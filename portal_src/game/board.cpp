@@ -325,18 +325,6 @@ void Board::initPortals()
                         if (portalPartner[cur] != Pos::NONE)
                             continue;
 
-                        // Don't mark gap cells (between collinear portals in this dir)
-                        bool isGap = false;
-                        for (int j = 0; j < numPortals; j++) {
-                            if (portals[j].collinear(dir)
-                                && isBetweenOnLine(cur, portals[j].a, portals[j].b, dir)) {
-                                isGap = true;
-                                break;
-                            }
-                        }
-                        if (isGap)
-                            break;  // Stop walking in this direction (gap blocks further cells too)
-
                         // Skip if it's a boundary/wall cell
                         if (cells[cur].piece == WALL)
                             break;
@@ -448,16 +436,17 @@ void Board::newGame()
     // them as EMPTY in the bitKey). We need to fix this.
     initPortals<R>();
 
-    // PORTAL: Fix bitKeys for portal and wall cells that were incorrectly marked EMPTY.
-    // We need to clear the EMPTY bits and set WALL-like bits (or rather, leave them
-    // as zero which in the absence of setBitKey means "not EMPTY", effectively WALL).
-    // Since setBitKey ORs in the color bits, and WALL is represented as bits 11,
-    // we need to set both BLACK and WHITE bits for portal/wall cells.
-    // Actually, simpler approach: for portal/wall cells, the bits were set to
-    // 01|10 = 11 (both BLACK and WHITE calls in the init loop above), which IS
-    // the WALL encoding (0b11). So portal cells already appear as WALL in bitKeys!
-    // This is actually CORRECT — setBitKey() for BLACK ORs 01, for WHITE ORs 10,
-    // together = 11 = WALL. No fix needed.
+    // PORTAL: Fix bitKeys for portal and wall cells that were incorrectly
+    // marked EMPTY. In Rapfi's encoding: 0b11=EMPTY, 0b00=WALL.
+    // The init loop above called setBitKey(BLACK) + setBitKey(WHITE) for ALL
+    // in-board cells, giving them 0b11 (EMPTY). After initPortals set some
+    // cells to WALL, their bitKey must be corrected: flip both bits back to 0.
+    for (Pos p = Pos::FULL_BOARD_START; p < Pos::FULL_BOARD_END; p++) {
+        if (cells[p].piece == WALL && p.isInBoard(boardSize, boardSize)) {
+            flipBitKey(p, BLACK);  // XOR 0b01 → 0b11 ^ 0b01 = 0b10
+            flipBitKey(p, WHITE);  // XOR 0b10 → 0b10 ^ 0b10 = 0b00 = WALL ✓
+        }
+    }
 
     // Init state info of the first ply with rule R
     StateInfo &st = stateInfos[moveCount];
@@ -503,59 +492,6 @@ template void Board::newGame<RENJU>();
 // move<R, MT>() — make a move with portal-extended update zone
 // =============================================================================
 
-/// PORTAL: Helper to refresh pattern/score for a single direction at a cell.
-/// Returns true if the cell was updated (cell is empty and portalAffected),
-/// indicating it should be included in the update cache for undo.
-///
-/// This is the core of the portal-extended update: for cells near portal B
-/// whose virtual line passes through B→A, the pattern changes when a stone
-/// is placed near portal A.
-template <Rule R, Board::MoveType MT>
-static inline void portalRefreshCell(Board            &board,
-                                     Cell             &c,
-                                     Pos               posi,
-                                     int               dir,
-                                     StateInfo        &st,
-                                     Board::UpdateCache &pc,  // NOLINT
-                                     int              &updateCacheIdx,
-                                     Value            &deltaValueBlack)
-{
-    if (c.piece != EMPTY)
-        return;
-
-    if constexpr (MT == Board::MoveType::NORMAL || MT == Board::MoveType::NO_EVALUATOR) {
-        deltaValueBlack -= c.valueBlack;
-    }
-
-    c.pattern2x[dir] = PatternConfig::lookupPattern<R>(board.getKeyAt<R>(posi, dir));
-
-    // Save to update cache for undo
-    pc[updateCacheIdx].pattern4[BLACK] = c.pattern4[BLACK];
-    pc[updateCacheIdx].pattern4[WHITE] = c.pattern4[WHITE];
-    pc[updateCacheIdx].score[BLACK]    = c.score[BLACK];
-    pc[updateCacheIdx].score[WHITE]    = c.score[WHITE];
-    if constexpr (MT == Board::MoveType::NORMAL || MT == Board::MoveType::NO_EVALUATOR) {
-        pc[updateCacheIdx].valueBlack = c.valueBlack;
-    }
-    updateCacheIdx++;
-
-    PatternCode pcode[SIDE_NB] = {c.pcode<BLACK>(), c.pcode<WHITE>()};
-
-    if constexpr (MT == Board::MoveType::NORMAL || MT == Board::MoveType::NO_EVALUATOR) {
-        deltaValueBlack += c.valueBlack = Config::getValueBlack(R, pcode[BLACK], pcode[WHITE]);
-    }
-
-    st.p4Count[BLACK][c.pattern4[BLACK]]--;
-    st.p4Count[WHITE][c.pattern4[WHITE]]--;
-    c.updatePattern4AndScore<R>(pcode[BLACK], pcode[WHITE]);
-    st.p4Count[BLACK][c.pattern4[BLACK]]++;
-    st.p4Count[WHITE][c.pattern4[WHITE]]++;
-
-    if (c.pattern4[BLACK] >= C_BLOCK4_FLEX3)
-        st.lastPattern4Move[BLACK][c.pattern4[BLACK] - C_BLOCK4_FLEX3] = posi;
-    if (c.pattern4[WHITE] >= C_BLOCK4_FLEX3)
-        st.lastPattern4Move[WHITE][c.pattern4[WHITE] - C_BLOCK4_FLEX3] = posi;
-}
 
 template <Rule R, Board::MoveType MT>
 void Board::move(Pos pos)

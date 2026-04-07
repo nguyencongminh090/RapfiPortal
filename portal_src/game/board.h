@@ -436,10 +436,14 @@ private:
         Score    score[SIDE_NB];
         Value    valueBlack;
     };
-    // PORTAL: Size increased from 40 to 60 to accommodate portal update zone extension.
-    // Normal zone: 4 dirs × (2L+1) ≤ 4×9 = 36 cells.
-    // Portal extension adds up to MAX_PORTAL_PAIRS × 2 × L extra cells per move.
-    using UpdateCache = std::array<SingleCellUpdateCache, 60>;
+    // PORTAL: Cache size must cover normal zone + worst-case portal extension.
+    // Normal zone:    4 dirs × (2L+1) = 4 × 9 = 36 entries.
+    // Portal extension per move:
+    //   Up to MAX_PORTAL_PAIRS portals near the placed stone.
+    //   Each triggered portal refreshes up to 4 dirs × 2L remote cells:
+    //   MAX_PORTAL_PAIRS × 4 × 2L = 8 × 4 × 8 = 256 entries (worst-case).
+    // Total worst-case: 36 + 256 = 292. Use 320 for safety margin.
+    using UpdateCache = std::array<SingleCellUpdateCache, 320>;
 
     /// The cells array of the board.
     Cell cells[FULL_BOARD_CELL_COUNT];
@@ -626,39 +630,89 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
     constexpr int L         = PatternConfig::HalfLineLen<R>;
     constexpr int WindowLen = 2 * L + 1;
 
-    // --- Step 1: Walk backward L steps to find the window start ---
-    Pos cur = pos;
-    for (int i = 0; i < L; i++)
-        cur = portalStep(cur, dir, -1);
+    // PORTAL: Use Pos::PASS (== -1) as the "not yet filled" sentinel.
+    // Pos::NONE == 0 == Pos::FULL_BOARD_START which IS a real (boundary) cell —
+    // using it as a sentinel would cause false duplicate hits on the top-left corner.
+    // Pos::PASS == -1 is guaranteed to never be a real board position.
+    static_assert(int(Pos::PASS) < 0, "Pos::PASS must be negative for OOB sentinel");
+    constexpr Pos UNSET = Pos::PASS;
 
-    // --- Step 2: Walk forward WindowLen steps, collecting bits ---
+    Pos windowCells[WindowLen];
+    for (int i = 0; i < WindowLen; i++) windowCells[i] = UNSET;
+    windowCells[L] = pos;
+
+    // --- Collect left window (descending from center) ---
+    Pos cur = pos;
+    for (int i = L - 1; i >= 0; i--) {
+        cur = portalStep(cur, dir, -1);
+        // Chain-skip adjacent portal cells (zero-width).
+        // Guard prevents runaway in degenerate multi-portal configs.
+        for (int guard = 0; guard < 2 * MAX_PORTAL_PAIRS; guard++) {
+            if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) break;
+            if (portalPartner[cur] == Pos::NONE) break;  // not a portal cell
+            cur = portalStep(cur, dir, -1);
+        }
+
+        // OOB: remaining left slots stay UNSET → emitted as WALL
+        if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT)
+            break;
+
+        // Loop detection: if cur was already placed in windowCells[i+1..L],
+        // we have a recursive portal ring — treat as closed (WALL).
+        bool dup = false;
+        for (int j = i + 1; j <= L; j++) {
+            if (windowCells[j] == cur) { dup = true; break; }
+        }
+        if (dup) break;
+
+        windowCells[i] = cur;
+    }
+
+    // --- Collect right window (ascending from center) ---
+    cur = pos;
+    for (int i = L + 1; i < WindowLen; i++) {
+        cur = portalStep(cur, dir, +1);
+        // Chain-skip adjacent portal cells (zero-width).
+        for (int guard = 0; guard < 2 * MAX_PORTAL_PAIRS; guard++) {
+            if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) break;
+            if (portalPartner[cur] == Pos::NONE) break;
+            cur = portalStep(cur, dir, +1);
+        }
+
+        if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT)
+            break;
+
+        // Loop detection: if cur was already placed anywhere in windowCells[0..i-1]
+        // (left side or center), we have a ring — treat as closed (WALL).
+        bool dup = false;
+        for (int j = 0; j < i; j++) {
+            if (windowCells[j] != UNSET && windowCells[j] == cur) {
+                dup = true; break;
+            }
+        }
+        if (dup) break;
+
+        windowCells[i] = cur;
+    }
+
+    // --- Build 64-bit key from logical window ---
+    // Encoding: EMPTY=0b11, BLACK=0b10, WHITE=0b01, WALL/UNSET=0b00
     uint64_t key = 0;
     for (int i = 0; i < WindowLen; i++) {
-        // Determine color bits for current position
-        // PORTAL: Rapfi bitKey convention:
-        //   EMPTY = 11 (both BLACK+WHITE bits set via setBitKey)
-        //   BLACK = 10 (WHITE bit only → BLACK stone placed, own bit flipped)
-        //   WHITE = 01 (BLACK bit only → WHITE stone placed, own bit flipped)
-        //   WALL  = 00 (no bits set → boundary/wall)
+        Pos      p = windowCells[i];
         uint64_t bits;
-        if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) {
-            bits = 0b00;  // Out-of-board = WALL
+        if (p == UNSET) {
+            bits = 0b00;  // unpopulated slot → WALL (OOB or loop break)
         }
         else {
-            switch (cells[cur].piece) {
+            switch (cells[p].piece) {
             case EMPTY: bits = 0b11; break;
             case BLACK: bits = 0b10; break;
             case WHITE: bits = 0b01; break;
-            default:    bits = 0b00; break;  // WALL (includes portal cells themselves,
-                                              // but portalStep skips them so this path
-                                              // is only hit for real WALLs/boundaries)
+            default:    bits = 0b00; break;  // WALL cell (addWall, boundary)
             }
         }
         key |= bits << (2 * i);
-
-        // Advance (skip last step to avoid stepping past the window end)
-        if (i < WindowLen - 1)
-            cur = portalStep(cur, dir, +1);
     }
 
     return key;
