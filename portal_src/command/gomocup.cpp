@@ -672,10 +672,51 @@ void takeBack()
 
 void begin()
 {
-    if (board->ply() != 0)
+    if (board->ply() != 0) {
         ERRORL("Board is not empty.");
-    else
-        think(*board);
+        return;
+    }
+
+    // PORTAL: When WALLs or portals exist, restrict first move to cells
+    // adjacent (8-neighbors) to WALL/portal cells instead of center.
+    // We pick a random cell from the legal set directly (like probeOpening
+    // does for center) rather than running a full search, which avoids a
+    // known checkP4 assertion during move/undo at ply 0 on portal boards.
+    bool hasObstacles = !pendingPortals.walls.empty() || !pendingPortals.pairs.empty();
+    if (hasObstacles) {
+        std::vector<Pos> adjCells;
+        auto collectNeighbors = [&](Pos center) {
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++) {
+                    if (dx == 0 && dy == 0) continue;
+                    Pos p(center.x() + dx, center.y() + dy);
+                    if (board->isInBoard(p) && board->isEmpty(p))
+                        adjCells.push_back(p);
+                }
+        };
+        for (Pos w : pendingPortals.walls)
+            collectNeighbors(w);
+        for (auto& [a, b] : pendingPortals.pairs) {
+            collectNeighbors(a);
+            collectNeighbors(b);
+        }
+        // Remove duplicates (cells adjacent to multiple obstacles)
+        std::sort(adjCells.begin(), adjCells.end());
+        adjCells.erase(std::unique(adjCells.begin(), adjCells.end()), adjCells.end());
+
+        if (!adjCells.empty()) {
+            PRNG prng;
+            Pos firstMove = adjCells[prng() % adjCells.size()];
+            sendActionAndUpdateBoard(ActionType::Move, firstMove);
+        }
+        else {
+            // Fallback: all neighbors are occupied/OOB → use normal opening
+            think(*board);
+        }
+    }
+    else {
+        think(*board);  // Normal: opening probe returns center
+    }
 }
 
 void turn()

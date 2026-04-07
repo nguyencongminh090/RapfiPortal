@@ -217,6 +217,127 @@ END
 check_pass "YXPORTAL A==B → ERROR" "$OUT" "^ERROR"
 
 # =============================================================================
+# First-Move-Near-WALL Tests
+# =============================================================================
+
+# Helper: parse "x,y" and check adjacency to a target position.
+# is_adjacent <move_line> <tx> <ty>  →  returns 0 if adjacent (Chebyshev dist 1)
+is_adjacent() {
+    local move_line="$1" tx="$2" ty="$3"
+    # Extract the first x,y coordinate line from output
+    local mx my
+    mx=$(echo "$move_line" | grep -oP '^\d+(?=,)' | head -1)
+    my=$(echo "$move_line" | grep -oP ',\K\d+' | head -1)
+    [ -z "$mx" ] && return 1
+    [ -z "$my" ] && return 1
+    local dx=$(( mx - tx )); [ $dx -lt 0 ] && dx=$(( -dx ))
+    local dy=$(( my - ty )); [ $dy -lt 0 ] && dy=$(( -dy ))
+    # Must be within distance 1 but not ON the wall itself
+    [ $dx -le 1 ] && [ $dy -le 1 ] && { [ $dx -gt 0 ] || [ $dy -gt 0 ]; }
+}
+
+# is_adjacent_to_any <move_line> <x1,y1> [<x2,y2> ...]
+# Returns 0 if move is adjacent to ANY of the listed positions.
+is_adjacent_to_any() {
+    local move_line="$1"; shift
+    for coord in "$@"; do
+        local tx="${coord%%,*}" ty="${coord##*,}"
+        if is_adjacent "$move_line" "$tx" "$ty"; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# check_adjacent <description> <output> <x1,y1> [<x2,y2> ...]
+check_adjacent() {
+    local desc="$1" output="$2"; shift 2
+    TOTAL=$((TOTAL + 1))
+    # Get the coordinate line (first line matching x,y pattern)
+    local move_line
+    move_line=$(echo "$output" | grep -E '^[0-9]+,[0-9]+$' | head -1)
+    if [ -z "$move_line" ]; then
+        printf "  ${RED}FAIL${RESET}: %s\n" "$desc"
+        printf "       no coordinate found in output\n"
+        FAIL=$((FAIL + 1))
+        return
+    fi
+    if is_adjacent_to_any "$move_line" "$@"; then
+        printf "  ${GREEN}PASS${RESET}: %s (move: %s)\n" "$desc" "$move_line"
+        PASS=$((PASS + 1))
+    else
+        printf "  ${RED}FAIL${RESET}: %s\n" "$desc"
+        printf "       move %s is NOT adjacent to any of: %s\n" "$move_line" "$*"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+# check_coord_equals <description> <output> <expected_x> <expected_y>
+check_coord_equals() {
+    local desc="$1" output="$2" ex="$3" ey="$4"
+    TOTAL=$((TOTAL + 1))
+    local move_line
+    move_line=$(echo "$output" | grep -E '^[0-9]+,[0-9]+$' | head -1)
+    if [ "$move_line" = "${ex},${ey}" ]; then
+        printf "  ${GREEN}PASS${RESET}: %s (move: %s)\n" "$desc" "$move_line"
+        PASS=$((PASS + 1))
+    else
+        printf "  ${RED}FAIL${RESET}: %s\n" "$desc"
+        printf "       expected %s,%s but got %s\n" "$ex" "$ey" "$move_line"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+# =============================================================================
+section "TEST 16: No WALL — BEGIN returns center (7,7)"
+OUT=$(run_engine "START 15
+BEGIN
+END
+")
+check_coord_equals "No obstacles → center move" "$OUT" "7" "7"
+
+# =============================================================================
+section "TEST 17: WALL at center (7,7) — BEGIN near center"
+OUT=$(run_engine "START 15
+INFO WALL 7,7
+BEGIN
+END
+")
+# First move must be adjacent to (7,7) — one of the 8 neighbors
+check_adjacent "WALL at center → move adjacent to (7,7)" "$OUT" "7,7"
+
+# =============================================================================
+section "TEST 18: WALL far from center — BEGIN NOT at center"
+OUT=$(run_engine "START 15
+INFO WALL 2,2
+BEGIN
+END
+")
+# First move must be adjacent to (2,2), which means NOT at center (7,7)
+check_adjacent "WALL at (2,2) → move adjacent to (2,2)" "$OUT" "2,2"
+
+# =============================================================================
+section "TEST 19: Portal only (no WALL) — BEGIN near portal cell"
+OUT=$(run_engine "START 15
+INFO YXPORTAL 2,3 10,10
+BEGIN
+END
+")
+# First move must be adjacent to portal A(2,3) or portal B(10,10)
+check_adjacent "Portal → move adjacent to a portal cell" "$OUT" "2,3" "10,10"
+
+# =============================================================================
+section "TEST 20: Multiple WALLs — BEGIN near one of them"
+OUT=$(run_engine "START 15
+INFO WALL 3,4
+INFO WALL 7,7
+BEGIN
+END
+")
+# First move must be adjacent to (3,4) or (7,7)
+check_adjacent "2 WALLs → move adjacent to one of them" "$OUT" "3,4" "7,7"
+
+# =============================================================================
 # Final summary
 printf "\n${BOLD}================================================================${RESET}\n"
 printf "${BOLD}  RESULTS: ${GREEN}%d passed${RESET}, ${BOLD}%s%d failed${RESET}\n" \
@@ -224,3 +345,4 @@ printf "${BOLD}  RESULTS: ${GREEN}%d passed${RESET}, ${BOLD}%s%d failed${RESET}\
 printf "${BOLD}================================================================${RESET}\n"
 
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1
+
