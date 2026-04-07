@@ -28,7 +28,7 @@
 #include <array>
 #include <cassert>
 #include <cstring>
-#include <vector>
+
 
 namespace Search {
 class SearchThread;
@@ -346,12 +346,22 @@ public:
     /// PORTAL: Get number of active portal pairs.
     int portalCount() const { return numPortals; }
 
+    /// PORTAL: Check if a cell is portal-affected in a specific direction (debug/test)
+    [[nodiscard]] bool isPortalAffected(Pos pos, int dir) const
+    {
+        return portalAffected[dir][int(pos)];
+    }
+
     /// PORTAL: Get portal pair by index.
     const PortalPair &getPortal(int i) const
     {
         assert(i >= 0 && i < numPortals);
         return portals[i];
     }
+
+    /// PORTAL: Walk one step in direction dir, handling portal teleportation.
+    /// Public for testing — this is the core teleportation primitive.
+    inline Pos portalStep(Pos cur, int dir, int sign) const;
 
     // ------------------------------------------------------------------------
     // general board info queries
@@ -514,23 +524,7 @@ private:
     template <Rule R>
     void initPortals();
 
-    /// PORTAL: Walk one step in direction dir, handling portal teleportation.
-    ///
-    /// If the next cell (cur + DIRECTION[dir]*sign) is a portal cell P with partner Q:
-    ///   → skip P (zero-width), skip Q (zero-width)
-    ///   → return Q + DIRECTION[dir]*sign  (continue from after Q)
-    ///
-    /// Otherwise returns the normal next cell (no teleportation).
-    ///
-    /// This is the core primitive used by buildPortalKey().
-    /// Runs in O(1) via portalPartner[] lookup.
-    ///
-    /// @param cur  Current position (NOT a portal cell; the walk is always from
-    ///             a real cell stepping towards the next)
-    /// @param dir  Direction index (0=H, 1=V, 2=UP_RIGHT, 3=DOWN_RIGHT)
-    /// @param sign +1 for forward (positive direction), -1 for backward
-    /// @return     Next position after one virtual step
-    inline Pos portalStep(Pos cur, int dir, int sign) const;
+    // portalStep declaration moved to public section for testing
 
     /// PORTAL: Build the virtual line key for a portal-affected cell.
     ///
@@ -598,9 +592,9 @@ inline Pos Board::portalStep(Pos cur, int dir, int sign) const
 
     // Bounds check: out-of-board cells act as WALL (no portal there)
     if (rawNext < 0 || rawNext >= FULL_BOARD_CELL_COUNT)
-        return Pos(int16_t(rawNext));
+        return Pos{int16_t(rawNext)};
 
-    Pos next(int16_t(rawNext));
+    Pos next{int16_t(rawNext)};
 
     // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells
     const Pos partner = portalPartner[next];
@@ -641,16 +635,21 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
     uint64_t key = 0;
     for (int i = 0; i < WindowLen; i++) {
         // Determine color bits for current position
+        // PORTAL: Rapfi bitKey convention:
+        //   EMPTY = 11 (both BLACK+WHITE bits set via setBitKey)
+        //   BLACK = 10 (WHITE bit only → BLACK stone placed, own bit flipped)
+        //   WHITE = 01 (BLACK bit only → WHITE stone placed, own bit flipped)
+        //   WALL  = 00 (no bits set → boundary/wall)
         uint64_t bits;
         if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) {
-            bits = 0b11;  // Out-of-board = WALL
+            bits = 0b00;  // Out-of-board = WALL
         }
         else {
             switch (cells[cur].piece) {
-            case EMPTY: bits = 0b00; break;
-            case BLACK: bits = 0b01; break;
-            case WHITE: bits = 0b10; break;
-            default:    bits = 0b11; break;  // WALL (includes portal cells themselves,
+            case EMPTY: bits = 0b11; break;
+            case BLACK: bits = 0b10; break;
+            case WHITE: bits = 0b01; break;
+            default:    bits = 0b00; break;  // WALL (includes portal cells themselves,
                                               // but portalStep skips them so this path
                                               // is only hit for real WALLs/boundaries)
             }
@@ -679,7 +678,7 @@ inline uint64_t Board::getKeyAt(Pos pos, int dir) const
     assert(dir >= 0 && dir < 4);
 
     // PORTAL: Check if this cell's window passes through a portal
-    if (portalAffected[dir][pos]) [[unlikely]]
+    if (portalAffected[dir][int(pos)]) [[unlikely]]
         return buildPortalKey<R>(pos, dir);
 
     // Fast path — identical to Rapfi
