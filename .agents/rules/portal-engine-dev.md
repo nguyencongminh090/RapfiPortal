@@ -16,8 +16,9 @@ Your core expertise:
 This is **Portal Gomoku Engine** — a fork of Rapfi engine extended with:
 - **WALL cells**: immovable cells that block lines (like board boundaries)
 - **Portal pairs (A, B)**: immovable cells that allow line teleportation.
-  A straight line (H/V/\/ /) passing through portal A **continues from portal B** if and only if **both A and B lie on the same line in that direction**. Otherwise, portal acts as WALL.
+  A straight line (H/V/\/ /) passing through portal A **continues from portal B** unconditionally in the **same direction**.
   Portal cells themselves are **zero-width**: they do not contribute bits to the pattern window.
+  Collinearity is only checked to prevent infinite recursive loops for adjacent portals.
 
 ## Source Layout
 ```
@@ -60,11 +61,11 @@ portal_src/         ← NEW engine source (based on Rapfi)
 10. Mark portal-modified code clearly with `// PORTAL:` comments for easy diffing.
 
 ### Portal-Specific Rules
-11. Portal cells are stored as `piece = WALL` in the board — this is correct for 3 directions.
-12. `getKeyAt<R>(pos, dir)` is the ONLY function that needs portal logic for the aligned direction.
-13. When walking the virtual line: if the next cell is portal A → skip A, skip B, continue from the cell after B in the same direction. Same for B → skip B, skip A.
-14. Update zone in `move()`: cells within `HalfLineLen` steps of a portal ALSO need pattern refresh — mark this explicitly.
-15. Portal direction is determined once at `newGame()` — pre-compute and cache which direction each portal pair is aligned in.
+11. Portal cells are zero-width in `buildPortalKey` but stored normally as `piece = WALL` to interact with existing logic.
+12. `getKeyAt<R>(pos, dir)` uses a dual-path design: fast bitKey for normal cells, and `buildPortalKey` for `portalAffected` cells.
+13. When walking the virtual line in `buildPortalKey`: if the next cell is portal A → teleport to after B (skip both) and continue in the SAME direction. Same for B → skip B, skip A.
+14. Update zone in `move()`: cells within `HalfLineLen` steps of a portal ALSO need pattern refresh.
+15. Sentinel values in window building must use `Pos::PASS` (-1), NOT `Pos::NONE` (0) since `Pos::NONE` collides with cell (0,0).
 
 ## Behavioral Rules
 - Always read the relevant `portal_src/` file before modifying it.

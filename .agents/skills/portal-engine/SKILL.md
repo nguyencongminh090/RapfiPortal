@@ -15,25 +15,18 @@ description: Deep knowledge of Portal Gomoku Engine architecture — use when im
 ### Portal Pair (A, B)
 - Both cells: immovable (cannot place stones), stored as `piece = WALL`.
 - Teleportation rule (confirmed):
-  - Portal (A, B) is **active** for direction D **only if** A and B are collinear in direction D.
-  - When scanning direction D and you reach portal A → **skip A, skip B**, continue from the cell after B in direction D. Same for B → skip A.
+  - Portals teleport unconditionally in **ALL 4 directions**.
+  - When scanning direction D and you reach portal A → **skip A, skip B**, continue from the cell after B in the **same direction D**. Same for B → skip A.
   - Portal cells are **zero-width** in the virtual line window: they do NOT contribute bits.
-  - For all OTHER directions: portal cells act exactly as WALL (line is blocked).
+  - **Loop detection**: If teleporting through portals revisits a physical cell already in the currently building window, the window is terminated (the rest becomes WALL) to prevent infinite loops (especially in small collinear gaps).
 
-### Visual Examples (10x10 board)
+### Visual Examples
 ```
-Horizontal portal WIN (A and B on same row):
-  Physical:  .  X  X  X [A] .  . [B]  X  *
-  Virtual:   .  X  X  X  X  X  .        = 5-in-a-row → WIN
-
-Diagonal portal WIN (A and B on same \ diagonal):
-  Physical (diagonal view): (1,1)X (2,2)X [A=(3,3)] [B=(6,6)] (7,7)X (8,8)X ★(9,9)
-  Virtual: X X X X X → WIN
-
-Non-aligned direction = WALL:
-  X  X [A] X  X   (A's partner B is on different row)
-  →  X  X [WALL] X  X   (blocked)
+Horizontal portal WIN (even if A and B are not on same row!):
+  Physical:      (x:1)X (2)X [A=(3,5)] ... [B=(7,2)] (8)X (9)X (10)*
+  Virtual (dir=H): X X X X X → WIN
 ```
+
 
 ## 2. Architecture: What Changes vs What Stays
 
@@ -60,29 +53,19 @@ Non-aligned direction = WALL:
 
 ## 3. Key Data Structures
 
-### Portal Struct (to add in board.h)
-```cpp
-/// Portal pair: two immovable cells that teleport lines in one direction.
-/// dir = precomputed direction index (0=H, 1=V, 2=\, 3=/) or -1 if not aligned.
-struct Portal {
-    Pos a;    ///< First portal cell position
-    Pos b;    ///< Second portal cell position
-    int dir;  ///< Aligned direction: 0=H 1=V 2=diag 3=antidiag, -1=invalid
-};
-```
+## 3. Key Data Structures
 
-### Portal Direction Computation
+### Portal Data (in board.h)
 ```cpp
-/// Returns the direction index (0-3) if a and b are collinear, else -1.
-/// 0=Horizontal(—), 1=Vertical(|), 2=Diagonal(\), 3=AntiDiag(/)
-constexpr int portalDirOf(Pos a, Pos b) {
-    int dx = b.x() - a.x(), dy = b.y() - a.y();
-    if (dy == 0 && dx != 0)      return 0;  // same row
-    if (dx == 0 && dy != 0)      return 1;  // same col
-    if (dx == dy && dx != 0)     return 2;  // diagonal
-    if (dx == -dy && dx != 0)    return 3;  // anti-diagonal
-    return -1;
-}
+struct PortalPair {
+    Pos a;  ///< First portal cell
+    Pos b;  ///< Second portal cell
+};
+
+// ... inside Board ...
+PortalPair portals[MAX_PORTAL_PAIRS];
+Pos portalPartner[FULL_BOARD_CELL_COUNT]; // O(1) teleport partner lookup
+bool portalAffected[4][FULL_BOARD_CELL_COUNT]; // Gatings for dual-path getKeyAt
 ```
 
 ## 4. The Core Algorithm: `getKeyAt<R>(pos, dir)`
@@ -99,43 +82,33 @@ getKeyAt(pos, dir):
 ```
 
 ### Portal-aware implementation:
-```
+```cpp
 getKeyAt(pos, dir):
   // Fast path: no portal in range — use existing bitKey rotation
-  if (!anyPortalNearby(pos, dir)):
+  if (!portalAffected[dir][pos]):
       return fastBitKeyExtract(pos, dir)   // unchanged Rapfi code
 
   // Slow path: build virtual window manually
   return buildPortalKey(pos, dir)
 
 buildPortalKey(pos, dir):
-  walk = pos
-  // Step backward L times (skipping portal cells)
-  for i in 1..L:
-      walk = portalStep(walk, dir, -1)
-
-  key = 0
-  // Walk forward 2L+1 steps, collecting bits
-  for i in 0..(2*L):
-      key |= colorBits(get(walk)) << (2*i)
-      walk = portalStep(walk, dir, +1)
-  return key
+  // 1. Walk left tracking windowCells using portalStep()
+  // 2. Center is pos
+  // 3. Walk right tracking windowCells using portalStep()
+  // Use Pos::PASS (-1) as sentinel if we hit boundary or loop.
+  // CRITICAL: Must track `posList` to detect if we step onto a cell
+  // we already collected (loop detection). If loop detected, terminate that end with Walls.
+  // 4. Assemble 2-bit colors from windowCells into 64-bit key and return.
 
 portalStep(cur, dir, sign):
   next = cur + DIRECTION[dir] * sign
-  for each portal (A, B) with portal.dir == dir:
-      if next == A: return B + DIRECTION[dir] * sign  // skip A, skip B
-      if next == B: return A + DIRECTION[dir] * sign  // skip B, skip A
-  return next  // no portal — normal step
-
-colorBits(pos):
-  piece = cells[pos].piece
-  if piece == EMPTY: return 0b00
-  if piece == BLACK: return 0b01
-  if piece == WHITE: return 0b10
-  // WALL or portal cell (should never appear — already skipped): return 0b11
-  return 0b11
+  if out_of_bounds(next): return next
+  partner = portalPartner[next]
+  if partner != Pos::NONE: 
+      return partner + DIRECTION[dir] * sign   // Teleport unconditionally
+  return next
 ```
+
 
 ## 5. Update Zone in `move()`
 
@@ -162,21 +135,20 @@ Example:
 ## 6. `newGame()` Changes
 
 ```cpp
-// 1. Mark portal cells as WALL in cells[] and bitKeys[]
+// 1. Mark portal cells as WALL in cells[] and portalPartner[]
 for each portal pair (A, B):
-    cells[A].piece = WALL   // already done since portals are WALLs
+    cells[A].piece = WALL
     cells[B].piece = WALL
-    // The bitKey for A and B already has WALL bits (11) from boundary init
-    // No additional bitKey change needed for non-aligned directions
+    portalPartner[A] = B
+    portalPartner[B] = A
 
-// 2. Pre-compute portal direction
-for each portal pair:
-    portal.dir = portalDirOf(portal.a, portal.b)
+// 2. Compute portalAffected[][] and portalUpdateZone
+// Walk from all portals out to depth L in all 4 directions.
+// Any non-portal cell reached is marked portalAffected[dir] = true.
 
-// 3. Pattern init
-// FOR_EVERY_POSITION: compute getKeyAt() for each empty cell
-// Portal cells are WALL → they are skipped by FOR_EVERY_POSITION
-// Cells near portals will naturally use buildPortalKey() via getKeyAt()
+// 3. IMPORTANT: Set WALL bitKey to 0b00
+// Since newGame() clears bitKeys to 0b11 (EMPTY), WALLs must be explicitly flipped:
+// flipBitKey(p, BLACK); flipBitKey(p, WHITE);
 ```
 
 ## 7. `binary_file` Compatibility
@@ -195,8 +167,7 @@ Portal positions create unusual pattern combinations that the original Rapfi nev
 
 | Pitfall | Correct approach |
 |---------|----------------|
-| Forgetting to update B's neighborhood when stone placed near A | Extend update zone in `move()` |
-| Portal cells contributing WALL bits to aligned direction | Must use buildPortalKey() which SKIPS portal cells |
-| Scanning past the other end of portal into board boundary | portalStep() must check boundary after teleport |
-| Two portals chaining (A→B→C→D) | Walk loop handles naturally — each step checks ALL portals |
-| Portal with dir=-1 (A and B not aligned) | Both cells act purely as WALL — no special handling needed |
+| Forgetting to update B's neighborhood when stone placed near A | Extend update zone in `move()` (via `portalUpdateZone`) |
+| Loop in collinear portal chain | Keep a `posList` in `buildPortalKey` to terminate window if a cell is visited twice. |
+| Using `Pos::NONE` (0) as sentinel | Cell 0 is a valid top-left board cell! Use `Pos::PASS` (-1) instead. |
+| Forgetting to fix WALL bitKey | Rapfi naturally makes empty cells 0b11. WALLs require `0b00`. You must flip both BLACK and WHITE bits in `newGame()` to set them correctly. |

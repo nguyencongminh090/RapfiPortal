@@ -102,6 +102,32 @@ bool                          GUIMode   = false;
 std::atomic_bool              thinking  = false;
 std::optional<CandidateRange> candRange = std::nullopt;
 
+// PORTAL: registered WALLs and portal pairs, applied at the next restart()
+struct PendingPortals {
+    std::vector<Pos>                         walls;
+    std::vector<std::pair<Pos, Pos>>         pairs;
+    
+    void clear() {
+        walls.clear();
+        pairs.clear();
+    }
+} pendingPortals;
+
+/// PORTAL: Sync board topology with pendingPortals and reinitialize.
+/// This is the SINGLE place newGame() should be called — never call
+/// board->newGame() directly. Maintains the invariant:
+///   After every command, board topology == pendingPortals.
+void applyAndReinit()
+{
+    if (!board) return;
+    board->clearPortals();
+    for (Pos w : pendingPortals.walls)
+        board->addWall(w);
+    for (auto& [a, b] : pendingPortals.pairs)
+        board->addPortal(a, b);
+    board->newGame(options.rule);  // initPortals() runs here
+}
+
 void sendActionAndUpdateBoard(ActionType action, Pos bestMove)
 {
     if (action == ActionType::Move) {
@@ -270,9 +296,9 @@ void getOption()
             Search::Threads.searcher()->setMemoryLimit(memLimitKB);
         }
 
-        // Clear TT if rule is changed
+        // PORTAL: Re-apply portals when rule changes so initPortals() sees new rule
         if (board && prevRule != options.rule) {
-            board->newGame(options.rule);
+            applyAndReinit();
             Search::Threads.clear(true);
         }
     }
@@ -331,7 +357,7 @@ void getOption()
                 tempPosition.push_back(board->getHistoryMove(i));
 
             board = std::make_unique<Board>(board->size(), *candRange);
-            board->newGame(options.rule);
+            applyAndReinit();  // PORTAL: re-apply portals after board recreation
             for (Pos p : tempPosition)
                 board->move(options.rule, p);
 
@@ -425,6 +451,39 @@ void getOption()
         std::cin >> str;
         Search::Threads.setupSearcher(Config::createSearcher(str));
         Search::Threads.clear(true);
+    }
+    // PORTAL: INFO WALL x,y
+    // Immediately re-inits board so no RESTART is needed before BEGIN/TURN.
+    else if (token == "WALL") {
+        int x, y; char comma;
+        std::cin >> x >> comma >> y;
+        Pos pos = inputCoordConvert(x, y, board ? board->size() : 15);
+        if (!board || board->isInBoard(pos)) {
+            pendingPortals.walls.push_back(pos);
+            applyAndReinit();  // PORTAL: immediate sync
+        }
+        else
+            ERRORL("WALL position out of board.");
+    }
+    // PORTAL: INFO YXPORTAL Ax,Ay Bx,By
+    // Immediately re-inits board so no RESTART is needed before BEGIN/TURN.
+    else if (token == "YXPORTAL") {
+        int ax, ay, bx, by; char comma;
+        std::cin >> ax >> comma >> ay >> bx >> comma >> by;
+        int  sz  = board ? board->size() : 15;
+        Pos  a   = inputCoordConvert(ax, ay, sz);
+        Pos  b   = inputCoordConvert(bx, by, sz);
+        if ((!board || (board->isInBoard(a) && board->isInBoard(b))) && a != b) {
+            pendingPortals.pairs.emplace_back(a, b);
+            applyAndReinit();  // PORTAL: immediate sync
+        }
+        else
+            ERRORL("PORTAL coordinates invalid or out of board.");
+    }
+    // PORTAL: INFO CLEARPORTALS — remove all WALL/portal config
+    else if (token == "CLEARPORTALS") {
+        pendingPortals.clear();
+        applyAndReinit();  // PORTAL: immediate sync (board now has no portals)
     }
     else {
         MESSAGEL("Unknown Info Parameter: " << token);
@@ -557,7 +616,9 @@ void databaseToLib()
 
 void restart()
 {
-    board->newGame(options.rule);
+    // PORTAL: applyAndReinit() is the single point that calls newGame().
+    // It syncs board topology with pendingPortals then resets stones.
+    applyAndReinit();
     Search::Threads.clear(false);
     std::cout << "OK" << std::endl;
 }
@@ -572,9 +633,17 @@ void start()
     }
 
     if (!board || boardSize != board->size()) {
+        // PORTAL: Board size change → old portal coordinates are invalid.
+        // Clear pending config so the new board starts clean.
+        if (board && boardSize != board->size()) {
+            pendingPortals.clear();
+            MESSAGEL("Board size changed — portal/WALL config cleared.");
+        }
         auto candidateRange = candRange.value_or(Config::DefaultCandidateRange);
         board               = std::make_unique<Board>(boardSize, candidateRange);
     }
+    // PORTAL: Same size: keep pendingPortals. applyAndReinit() inside restart()
+    // will re-apply them immediately so the board is always in sync.
 
     restart();
 }
@@ -621,73 +690,92 @@ void turn()
     think(*board);
 }
 
+/// Helper: replay non-WALL stones from a position list onto the current board.
+/// Assumes board->newGame() already called and portals initialized.
+static void replayPositionMoves(
+    Board& board, Rule rule,
+    const std::vector<std::pair<Pos, int>>& position,
+    Color selfColor)
+{
+    for (auto [pos, side] : position) {
+        if (side == 3) continue;  // WALL — skip
+
+        if ((side == 1 && board.sideToMove() != selfColor)
+            || (side == 2 && board.sideToMove() != ~selfColor)) {
+            if (checkLastMoveIsNotPass(board)) return;
+            board.move(rule, Pos::PASS);
+        }
+        if (pos == Pos::PASS && checkLastMoveIsNotPass(board)) return;
+        board.move(rule, pos);
+    }
+}
+
 void getPosition(bool startThink)
 {
-    board->newGame(options.rule);
     options.multiPV     = 1;
     options.balanceMode = Search::SearchOptions::BALANCE_NONE;
 
-    // Read position sequence
-    enum SideFlag { SELF = 1, OPPO = 2, WALL = 3 };
-    std::vector<std::pair<Pos, SideFlag>> position;
+    // Read position sequence (stones + inline WALLs)
+    // color: 1=SELF, 2=OPPO, 3=WALL
+    std::vector<std::pair<Pos, int>> position;
+    bool hasInlineWalls = false;
 
-    while (true) {
-        std::string coordStr;
-        std::cin >> coordStr;
-        upperInplace(coordStr);
+    // PORTAL: Parse against an empty board temporarily to validate coords.
+    // We will re-init the board with portals before replaying.
+    {
+        // Temp newGame just for coord parsing via parseLegalCoord
+        applyAndReinit();
 
-        if (coordStr == "DONE" || std::cin.eof())
-            break;
+        while (true) {
+            std::string coordStr;
+            std::cin >> coordStr;
+            upperInplace(coordStr);
+            if (coordStr == "DONE" || std::cin.eof()) break;
 
-        std::optional<Pos> pos;
-        int                color = -1;
-        {
-            std::stringstream ss;
-            char              comma;
-            ss << coordStr;
-            pos = parseLegalCoord(ss, *board);
-            ss >> comma >> color;
-        }
+            std::optional<Pos> pos;
+            int                color = -1;
+            {
+                std::stringstream ss;
+                char              comma;
+                ss << coordStr;
+                pos = parseLegalCoord(ss, *board);
+                ss >> comma >> color;
+            }
 
-        if (pos.has_value()) {
-            if (color == SELF || color == OPPO || color == WALL && *pos != Pos::NONE)
-                position.emplace_back(*pos, static_cast<SideFlag>(color));
-            else
-                ERRORL("Color is not a valid value, must be one of [1, 2, 3].");
+            if (pos.has_value()) {
+                if (color == 1 || color == 2 || (color == 3 && *pos != Pos::NONE)) {
+                    position.emplace_back(*pos, color);
+                    if (color == 3) hasInlineWalls = true;
+                }
+                else
+                    ERRORL("Color is not a valid value, must be one of [1, 2, 3].");
+            }
         }
     }
 
-    // The first move (either real move or pass) is always considered as BLACK
+    // PORTAL: Collect any inline WALLs (color=3) into pendingPortals,
+    // then call applyAndReinit() so initPortals() sees all WALLs + portals.
+    if (hasInlineWalls) {
+        for (auto [pos, color] : position) {
+            if (color == 3 && board->isInBoard(pos))
+                pendingPortals.walls.push_back(pos);
+        }
+        applyAndReinit();  // PORTAL: inline WALLs now active
+    }
+    // If no inline WALLs, applyAndReinit() at top already ran → board ready.
+
+    // Determine which color SELF is (first non-WALL move)
     Color selfColor = BLACK;
-    for (auto [pos, side] : position) {
-        if (side != WALL) {
-            selfColor = side == SELF ? BLACK : WHITE;
+    for (auto [pos, color] : position) {
+        if (color != 3) {
+            selfColor = (color == 1) ? BLACK : WHITE;
             break;
         }
     }
 
-    // Put stones on board
-    for (auto [pos, side] : position) {
-        if (side == WALL)  // Currently wall is not supported
-            continue;
+    // Replay all non-WALL stone moves onto the correctly initialized board
+    replayPositionMoves(*board, options.rule, position, selfColor);
 
-        // Make sure current side to move correspond to the input side
-        // If not, we add an extra PASS move to flip the side
-        if (side == SELF && board->sideToMove() != selfColor
-            || side == OPPO && board->sideToMove() != ~selfColor) {
-            if (checkLastMoveIsNotPass(*board))
-                return;
-
-            board->move(options.rule, Pos::PASS);
-        }
-
-        if (pos == Pos::PASS && checkLastMoveIsNotPass(*board))
-            return;
-
-        board->move(options.rule, pos);
-    }
-
-    // Start thinking if needed
     if (startThink)
         think(*board);
 }

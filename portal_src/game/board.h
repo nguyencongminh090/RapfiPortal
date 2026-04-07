@@ -600,10 +600,13 @@ inline Pos Board::portalStep(Pos cur, int dir, int sign) const
 
     Pos next{int16_t(rawNext)};
 
-    // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells
+    // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells.
+    // Portals teleport in ALL directions unconditionally.
+    // For collinear portals (A and B on the same physical line in direction dir),
+    // the buildPortalKey duplicate-detection prevents infinite loops.
     const Pos partner = portalPartner[next];
     if (partner != Pos::NONE) {
-        // Skip both portal cells (zero-width); continue from after partner
+        // Skip both portal cells (zero-width); continue from after partner.
         // exit = partner + DIRECTION[dir] * sign
         return Pos(int16_t(int(partner) + int(DIRECTION[dir]) * sign));
     }
