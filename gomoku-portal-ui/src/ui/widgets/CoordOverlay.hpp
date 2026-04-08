@@ -1,30 +1,31 @@
 /*
  *  Portal Gomoku UI — Coordinate Overlay
- *  Draws the A-Z and 1-15 labels around the edges of the board.
+ *  Draws A-O column and 1-15 row labels.
+ *  Designed to be called FROM BoardCanvas::draw_content, NOT as a standalone overlay.
+ *  Kept as a utility class with a static draw method.
  */
 
 #pragma once
 
-#include <gtkmm/drawingarea.h>
+#include <cairomm/context.h>
+#include <string>
 
 namespace ui::widgets {
 
-class CoordOverlay : public Gtk::DrawingArea {
+/// Utility for drawing coordinate labels around a board grid.
+/// Not a standalone widget — called from BoardCanvas's draw function
+/// to ensure pixel-perfect alignment with the grid.
+class CoordOverlay {
 public:
-    CoordOverlay();
-
-    /// Set board size (e.g. 15 for 15x15)
-    void setBoardSize(int size);
-
-    /// Set the pixel size of a single grid cell
-    void setCellSize(double cellSize);
-
-protected:
-    void draw_content(const Cairo::RefPtr<Cairo::Context>& cr, int width, int height);
-
-private:
-    int boardSize_ = 15;
-    double cellSize_ = 30.0;
+    /// Draw coordinate labels around the board.
+    /// @param cr        Cairo context (from the BoardCanvas draw function)
+    /// @param boardSize Number of lines (e.g. 15)
+    /// @param cellSize  Pixel distance between grid lines
+    /// @param originX   X pixel of grid line 0 (top-left intersection)
+    /// @param originY   Y pixel of grid line 0 (top-left intersection)
+    static void draw(const Cairo::RefPtr<Cairo::Context>& cr,
+                     int boardSize, double cellSize,
+                     double originX, double originY);
 };
 
-} // namespace ui::widgets
+}  // namespace ui::widgets

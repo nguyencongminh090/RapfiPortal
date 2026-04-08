@@ -1,0 +1,116 @@
+/*
+ *  Portal Gomoku UI — Main Window
+ *  Assembles all UI panels into the application layout.
+ *
+ *  Layout:
+ *    ┌──────────────────────────────────────────┐
+ *    │  Toolbar (New, Undo, Connect, Think)     │
+ *    ├────┬──────────────────────┬──────────────┤
+ *    │Eval│                      │  Side Panel  │
+ *    │Bar │   BoardCanvas        │  (Notebook)  │
+ *    │    │                      │  - Log       │
+ *    │    │                      │  - Database  │
+ *    ├────┴──────────────────────┴──────────────┤
+ *    │  Status Bar [indicator] [engine name]    │
+ *    └──────────────────────────────────────────┘
+ */
+
+#pragma once
+
+#include "../controller/GameController.hpp"
+#include "../ui/board/BoardCanvas.hpp"
+#include "../ui/widgets/EvalBar.hpp"
+#include "../ui/widgets/StatusIndicator.hpp"
+#include "../ui/widgets/ClockWidget.hpp"
+#include "../ui/panels/LogPanel.hpp"
+#include "../ui/panels/DatabasePanel.hpp"
+
+#include <gtkmm/applicationwindow.h>
+#include <gtkmm/box.h>
+#include <gtkmm/button.h>
+#include <gtkmm/headerbar.h>
+#include <gtkmm/label.h>
+#include <gtkmm/notebook.h>
+#include <gtkmm/paned.h>
+#include <gtkmm/separator.h>
+#include <glibmm/main.h>
+
+namespace ui {
+
+class MainWindow : public Gtk::ApplicationWindow {
+public:
+    explicit MainWindow(controller::GameController& gameCtrl);
+    ~MainWindow() override;
+
+private:
+    controller::GameController& gameCtrl_;
+
+    // =========================================================================
+    // Layout Containers
+    // =========================================================================
+    Gtk::Box       mainVBox_{Gtk::Orientation::VERTICAL};
+    Gtk::Box       toolbarBox_{Gtk::Orientation::HORIZONTAL};
+    Gtk::Paned     centerPaned_{Gtk::Orientation::HORIZONTAL};
+    Gtk::Box       boardArea_{Gtk::Orientation::HORIZONTAL};
+    Gtk::Box       statusBar_{Gtk::Orientation::HORIZONTAL};
+
+    // =========================================================================
+    // Toolbar Buttons
+    // =========================================================================
+    Gtk::Button btnNewGame_{"New Game"};
+    Gtk::Button btnUndo_{"Undo"};
+    Gtk::Button btnConnect_{"Connect"};
+    Gtk::Button btnThink_{"Think"};
+    Gtk::Button btnStop_{"Stop"};
+
+    // =========================================================================
+    // Board & Widgets
+    // =========================================================================
+    board::BoardCanvas   boardCanvas_;
+    widgets::EvalBar     evalBar_;
+    widgets::StatusIndicator statusIndicator_;
+    Gtk::Label           engineNameLabel_{"No engine"};
+
+    // =========================================================================
+    // Side Panel
+    // =========================================================================
+    Gtk::Notebook       sideNotebook_;
+    panels::LogPanel    logPanel_;
+    panels::DatabasePanel databasePanel_;
+
+    // =========================================================================
+    // Timer for engine polling
+    // =========================================================================
+    sigc::connection pollTimerConnection_;
+
+    // =========================================================================
+    // Signal connections
+    // =========================================================================
+    std::vector<sigc::connection> connections_;
+
+    // =========================================================================
+    // Setup
+    // =========================================================================
+    void setupLayout();
+    void setupToolbar();
+    void setupSignals();
+    void startPollingTimer();
+
+    // =========================================================================
+    // Handlers
+    // =========================================================================
+    void onNewGame();
+    void onUndo();
+    void onConnect();
+    void onThink();
+    void onStop();
+    bool onPollTimer();
+
+    // GameController signal handlers
+    void onBoardChanged();
+    void onEngineStateChanged(engine::EngineState state);
+    void onEngineMessage(const std::string& msg);
+    void onEngineName(const std::string& name);
+};
+
+}  // namespace ui

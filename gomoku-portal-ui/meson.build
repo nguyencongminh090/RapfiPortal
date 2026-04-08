@@ -21,11 +21,16 @@ model_sources = files(
 # Main application
 app_sources = files(
     'src/main.cpp',
+    'src/ui/Application.cpp',
+    'src/ui/MainWindow.cpp',
     'src/ui/widgets/StatusIndicator.cpp',
     'src/ui/widgets/EvalBar.cpp',
     'src/ui/widgets/ClockWidget.cpp',
     'src/ui/widgets/CoordOverlay.cpp',
     'src/ui/panels/LogPanel.cpp',
+    'src/ui/board/BoardRenderer.cpp',
+    'src/ui/board/BoardCanvas.cpp',
+    'src/controller/GameController.cpp',
     'src/controller/DatabaseController.cpp',
     'src/ui/panels/DatabasePanel.cpp',
 )
