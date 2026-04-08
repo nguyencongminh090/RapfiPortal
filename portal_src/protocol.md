@@ -17,7 +17,7 @@ YXSHOWINFO
 ```
 The engine will reply with version strings and engine configuration information, for example:
 ```text
-MESSAGE MINT-P Rapfi 1.x.x
+MESSAGE MINT-P 1.1.0 (g++ 13.3.0 on Linux SSE41 AVX2 BMI2)
 MESSAGE INFO MAX_THREAD_NUM 256
 MESSAGE INFO MAX_HASH_SIZE 30
 ```
@@ -35,9 +35,10 @@ These are standard Gomocup protocol commands essential for normal gameplay:
 | `RESTART` | Clears the board pieces and restarts the game with the same portal topology. Engine replies `OK`. | Send to replay a game on the exact same board setup. |
 | `BEGIN` | Engine plays the first move on the empty board. | If playing as White and the engine is Black. |
 | `TURN [x],[y]` | Opponent piece is placed at `[x],[y]`. The engine thinks and outputs its next move as `[A],[B]`. | Send this when the human user clicks a cell. |
-| `TAKEBACK [x],[y]` | Undoes the last move. Engine replies `OK`. | Useful for undo buttons. It only undoes ONE ply. |
+| `TAKEBACK [x],[y]` | Undoes the last move. Engine replies `OK`. Note: the coordinates are read but ignored — it always undoes the last ply. | Useful for undo buttons. It only undoes ONE ply. |
 | `BOARD` | Followed by a list of `[x],[y],[color]` (color 1=SELF, 2=OPPO, 3=WALL) and terminated by `DONE`. Starts engine thinking. | Restoring a game from save or importing a position. |
 | `YXBOARD` | Same as `BOARD`, but the engine does NOT automatically start thinking after `DONE`. | Use to set a board state silently. |
+| `ABOUT` | Engine prints identity info: `name="MINT-P", version="1.1.0 (...)", author="...", country="..."` | Use to display engine info in the UI "About" dialog. |
 | `END` | Exits the engine. | Send before terminating the engine process. |
 
 ---
@@ -53,7 +54,7 @@ INFO [KEY] [VALUE_OR_ARGS]
 
 **IMPORTANT NOTE:**
 The Engine uses `0`-based coordinates internally, so the top-left cell is `0,0`. Gomocup interface expects `x,y`. 
-Whenever the UI configures a Portal or a Wall, the engine **immediately resets the game board** internally behind the scenes to apply the new topology (via `applyAndReinit()`). `RESTART` is not strictly necessary after setting portals, but it is highly recommended to follow a structured setup flow.
+Whenever the UI configures a Portal or a Wall, the engine **immediately resets the game board** internally behind the scenes to apply the new topology (via `applyAndReinit()`). **This clears all stones on the board.** If you need to preserve a position after adding portals/walls, re-send the position via `BOARD` or `YXBOARD` after the portal/wall setup is complete. `RESTART` is not strictly necessary after setting portals, but it is highly recommended to follow a structured setup flow.
 
 #### Add a Wall
 ```text
@@ -124,8 +125,8 @@ You can adjust engine characteristics via `INFO`:
 | :--- | :--- |
 | `INFO TIMEOUT_TURN [ms]` | Maximum time per move in milliseconds. |
 | `INFO TIMEOUT_MATCH [ms]` | Maximum time for the entire game in milliseconds. |
-| `INFO RULE [0/1/4/5/6]` | `0`: Freestyle, `1`: Standard (Free Open), `4`: Renju. |
-| `INFO MAX_MEMORY [kb]` | Limit Engine Hash/Search memory in kilo-bytes. |
+| `INFO RULE [0/1/2/4/5/6]` | `0`: Freestyle, `1`: Standard (overline forbidden), `2`/`4`: Renju (rule `2` is Yixin-Board alias for `4`), `5`: Freestyle+Swap1, `6`: Freestyle+Swap2. |
+| `INFO MAX_MEMORY [bytes]` | Limit Engine Hash/Search memory in **bytes** (e.g., `209715200` for 200 MB). The engine internally converts to KB via `val >> 10`. |
 | `INFO THREAD_NUM [n]` | Set number of searchers/threads to use. |
 | `INFO STRENGTH [0-100]` | Set difficulty strength (internal Rapfi param). |
 
@@ -133,5 +134,69 @@ You can adjust engine characteristics via `INFO`:
 
 1. **Wait State:** When you send `TURN X,Y` or `BEGIN`, the engine will block and think. During this time, wait for the engine to output `Ax,Ay` before allowing the human to move again.
 2. **First Move Restrictions:** In a board with Portals or Walls, if the engine is forced to play the *very first move* (Ply 0), it will intentionally pick an empty cell **adjacent to an obstacle**. This is to prevent opening-book assertion crashes on zero-board situations.
-3. **Interrupting:** If you need to stop the engine calculation midway through a turn, send `STOP`. The engine will halt processing and report its best move gathered so far. You can safely send `TAKEBACK` or a new command after.
-4. **GUI Logging:** The engine frequently prints logs starting with `MESSAGE ...` or `DEBUG ...`. The UI backend parser should filter these and show them in an engine log console, keeping them strictly separated from positional return coordinates.
+3. **Interrupting:** If you need to stop the engine calculation midway through a turn, send `STOP` (or `YXSTOP`). The engine will halt processing and report its best move gathered so far. You can safely send `TAKEBACK` or a new command after.
+4. **GUI Logging:** The engine frequently prints logs starting with `MESSAGE ...` or `ERROR ...`. The UI backend parser should filter these and show them in an engine log console, keeping them strictly separated from positional return coordinates.
+5. **Output Parsing:** The engine's move response is always a single line `X,Y` (two integers separated by a comma). Any line starting with `MESSAGE` or `ERROR` is a log line and should NOT be parsed as a move.
+
+---
+
+## 6. Full Game Lifecycle — Sequence Diagram
+
+Below is a complete example of a game lifecycle with portal setup:
+
+```
+UI                              ENGINE
+│                                │
+│  YXSHOWINFO                    │
+│───────────────────────────────►│
+│  MESSAGE MINT-P 1.1.0 (...)    │
+│◄───────────────────────────────│
+│                                │
+│  START 15                      │
+│───────────────────────────────►│
+│  OK                            │
+│◄───────────────────────────────│
+│                                │
+│  INFO CLEARPORTALS             │  ← Reset any previous topology
+│───────────────────────────────►│
+│                                │
+│  INFO WALL 3,3                 │  ← Add wall
+│───────────────────────────────►│
+│                                │
+│  INFO YXPORTAL 5,5 10,10       │  ← Add portal pair
+│───────────────────────────────►│
+│                                │
+│  INFO RULE 0                   │  ← Set Freestyle rule
+│───────────────────────────────►│
+│                                │
+│  INFO TIMEOUT_TURN 5000        │
+│───────────────────────────────►│
+│                                │
+│  INFO MAX_MEMORY 209715200     │  ← 200 MB in bytes
+│───────────────────────────────►│
+│                                │
+│  TURN 7,7                      │  ← Human plays at (7,7)
+│───────────────────────────────►│
+│  MESSAGE depth ... score ...   │  ← Search progress (filtered)
+│◄───────────────────────────────│
+│  8,8                           │  ← Engine's move
+│◄───────────────────────────────│
+│                                │
+│  TURN 6,6                      │  ← Human plays at (6,6)
+│───────────────────────────────►│
+│  9,9                           │  ← Engine's move
+│◄───────────────────────────────│
+│                                │
+│  TAKEBACK 9,9                  │  ← Undo engine's last move
+│───────────────────────────────►│
+│  OK                            │
+│◄───────────────────────────────│
+│                                │
+│  TAKEBACK 6,6                  │  ← Undo human's last move
+│───────────────────────────────►│
+│  OK                            │
+│◄───────────────────────────────│
+│                                │
+│  END                           │  ← Terminate engine
+│───────────────────────────────►│
+```
