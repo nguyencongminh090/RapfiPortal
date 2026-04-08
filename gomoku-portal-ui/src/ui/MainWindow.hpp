@@ -28,6 +28,7 @@
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/box.h>
 #include <gtkmm/button.h>
+#include <gtkmm/comboboxtext.h>
 #include <gtkmm/headerbar.h>
 #include <gtkmm/label.h>
 #include <gtkmm/notebook.h>
@@ -55,9 +56,10 @@ private:
     Gtk::Box       statusBar_{Gtk::Orientation::HORIZONTAL};
 
     // =========================================================================
-    // Toolbar Buttons
+    // Toolbar Buttons & Controls
     // =========================================================================
     Gtk::Button btnNewGame_{"New Game"};
+    Gtk::ComboBoxText comboMode_;
     Gtk::Button btnUndo_{"Undo"};
     Gtk::Button btnConnect_{"Connect"};
     Gtk::Button btnThink_{"Think"};
@@ -100,6 +102,7 @@ private:
     // Handlers
     // =========================================================================
     void onNewGame();
+    void onModeChanged();
     void onUndo();
     void onConnect();
     void onThink();

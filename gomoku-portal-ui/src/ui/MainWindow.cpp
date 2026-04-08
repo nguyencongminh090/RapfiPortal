@@ -94,6 +94,13 @@ void MainWindow::setupLayout() {
 
 void MainWindow::setupToolbar() {
     toolbarBox_.append(btnNewGame_);
+
+    comboMode_.append("Free Play");
+    comboMode_.append("Engine as White");
+    comboMode_.append("Engine as Black");
+    comboMode_.set_active(0);
+    toolbarBox_.append(comboMode_);
+
     toolbarBox_.append(btnUndo_);
     toolbarBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::VERTICAL));
     toolbarBox_.append(btnConnect_);
@@ -110,6 +117,7 @@ void MainWindow::setupToolbar() {
 void MainWindow::setupSignals() {
     // Toolbar buttons
     btnNewGame_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onNewGame));
+    comboMode_.signal_changed().connect(sigc::mem_fun(*this, &MainWindow::onModeChanged));
     btnUndo_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onUndo));
     btnConnect_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onConnect));
     btnThink_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onThink));
@@ -159,6 +167,17 @@ void MainWindow::onNewGame() {
     logPanel_.appendLog("--- New Game ---");
 }
 
+void MainWindow::onModeChanged() {
+    int active = comboMode_.get_active_row_number();
+    if (active == 0) {
+        gameCtrl_.setGameMode(controller::GameMode::FreePlay);
+    } else if (active == 1) {
+        gameCtrl_.setGameMode(controller::GameMode::HumanVsEngine, controller::HumanSide::Black);
+    } else if (active == 2) {
+        gameCtrl_.setGameMode(controller::GameMode::HumanVsEngine, controller::HumanSide::White);
+    }
+}
+
 void MainWindow::onUndo() {
     gameCtrl_.undoMove();
 }
@@ -186,7 +205,7 @@ void MainWindow::onConnect() {
             }
         } catch (const Glib::Error& err) {
             // User cancelled — ignore
-            if (err.what().find("dismissed") == Glib::ustring::npos) {
+            if (std::string(err.what()).find("dismissed") == std::string::npos) {
                 logPanel_.appendLog("Error: " + std::string(err.what()));
             }
         }

@@ -59,12 +59,21 @@ void GameController::newGame(int boardSize) {
         cfg.timeoutMatch = matchTimeMs_;
         cfg.maxMemoryBytes = maxMemory_;
         engine_.startGame(cfg);
+
+        if (isEngineTurn()) {
+            requestEngineMove();
+        }
     }
 }
 
 void GameController::setGameMode(GameMode mode, HumanSide side) {
     mode_ = mode;
     humanSide_ = side;
+    
+    // If we switch to a mode where engine should move, trigger it
+    if (isEngineTurn() && engine_.state() == engine::EngineState::Idle) {
+        requestEngineMove();
+    }
 }
 
 void GameController::onCellClicked(int x, int y) {
