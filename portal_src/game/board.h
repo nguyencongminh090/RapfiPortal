@@ -206,28 +206,40 @@ struct PortalPair
     /// Gap cells on the collinear direction must use normal bitKey (WALL bits)
     /// to avoid infinite loops in the portal walk.
     /// For non-collinear directions, gap cells do not exist → always returns false.
-    /// @param dir Direction index (0-3)
+    /// @param dir Direction index (0=H, 1=V, 2=/, 3=\)
     [[nodiscard]] bool isGapCell(Pos pos, int dir) const
     {
         if (!collinear(dir))
             return false;
 
-        // Check if pos lies strictly between a and b on this line
-        // Uses line coordinate: project pos onto the line direction
-        int posCoord, aCoord, bCoord;
+        // For each direction, check:
+        //   (1) pos lies ON THE SAME LINE as A and B in direction dir
+        //   (2) pos coordinate is strictly between A and B
+        //
+        //  dir=0 (H):  same row    → invariant=y, progress=x
+        //  dir=1 (V):  same col    → invariant=x, progress=y
+        //  dir=2 (/):  same x+y   → invariant=x+y, progress=x
+        //  dir=3 (\):  same y-x   → invariant=y-x, progress=x
         switch (dir) {
-        case 0: posCoord = pos.x(); aCoord = a.x(); bCoord = b.x(); break;
-        case 1: posCoord = pos.y(); aCoord = a.y(); bCoord = b.y(); break;
-        case 2: posCoord = pos.x(); aCoord = a.x(); bCoord = b.x(); break;  // x+y same, x sufficient
-        case 3: posCoord = pos.x(); aCoord = a.x(); bCoord = b.x(); break;
-        default: return false;
+        case 0:  // Horizontal
+            if (pos.y() != a.y()) return false;
+            return pos.x() > std::min(a.x(), b.x())
+                && pos.x() < std::max(a.x(), b.x());
+        case 1:  // Vertical
+            if (pos.x() != a.x()) return false;
+            return pos.y() > std::min(a.y(), b.y())
+                && pos.y() < std::max(a.y(), b.y());
+        case 2:  // Anti-diagonal (x+y = const)
+            if (pos.x() + pos.y() != a.x() + a.y()) return false;
+            return pos.x() > std::min(a.x(), b.x())
+                && pos.x() < std::max(a.x(), b.x());
+        case 3:  // Diagonal (y-x = const)
+            if (pos.y() - pos.x() != a.y() - a.x()) return false;
+            return pos.x() > std::min(a.x(), b.x())
+                && pos.x() < std::max(a.x(), b.x());
+        default:
+            return false;
         }
-
-        int lo = std::min(aCoord, bCoord);
-        int hi = std::max(aCoord, bCoord);
-        return posCoord > lo && posCoord < hi && pos.y() == (dir == 0 ? a.y() :
-               dir == 1 ? a.x() == pos.x() ? pos.y() : -1  // dummy for V
-               : pos.y());  // simplified — see detailed impl in initPortals
     }
 };
 

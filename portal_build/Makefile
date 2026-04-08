@@ -143,6 +143,19 @@ portal-test/fast:
 .PHONY : portal-test/fast
 
 #=============================================================================
+# Target rules for targets named portal-pattern-test
+
+# Build rule for target.
+portal-pattern-test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 portal-pattern-test
+.PHONY : portal-pattern-test
+
+# fast build rule for target.
+portal-pattern-test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/build
+.PHONY : portal-pattern-test/fast
+
+#=============================================================================
 # Target rules for targets named lz4
 
 # Build rule for target.
@@ -162,6 +175,7 @@ command/argutils.o: command/argutils.cpp.o
 command/argutils.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/argutils.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/argutils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/argutils.cpp.o
 .PHONY : command/argutils.cpp.o
 
 command/argutils.i: command/argutils.cpp.i
@@ -171,6 +185,7 @@ command/argutils.i: command/argutils.cpp.i
 command/argutils.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/argutils.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/argutils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/argutils.cpp.i
 .PHONY : command/argutils.cpp.i
 
 command/argutils.s: command/argutils.cpp.s
@@ -180,6 +195,7 @@ command/argutils.s: command/argutils.cpp.s
 command/argutils.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/argutils.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/argutils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/argutils.cpp.s
 .PHONY : command/argutils.cpp.s
 
 command/benchmark.o: command/benchmark.cpp.o
@@ -189,6 +205,7 @@ command/benchmark.o: command/benchmark.cpp.o
 command/benchmark.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/benchmark.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/benchmark.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/benchmark.cpp.o
 .PHONY : command/benchmark.cpp.o
 
 command/benchmark.i: command/benchmark.cpp.i
@@ -198,6 +215,7 @@ command/benchmark.i: command/benchmark.cpp.i
 command/benchmark.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/benchmark.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/benchmark.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/benchmark.cpp.i
 .PHONY : command/benchmark.cpp.i
 
 command/benchmark.s: command/benchmark.cpp.s
@@ -207,6 +225,7 @@ command/benchmark.s: command/benchmark.cpp.s
 command/benchmark.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/benchmark.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/benchmark.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/benchmark.cpp.s
 .PHONY : command/benchmark.cpp.s
 
 command/command.o: command/command.cpp.o
@@ -216,6 +235,7 @@ command/command.o: command/command.cpp.o
 command/command.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/command.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/command.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/command.cpp.o
 .PHONY : command/command.cpp.o
 
 command/command.i: command/command.cpp.i
@@ -225,6 +245,7 @@ command/command.i: command/command.cpp.i
 command/command.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/command.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/command.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/command.cpp.i
 .PHONY : command/command.cpp.i
 
 command/command.s: command/command.cpp.s
@@ -234,6 +255,7 @@ command/command.s: command/command.cpp.s
 command/command.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/command.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/command.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/command.cpp.s
 .PHONY : command/command.cpp.s
 
 command/gomocup.o: command/gomocup.cpp.o
@@ -243,6 +265,7 @@ command/gomocup.o: command/gomocup.cpp.o
 command/gomocup.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/gomocup.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/gomocup.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/gomocup.cpp.o
 .PHONY : command/gomocup.cpp.o
 
 command/gomocup.i: command/gomocup.cpp.i
@@ -252,6 +275,7 @@ command/gomocup.i: command/gomocup.cpp.i
 command/gomocup.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/gomocup.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/gomocup.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/gomocup.cpp.i
 .PHONY : command/gomocup.cpp.i
 
 command/gomocup.s: command/gomocup.cpp.s
@@ -261,6 +285,7 @@ command/gomocup.s: command/gomocup.cpp.s
 command/gomocup.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/command/gomocup.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/command/gomocup.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/command/gomocup.cpp.s
 .PHONY : command/gomocup.cpp.s
 
 config.o: config.cpp.o
@@ -270,6 +295,7 @@ config.o: config.cpp.o
 config.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/config.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/config.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/config.cpp.o
 .PHONY : config.cpp.o
 
 config.i: config.cpp.i
@@ -279,6 +305,7 @@ config.i: config.cpp.i
 config.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/config.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/config.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/config.cpp.i
 .PHONY : config.cpp.i
 
 config.s: config.cpp.s
@@ -288,6 +315,7 @@ config.s: config.cpp.s
 config.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/config.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/config.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/config.cpp.s
 .PHONY : config.cpp.s
 
 core/hash.o: core/hash.cpp.o
@@ -297,6 +325,7 @@ core/hash.o: core/hash.cpp.o
 core/hash.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/hash.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/hash.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/hash.cpp.o
 .PHONY : core/hash.cpp.o
 
 core/hash.i: core/hash.cpp.i
@@ -306,6 +335,7 @@ core/hash.i: core/hash.cpp.i
 core/hash.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/hash.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/hash.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/hash.cpp.i
 .PHONY : core/hash.cpp.i
 
 core/hash.s: core/hash.cpp.s
@@ -315,6 +345,7 @@ core/hash.s: core/hash.cpp.s
 core/hash.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/hash.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/hash.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/hash.cpp.s
 .PHONY : core/hash.cpp.s
 
 core/iohelper.o: core/iohelper.cpp.o
@@ -324,6 +355,7 @@ core/iohelper.o: core/iohelper.cpp.o
 core/iohelper.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/iohelper.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/iohelper.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/iohelper.cpp.o
 .PHONY : core/iohelper.cpp.o
 
 core/iohelper.i: core/iohelper.cpp.i
@@ -333,6 +365,7 @@ core/iohelper.i: core/iohelper.cpp.i
 core/iohelper.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/iohelper.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/iohelper.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/iohelper.cpp.i
 .PHONY : core/iohelper.cpp.i
 
 core/iohelper.s: core/iohelper.cpp.s
@@ -342,6 +375,7 @@ core/iohelper.s: core/iohelper.cpp.s
 core/iohelper.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/iohelper.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/iohelper.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/iohelper.cpp.s
 .PHONY : core/iohelper.cpp.s
 
 core/platform.o: core/platform.cpp.o
@@ -351,6 +385,7 @@ core/platform.o: core/platform.cpp.o
 core/platform.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/platform.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/platform.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/platform.cpp.o
 .PHONY : core/platform.cpp.o
 
 core/platform.i: core/platform.cpp.i
@@ -360,6 +395,7 @@ core/platform.i: core/platform.cpp.i
 core/platform.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/platform.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/platform.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/platform.cpp.i
 .PHONY : core/platform.cpp.i
 
 core/platform.s: core/platform.cpp.s
@@ -369,6 +405,7 @@ core/platform.s: core/platform.cpp.s
 core/platform.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/platform.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/platform.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/platform.cpp.s
 .PHONY : core/platform.cpp.s
 
 core/utils.o: core/utils.cpp.o
@@ -378,6 +415,7 @@ core/utils.o: core/utils.cpp.o
 core/utils.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/utils.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/utils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/utils.cpp.o
 .PHONY : core/utils.cpp.o
 
 core/utils.i: core/utils.cpp.i
@@ -387,6 +425,7 @@ core/utils.i: core/utils.cpp.i
 core/utils.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/utils.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/utils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/utils.cpp.i
 .PHONY : core/utils.cpp.i
 
 core/utils.s: core/utils.cpp.s
@@ -396,6 +435,7 @@ core/utils.s: core/utils.cpp.s
 core/utils.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/utils.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/utils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/utils.cpp.s
 .PHONY : core/utils.cpp.s
 
 core/version.o: core/version.cpp.o
@@ -405,6 +445,7 @@ core/version.o: core/version.cpp.o
 core/version.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/version.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/version.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/version.cpp.o
 .PHONY : core/version.cpp.o
 
 core/version.i: core/version.cpp.i
@@ -414,6 +455,7 @@ core/version.i: core/version.cpp.i
 core/version.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/version.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/version.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/version.cpp.i
 .PHONY : core/version.cpp.i
 
 core/version.s: core/version.cpp.s
@@ -423,6 +465,7 @@ core/version.s: core/version.cpp.s
 core/version.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/core/version.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/core/version.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/core/version.cpp.s
 .PHONY : core/version.cpp.s
 
 database/dbclient.o: database/dbclient.cpp.o
@@ -432,6 +475,7 @@ database/dbclient.o: database/dbclient.cpp.o
 database/dbclient.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbclient.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbclient.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbclient.cpp.o
 .PHONY : database/dbclient.cpp.o
 
 database/dbclient.i: database/dbclient.cpp.i
@@ -441,6 +485,7 @@ database/dbclient.i: database/dbclient.cpp.i
 database/dbclient.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbclient.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbclient.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbclient.cpp.i
 .PHONY : database/dbclient.cpp.i
 
 database/dbclient.s: database/dbclient.cpp.s
@@ -450,6 +495,7 @@ database/dbclient.s: database/dbclient.cpp.s
 database/dbclient.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbclient.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbclient.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbclient.cpp.s
 .PHONY : database/dbclient.cpp.s
 
 database/dbtypes.o: database/dbtypes.cpp.o
@@ -459,6 +505,7 @@ database/dbtypes.o: database/dbtypes.cpp.o
 database/dbtypes.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbtypes.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbtypes.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbtypes.cpp.o
 .PHONY : database/dbtypes.cpp.o
 
 database/dbtypes.i: database/dbtypes.cpp.i
@@ -468,6 +515,7 @@ database/dbtypes.i: database/dbtypes.cpp.i
 database/dbtypes.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbtypes.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbtypes.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbtypes.cpp.i
 .PHONY : database/dbtypes.cpp.i
 
 database/dbtypes.s: database/dbtypes.cpp.s
@@ -477,6 +525,7 @@ database/dbtypes.s: database/dbtypes.cpp.s
 database/dbtypes.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbtypes.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbtypes.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbtypes.cpp.s
 .PHONY : database/dbtypes.cpp.s
 
 database/dbutils.o: database/dbutils.cpp.o
@@ -486,6 +535,7 @@ database/dbutils.o: database/dbutils.cpp.o
 database/dbutils.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbutils.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbutils.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbutils.cpp.o
 .PHONY : database/dbutils.cpp.o
 
 database/dbutils.i: database/dbutils.cpp.i
@@ -495,6 +545,7 @@ database/dbutils.i: database/dbutils.cpp.i
 database/dbutils.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbutils.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbutils.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbutils.cpp.i
 .PHONY : database/dbutils.cpp.i
 
 database/dbutils.s: database/dbutils.cpp.s
@@ -504,6 +555,7 @@ database/dbutils.s: database/dbutils.cpp.s
 database/dbutils.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/dbutils.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/dbutils.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/dbutils.cpp.s
 .PHONY : database/dbutils.cpp.s
 
 database/yxdbstorage.o: database/yxdbstorage.cpp.o
@@ -513,6 +565,7 @@ database/yxdbstorage.o: database/yxdbstorage.cpp.o
 database/yxdbstorage.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/yxdbstorage.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/yxdbstorage.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/yxdbstorage.cpp.o
 .PHONY : database/yxdbstorage.cpp.o
 
 database/yxdbstorage.i: database/yxdbstorage.cpp.i
@@ -522,6 +575,7 @@ database/yxdbstorage.i: database/yxdbstorage.cpp.i
 database/yxdbstorage.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/yxdbstorage.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/yxdbstorage.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/yxdbstorage.cpp.i
 .PHONY : database/yxdbstorage.cpp.i
 
 database/yxdbstorage.s: database/yxdbstorage.cpp.s
@@ -531,6 +585,7 @@ database/yxdbstorage.s: database/yxdbstorage.cpp.s
 database/yxdbstorage.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/database/yxdbstorage.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/database/yxdbstorage.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/database/yxdbstorage.cpp.s
 .PHONY : database/yxdbstorage.cpp.s
 
 eval/eval.o: eval/eval.cpp.o
@@ -540,6 +595,7 @@ eval/eval.o: eval/eval.cpp.o
 eval/eval.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/eval.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/eval.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/eval.cpp.o
 .PHONY : eval/eval.cpp.o
 
 eval/eval.i: eval/eval.cpp.i
@@ -549,6 +605,7 @@ eval/eval.i: eval/eval.cpp.i
 eval/eval.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/eval.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/eval.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/eval.cpp.i
 .PHONY : eval/eval.cpp.i
 
 eval/eval.s: eval/eval.cpp.s
@@ -558,6 +615,7 @@ eval/eval.s: eval/eval.cpp.s
 eval/eval.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/eval.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/eval.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/eval.cpp.s
 .PHONY : eval/eval.cpp.s
 
 eval/evaluator.o: eval/evaluator.cpp.o
@@ -567,6 +625,7 @@ eval/evaluator.o: eval/evaluator.cpp.o
 eval/evaluator.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/evaluator.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/evaluator.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/evaluator.cpp.o
 .PHONY : eval/evaluator.cpp.o
 
 eval/evaluator.i: eval/evaluator.cpp.i
@@ -576,6 +635,7 @@ eval/evaluator.i: eval/evaluator.cpp.i
 eval/evaluator.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/evaluator.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/evaluator.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/evaluator.cpp.i
 .PHONY : eval/evaluator.cpp.i
 
 eval/evaluator.s: eval/evaluator.cpp.s
@@ -585,6 +645,7 @@ eval/evaluator.s: eval/evaluator.cpp.s
 eval/evaluator.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/evaluator.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/evaluator.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/evaluator.cpp.s
 .PHONY : eval/evaluator.cpp.s
 
 eval/mix10nnue.o: eval/mix10nnue.cpp.o
@@ -594,6 +655,7 @@ eval/mix10nnue.o: eval/mix10nnue.cpp.o
 eval/mix10nnue.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/mix10nnue.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/mix10nnue.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/mix10nnue.cpp.o
 .PHONY : eval/mix10nnue.cpp.o
 
 eval/mix10nnue.i: eval/mix10nnue.cpp.i
@@ -603,6 +665,7 @@ eval/mix10nnue.i: eval/mix10nnue.cpp.i
 eval/mix10nnue.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/mix10nnue.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/mix10nnue.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/mix10nnue.cpp.i
 .PHONY : eval/mix10nnue.cpp.i
 
 eval/mix10nnue.s: eval/mix10nnue.cpp.s
@@ -612,6 +675,7 @@ eval/mix10nnue.s: eval/mix10nnue.cpp.s
 eval/mix10nnue.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/mix10nnue.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/mix10nnue.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/mix10nnue.cpp.s
 .PHONY : eval/mix10nnue.cpp.s
 
 eval/mix9svqnnue.o: eval/mix9svqnnue.cpp.o
@@ -621,6 +685,7 @@ eval/mix9svqnnue.o: eval/mix9svqnnue.cpp.o
 eval/mix9svqnnue.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/mix9svqnnue.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/mix9svqnnue.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/mix9svqnnue.cpp.o
 .PHONY : eval/mix9svqnnue.cpp.o
 
 eval/mix9svqnnue.i: eval/mix9svqnnue.cpp.i
@@ -630,6 +695,7 @@ eval/mix9svqnnue.i: eval/mix9svqnnue.cpp.i
 eval/mix9svqnnue.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/mix9svqnnue.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/mix9svqnnue.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/mix9svqnnue.cpp.i
 .PHONY : eval/mix9svqnnue.cpp.i
 
 eval/mix9svqnnue.s: eval/mix9svqnnue.cpp.s
@@ -639,6 +705,7 @@ eval/mix9svqnnue.s: eval/mix9svqnnue.cpp.s
 eval/mix9svqnnue.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/eval/mix9svqnnue.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/eval/mix9svqnnue.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/eval/mix9svqnnue.cpp.s
 .PHONY : eval/mix9svqnnue.cpp.s
 
 game/board.o: game/board.cpp.o
@@ -648,6 +715,7 @@ game/board.o: game/board.cpp.o
 game/board.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/board.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/board.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/board.cpp.o
 .PHONY : game/board.cpp.o
 
 game/board.i: game/board.cpp.i
@@ -657,6 +725,7 @@ game/board.i: game/board.cpp.i
 game/board.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/board.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/board.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/board.cpp.i
 .PHONY : game/board.cpp.i
 
 game/board.s: game/board.cpp.s
@@ -666,6 +735,7 @@ game/board.s: game/board.cpp.s
 game/board.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/board.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/board.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/board.cpp.s
 .PHONY : game/board.cpp.s
 
 game/movegen.o: game/movegen.cpp.o
@@ -675,6 +745,7 @@ game/movegen.o: game/movegen.cpp.o
 game/movegen.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/movegen.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/movegen.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/movegen.cpp.o
 .PHONY : game/movegen.cpp.o
 
 game/movegen.i: game/movegen.cpp.i
@@ -684,6 +755,7 @@ game/movegen.i: game/movegen.cpp.i
 game/movegen.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/movegen.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/movegen.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/movegen.cpp.i
 .PHONY : game/movegen.cpp.i
 
 game/movegen.s: game/movegen.cpp.s
@@ -693,6 +765,7 @@ game/movegen.s: game/movegen.cpp.s
 game/movegen.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/movegen.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/movegen.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/movegen.cpp.s
 .PHONY : game/movegen.cpp.s
 
 game/pattern.o: game/pattern.cpp.o
@@ -702,6 +775,7 @@ game/pattern.o: game/pattern.cpp.o
 game/pattern.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/pattern.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/pattern.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/pattern.cpp.o
 .PHONY : game/pattern.cpp.o
 
 game/pattern.i: game/pattern.cpp.i
@@ -711,6 +785,7 @@ game/pattern.i: game/pattern.cpp.i
 game/pattern.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/pattern.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/pattern.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/pattern.cpp.i
 .PHONY : game/pattern.cpp.i
 
 game/pattern.s: game/pattern.cpp.s
@@ -720,6 +795,7 @@ game/pattern.s: game/pattern.cpp.s
 game/pattern.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/game/pattern.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/game/pattern.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/game/pattern.cpp.s
 .PHONY : game/pattern.cpp.s
 
 internalConfig.o: internalConfig.cpp.o
@@ -729,6 +805,7 @@ internalConfig.o: internalConfig.cpp.o
 internalConfig.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/internalConfig.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/internalConfig.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/internalConfig.cpp.o
 .PHONY : internalConfig.cpp.o
 
 internalConfig.i: internalConfig.cpp.i
@@ -738,6 +815,7 @@ internalConfig.i: internalConfig.cpp.i
 internalConfig.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/internalConfig.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/internalConfig.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/internalConfig.cpp.i
 .PHONY : internalConfig.cpp.i
 
 internalConfig.s: internalConfig.cpp.s
@@ -747,6 +825,7 @@ internalConfig.s: internalConfig.cpp.s
 internalConfig.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/internalConfig.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/internalConfig.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/internalConfig.cpp.s
 .PHONY : internalConfig.cpp.s
 
 main.o: main.cpp.o
@@ -780,6 +859,7 @@ search/ab/history.o: search/ab/history.cpp.o
 search/ab/history.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/ab/history.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/ab/history.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/ab/history.cpp.o
 .PHONY : search/ab/history.cpp.o
 
 search/ab/history.i: search/ab/history.cpp.i
@@ -789,6 +869,7 @@ search/ab/history.i: search/ab/history.cpp.i
 search/ab/history.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/ab/history.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/ab/history.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/ab/history.cpp.i
 .PHONY : search/ab/history.cpp.i
 
 search/ab/history.s: search/ab/history.cpp.s
@@ -798,6 +879,7 @@ search/ab/history.s: search/ab/history.cpp.s
 search/ab/history.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/ab/history.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/ab/history.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/ab/history.cpp.s
 .PHONY : search/ab/history.cpp.s
 
 search/ab/search.o: search/ab/search.cpp.o
@@ -807,6 +889,7 @@ search/ab/search.o: search/ab/search.cpp.o
 search/ab/search.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/ab/search.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/ab/search.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/ab/search.cpp.o
 .PHONY : search/ab/search.cpp.o
 
 search/ab/search.i: search/ab/search.cpp.i
@@ -816,6 +899,7 @@ search/ab/search.i: search/ab/search.cpp.i
 search/ab/search.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/ab/search.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/ab/search.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/ab/search.cpp.i
 .PHONY : search/ab/search.cpp.i
 
 search/ab/search.s: search/ab/search.cpp.s
@@ -825,6 +909,7 @@ search/ab/search.s: search/ab/search.cpp.s
 search/ab/search.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/ab/search.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/ab/search.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/ab/search.cpp.s
 .PHONY : search/ab/search.cpp.s
 
 search/hashtable.o: search/hashtable.cpp.o
@@ -834,6 +919,7 @@ search/hashtable.o: search/hashtable.cpp.o
 search/hashtable.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/hashtable.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/hashtable.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/hashtable.cpp.o
 .PHONY : search/hashtable.cpp.o
 
 search/hashtable.i: search/hashtable.cpp.i
@@ -843,6 +929,7 @@ search/hashtable.i: search/hashtable.cpp.i
 search/hashtable.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/hashtable.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/hashtable.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/hashtable.cpp.i
 .PHONY : search/hashtable.cpp.i
 
 search/hashtable.s: search/hashtable.cpp.s
@@ -852,6 +939,7 @@ search/hashtable.s: search/hashtable.cpp.s
 search/hashtable.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/hashtable.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/hashtable.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/hashtable.cpp.s
 .PHONY : search/hashtable.cpp.s
 
 search/mcts/node.o: search/mcts/node.cpp.o
@@ -861,6 +949,7 @@ search/mcts/node.o: search/mcts/node.cpp.o
 search/mcts/node.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/mcts/node.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/mcts/node.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/mcts/node.cpp.o
 .PHONY : search/mcts/node.cpp.o
 
 search/mcts/node.i: search/mcts/node.cpp.i
@@ -870,6 +959,7 @@ search/mcts/node.i: search/mcts/node.cpp.i
 search/mcts/node.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/mcts/node.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/mcts/node.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/mcts/node.cpp.i
 .PHONY : search/mcts/node.cpp.i
 
 search/mcts/node.s: search/mcts/node.cpp.s
@@ -879,6 +969,7 @@ search/mcts/node.s: search/mcts/node.cpp.s
 search/mcts/node.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/mcts/node.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/mcts/node.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/mcts/node.cpp.s
 .PHONY : search/mcts/node.cpp.s
 
 search/mcts/search.o: search/mcts/search.cpp.o
@@ -888,6 +979,7 @@ search/mcts/search.o: search/mcts/search.cpp.o
 search/mcts/search.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/mcts/search.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/mcts/search.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/mcts/search.cpp.o
 .PHONY : search/mcts/search.cpp.o
 
 search/mcts/search.i: search/mcts/search.cpp.i
@@ -897,6 +989,7 @@ search/mcts/search.i: search/mcts/search.cpp.i
 search/mcts/search.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/mcts/search.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/mcts/search.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/mcts/search.cpp.i
 .PHONY : search/mcts/search.cpp.i
 
 search/mcts/search.s: search/mcts/search.cpp.s
@@ -906,6 +999,7 @@ search/mcts/search.s: search/mcts/search.cpp.s
 search/mcts/search.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/mcts/search.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/mcts/search.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/mcts/search.cpp.s
 .PHONY : search/mcts/search.cpp.s
 
 search/movepick.o: search/movepick.cpp.o
@@ -915,6 +1009,7 @@ search/movepick.o: search/movepick.cpp.o
 search/movepick.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/movepick.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/movepick.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/movepick.cpp.o
 .PHONY : search/movepick.cpp.o
 
 search/movepick.i: search/movepick.cpp.i
@@ -924,6 +1019,7 @@ search/movepick.i: search/movepick.cpp.i
 search/movepick.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/movepick.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/movepick.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/movepick.cpp.i
 .PHONY : search/movepick.cpp.i
 
 search/movepick.s: search/movepick.cpp.s
@@ -933,6 +1029,7 @@ search/movepick.s: search/movepick.cpp.s
 search/movepick.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/movepick.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/movepick.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/movepick.cpp.s
 .PHONY : search/movepick.cpp.s
 
 search/opening.o: search/opening.cpp.o
@@ -942,6 +1039,7 @@ search/opening.o: search/opening.cpp.o
 search/opening.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/opening.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/opening.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/opening.cpp.o
 .PHONY : search/opening.cpp.o
 
 search/opening.i: search/opening.cpp.i
@@ -951,6 +1049,7 @@ search/opening.i: search/opening.cpp.i
 search/opening.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/opening.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/opening.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/opening.cpp.i
 .PHONY : search/opening.cpp.i
 
 search/opening.s: search/opening.cpp.s
@@ -960,6 +1059,7 @@ search/opening.s: search/opening.cpp.s
 search/opening.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/opening.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/opening.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/opening.cpp.s
 .PHONY : search/opening.cpp.s
 
 search/searchcommon.o: search/searchcommon.cpp.o
@@ -969,6 +1069,7 @@ search/searchcommon.o: search/searchcommon.cpp.o
 search/searchcommon.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchcommon.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchcommon.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchcommon.cpp.o
 .PHONY : search/searchcommon.cpp.o
 
 search/searchcommon.i: search/searchcommon.cpp.i
@@ -978,6 +1079,7 @@ search/searchcommon.i: search/searchcommon.cpp.i
 search/searchcommon.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchcommon.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchcommon.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchcommon.cpp.i
 .PHONY : search/searchcommon.cpp.i
 
 search/searchcommon.s: search/searchcommon.cpp.s
@@ -987,6 +1089,7 @@ search/searchcommon.s: search/searchcommon.cpp.s
 search/searchcommon.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchcommon.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchcommon.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchcommon.cpp.s
 .PHONY : search/searchcommon.cpp.s
 
 search/searchoutput.o: search/searchoutput.cpp.o
@@ -996,6 +1099,7 @@ search/searchoutput.o: search/searchoutput.cpp.o
 search/searchoutput.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchoutput.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchoutput.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchoutput.cpp.o
 .PHONY : search/searchoutput.cpp.o
 
 search/searchoutput.i: search/searchoutput.cpp.i
@@ -1005,6 +1109,7 @@ search/searchoutput.i: search/searchoutput.cpp.i
 search/searchoutput.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchoutput.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchoutput.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchoutput.cpp.i
 .PHONY : search/searchoutput.cpp.i
 
 search/searchoutput.s: search/searchoutput.cpp.s
@@ -1014,6 +1119,7 @@ search/searchoutput.s: search/searchoutput.cpp.s
 search/searchoutput.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchoutput.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchoutput.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchoutput.cpp.s
 .PHONY : search/searchoutput.cpp.s
 
 search/searchthread.o: search/searchthread.cpp.o
@@ -1023,6 +1129,7 @@ search/searchthread.o: search/searchthread.cpp.o
 search/searchthread.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchthread.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchthread.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchthread.cpp.o
 .PHONY : search/searchthread.cpp.o
 
 search/searchthread.i: search/searchthread.cpp.i
@@ -1032,6 +1139,7 @@ search/searchthread.i: search/searchthread.cpp.i
 search/searchthread.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchthread.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchthread.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchthread.cpp.i
 .PHONY : search/searchthread.cpp.i
 
 search/searchthread.s: search/searchthread.cpp.s
@@ -1041,6 +1149,7 @@ search/searchthread.s: search/searchthread.cpp.s
 search/searchthread.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/searchthread.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/searchthread.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/searchthread.cpp.s
 .PHONY : search/searchthread.cpp.s
 
 search/timecontrol.o: search/timecontrol.cpp.o
@@ -1050,6 +1159,7 @@ search/timecontrol.o: search/timecontrol.cpp.o
 search/timecontrol.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/timecontrol.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/timecontrol.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/timecontrol.cpp.o
 .PHONY : search/timecontrol.cpp.o
 
 search/timecontrol.i: search/timecontrol.cpp.i
@@ -1059,6 +1169,7 @@ search/timecontrol.i: search/timecontrol.cpp.i
 search/timecontrol.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/timecontrol.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/timecontrol.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/timecontrol.cpp.i
 .PHONY : search/timecontrol.cpp.i
 
 search/timecontrol.s: search/timecontrol.cpp.s
@@ -1068,7 +1179,32 @@ search/timecontrol.s: search/timecontrol.cpp.s
 search/timecontrol.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-engine.dir/build.make CMakeFiles/portal-engine.dir/search/timecontrol.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-test.dir/build.make CMakeFiles/portal-test.dir/search/timecontrol.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/search/timecontrol.cpp.s
 .PHONY : search/timecontrol.cpp.s
+
+test_pattern.o: test_pattern.cpp.o
+.PHONY : test_pattern.o
+
+# target to build an object file
+test_pattern.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/test_pattern.cpp.o
+.PHONY : test_pattern.cpp.o
+
+test_pattern.i: test_pattern.cpp.i
+.PHONY : test_pattern.i
+
+# target to preprocess a source file
+test_pattern.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/test_pattern.cpp.i
+.PHONY : test_pattern.cpp.i
+
+test_pattern.s: test_pattern.cpp.s
+.PHONY : test_pattern.s
+
+# target to generate assembly for a file
+test_pattern.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/portal-pattern-test.dir/build.make CMakeFiles/portal-pattern-test.dir/test_pattern.cpp.s
+.PHONY : test_pattern.cpp.s
 
 test_portal.o: test_portal.cpp.o
 .PHONY : test_portal.o
@@ -1104,6 +1240,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... lz4"
 	@echo "... portal-engine"
+	@echo "... portal-pattern-test"
 	@echo "... portal-test"
 	@echo "... command/argutils.o"
 	@echo "... command/argutils.i"
@@ -1207,6 +1344,9 @@ help:
 	@echo "... search/timecontrol.o"
 	@echo "... search/timecontrol.i"
 	@echo "... search/timecontrol.s"
+	@echo "... test_pattern.o"
+	@echo "... test_pattern.i"
+	@echo "... test_pattern.s"
 	@echo "... test_portal.o"
 	@echo "... test_portal.i"
 	@echo "... test_portal.s"

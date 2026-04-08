@@ -329,6 +329,24 @@ void Board::initPortals()
                         if (cells[cur].piece == WALL)
                             break;
 
+                        // PORTAL BUG-005 FIX: Gap cell exclusion.
+                        // A "gap cell" is a cell strictly between two portals A and B
+                        // that are collinear in direction `dir`. These cells must NOT be
+                        // marked portalAffected — their window uses the fast bitKey path
+                        // where A and B appear as WALL bits, creating two isolated sub-lines.
+                        // Without this check, buildPortalKey is called for gap cells,
+                        // producing non-monotonic windows and false pattern counts.
+                        // See PortalPair::isGapCell() in board.h for the exact predicate.
+                        bool gap = false;
+                        for (int j = 0; j < numPortals; j++) {
+                            if (portals[j].isGapCell(cur, dir)) {
+                                gap = true;
+                                break;
+                            }
+                        }
+                        if (gap)
+                            continue;  // NOTE: continue, not break — cells further out may be valid
+
                         portalAffected[dir][int(cur)] = true;
                     }
                 }

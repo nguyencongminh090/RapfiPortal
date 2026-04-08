@@ -618,16 +618,39 @@ static void test12_collinear_gap()
     board.move<FREESTYLE>(Pos{5, 5});   // B
     board.move<FREESTYLE>(Pos{0, 0});   // W
 
-    std::cout << "  Gap cell pattern info (before placing at gap):\n";
+    std::cout << "  Gap cell pattern info (H dir, with BLACK stone at (5,5) inside gap):\n";
     printCellInfo(board, Pos{4, 5});
     printCellInfo(board, Pos{6, 5});
 
-    // (4,5) in H-dir: left side is blocked by A=(3,5)=WALL, limited window
-    // (6,5) in H-dir: right side is blocked by B=(8,5)=WALL, limited window
-    // These cells should NOT see through the portal in H direction
+    // BUG-005 regression checks:
+    // Collinear portals A=(3,5) B=(8,5) on same H-row.
+    // Gap cells (4..7,5) must use fast bitKey path — A/B appear as WALL.
+    // Sub-lines are bounded on each side; no teleport through gap.
 
-    std::cout << "  [collinear gap test completed — verify patterns visually]\n";
+    // (4,5): left=(3,5)=WALL (A), right sub-line has stone at (5,5) then walls at B
+    const Cell &c4 = board.cell(Pos{4, 5});
+    Pattern p4H = c4.pattern(BLACK, 0);
+    std::cout << "  (4,5) H pat[B]=" << patternName(p4H) << "\n";
+    CHECK(p4H != F5 && p4H != F4 && p4H != B4,
+          "BUG-005: (4,5) H no F5/F4/B4 (portal WALL bounds sub-line)");
+
+    // (6,5): between A and B, sub-line space < 5 on both sides
+    const Cell &c6 = board.cell(Pos{6, 5});
+    Pattern p6H = c6.pattern(BLACK, 0);
+    std::cout << "  (6,5) H pat[B]=" << patternName(p6H) << "\n";
+    CHECK(p6H != F5 && p6H != F4 && p6H != B4,
+          "BUG-005: (6,5) H no F5/F4/B4 (sub-line too short between portal WALLs)");
+
+    // Stone at (5,5) inside gap must be invisible from right side of portal B.
+    // Cell (9,5) is on the right sub-line; it SHOULD NOT see the stone at (5,5).
+    const Cell &c9 = board.cell(Pos{9, 5});
+    Pattern p9H = c9.pattern(BLACK, 0);
+    std::cout << "  (9,5) H pat[B]=" << patternName(p9H)
+              << " (stone at 5,5 must be invisible from right of portal B)\n";
+    CHECK(p9H <= B1,
+          "BUG-005: (9,5) H <= B1 (gap stone invisible across portal boundary)");
 }
+
 
 // ============================================================================
 // TEST 13: Incremental update — place stone near portal, check remote update

@@ -273,6 +273,32 @@ if(NOT WIN32 AND NOT EMSCRIPTEN)
     endif()
 endif()
 
+# Pattern detection test suite (Phase 1: normal, Phase 2: portal)
+add_executable(portal-pattern-test
+    test_pattern.cpp
+    ${TEST_SOURCES}
+)
+target_link_libraries(portal-pattern-test PRIVATE cpptoml cxxopts lz4 simde)
+if(NOT NO_MULTI_THREADING)
+    target_compile_definitions(portal-pattern-test PRIVATE MULTI_THREADING)
+endif()
+if(USE_SSE)
+    target_compile_definitions(portal-pattern-test PRIVATE USE_SSE)
+endif()
+if(USE_AVX2)
+    target_compile_definitions(portal-pattern-test PRIVATE USE_AVX2)
+endif()
+if(USE_BMI2 OR USE_AVX2)
+    target_compile_definitions(portal-pattern-test PRIVATE USE_BMI2)
+endif()
+if(NOT WIN32 AND NOT EMSCRIPTEN)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        target_link_libraries(portal-pattern-test PRIVATE pthread)
+    else()
+        target_link_libraries(portal-pattern-test PRIVATE pthread atomic)
+    endif()
+endif()
+
 #==========================================================
 # IDE helper
 
