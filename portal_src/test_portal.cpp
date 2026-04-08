@@ -642,13 +642,19 @@ static void test12_collinear_gap()
           "BUG-005: (6,5) H no F5/F4/B4 (sub-line too short between portal WALLs)");
 
     // Stone at (5,5) inside gap must be invisible from right side of portal B.
-    // Cell (9,5) is on the right sub-line; it SHOULD NOT see the stone at (5,5).
+    // Cell (9,5) is on the right sub-line; its virtual H window via buildPortalKey:
+    //   LEFT:  (8,5)=B portal → teleport → exits LEFT of A=(3,5) → (2,5),(1,5),(0,5)
+    //   RIGHT: (10,5),(11,5),(12,5),(13,5)
+    // The stone at (5,5) is NEVER traversed — it's in the gap between A and B.
+    // (9,5) naturally has F1 (4 valid 5-windows exist even with no stones).
+    // If BUG-005 were active (gap cells wrongly portalAffected), those gap cells
+    // would show F2/B2+ patterns — detected by the (4,5) and (6,5) checks above.
     const Cell &c9 = board.cell(Pos{9, 5});
     Pattern p9H = c9.pattern(BLACK, 0);
     std::cout << "  (9,5) H pat[B]=" << patternName(p9H)
-              << " (stone at 5,5 must be invisible from right of portal B)\n";
-    CHECK(p9H <= B1,
-          "BUG-005: (9,5) H <= B1 (gap stone invisible across portal boundary)");
+              << " (F1 expected: natural empty cell, gap stone invisible)\n";
+    CHECK(p9H <= F1,
+          "BUG-005: (9,5) H <= F1 (gap stone invisible — no strength added beyond empty baseline)");
 }
 
 
