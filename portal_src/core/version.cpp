@@ -119,7 +119,7 @@ std::string getEngineInfo()
     std::stringstream ss;
     ss << "name=\"MINT-P\", ";
     ss << "version=\"" << getVersionInfo() << "\", ";
-    ss << "author=\"nguyencongminh090\", ";
+    ss << "author=\"nguyencongminh090 (derived from Rapfi by Rapfi developers)\", ";
     ss << "country=\"Vietnam\"";
     return ss.str();
 }
