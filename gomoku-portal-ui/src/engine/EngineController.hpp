@@ -126,6 +126,9 @@ public:
     void saveDatabase();
     void queryDatabaseAll();
     void queryDatabaseOne();
+    void queryDatabaseText();
+    void deleteDatabaseOne();
+    void deleteDatabaseAll();
 
     // =========================================================================
     // Signals (emitted on GTK main thread via drainOutput)

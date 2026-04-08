@@ -21,6 +21,13 @@ model_sources = files(
 # Main application
 app_sources = files(
     'src/main.cpp',
+    'src/ui/widgets/StatusIndicator.cpp',
+    'src/ui/widgets/EvalBar.cpp',
+    'src/ui/widgets/ClockWidget.cpp',
+    'src/ui/widgets/CoordOverlay.cpp',
+    'src/ui/panels/LogPanel.cpp',
+    'src/controller/DatabaseController.cpp',
+    'src/ui/panels/DatabasePanel.cpp',
 )
 
 executable('gomoku-portal-ui',

@@ -203,6 +203,9 @@ void EngineController::setDatabase(const std::string& p) { send(EngineProtocol::
 void EngineController::saveDatabase()                    { send(EngineProtocol::yxSaveDatabase()); }
 void EngineController::queryDatabaseAll()                { send(EngineProtocol::yxQueryDatabaseAll()); }
 void EngineController::queryDatabaseOne()                { send(EngineProtocol::yxQueryDatabaseOne()); }
+void EngineController::queryDatabaseText()               { send(EngineProtocol::yxQueryDatabaseText()); }
+void EngineController::deleteDatabaseOne()               { send(EngineProtocol::yxDeleteDatabaseOne()); }
+void EngineController::deleteDatabaseAll()               { send(EngineProtocol::yxDeleteDatabaseAll()); }
 
 // =============================================================================
 // Polling & Dispatch
