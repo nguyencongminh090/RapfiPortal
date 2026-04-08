@@ -210,7 +210,7 @@ void think(Board                             &board,
 
 void setGUIMode()
 {
-    MESSAGEL("Rapfi " << getVersionInfo());
+    MESSAGEL("MINT-P " << getVersionInfo());
     MESSAGEL("INFO MAX_THREAD_NUM 256");
     MESSAGEL("INFO MAX_HASH_SIZE 30");
     GUIMode = true;

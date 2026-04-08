@@ -137,7 +137,7 @@ add_executable(portal-engine
     ${CORE_SOURCES}
     $<$<NOT:$<BOOL:${NO_COMMAND_MODULES}>>:${MODULE_SOURCES}>
 )
-set_target_properties(portal-engine PROPERTIES OUTPUT_NAME "pbrain-portal")
+set_target_properties(portal-engine PROPERTIES OUTPUT_NAME "pbrain-MINT-P")
 
 #==========================================================
 # External libraries (symlinked/copied from Rapfi's external/)

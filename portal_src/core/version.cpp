@@ -20,9 +20,9 @@
 
 #include <sstream>
 
-#define RAPFI_MAJOR_VER    0
-#define RAPFI_MINOR_VER    43
-#define RAPFI_REVISION_VER 01
+#define RAPFI_MAJOR_VER    1
+#define RAPFI_MINOR_VER    1
+#define RAPFI_REVISION_VER 0
 
 #define MACRO_STR(s)         #s
 #define VERSION_STR(a, b, c) MACRO_STR(a) "." MACRO_STR(b) "." MACRO_STR(c)
@@ -117,9 +117,9 @@ std::string getVersionInfo()
 std::string getEngineInfo()
 {
     std::stringstream ss;
-    ss << "name=\"Rapfi\", ";
+    ss << "name=\"MINT-P\", ";
     ss << "version=\"" << getVersionInfo() << "\", ";
-    ss << "author=\"Rapfi developers (see AUTHORS file)\", ";
-    ss << "country=\"China\"";
+    ss << "author=\"nguyencongminh090\", ";
+    ss << "country=\"Vietnam\"";
     return ss.str();
 }
