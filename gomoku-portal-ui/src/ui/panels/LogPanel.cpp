@@ -27,12 +27,17 @@ LogPanel::LogPanel() : Gtk::Box(Gtk::Orientation::VERTICAL) {
 void LogPanel::appendLog(const std::string& msg) {
     if (!textBuffer_) return;
 
-    Gtk::TextBuffer::iterator iter = textBuffer_->end();
+    auto iter = textBuffer_->end();
     textBuffer_->insert(iter, msg + "\n");
 
-    // Auto-scroll to bottom
-    Gtk::TextBuffer::iterator end_iter = textBuffer_->end();
-    textView_.scroll_to(textBuffer_->create_mark(end_iter), 0.0);
+    // Auto-scroll to bottom using a persistent mark (avoids leaking anonymous marks)
+    auto endMark = textBuffer_->get_mark("scroll-end");
+    if (!endMark) {
+        endMark = textBuffer_->create_mark("scroll-end", textBuffer_->end());
+    } else {
+        textBuffer_->move_mark(endMark, textBuffer_->end());
+    }
+    textView_.scroll_to(endMark, 0.0);
 }
 
 void LogPanel::clearLogs() {
