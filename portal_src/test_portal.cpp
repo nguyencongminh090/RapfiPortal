@@ -754,6 +754,269 @@ static void test16_trace()
 }
 
 // ============================================================================
+// WINCHECK TESTS — Tests 17-22
+// Tests the full pipeline: getKeyAt → pattern2x → pattern4 → p4Count → quickWinCheck
+// ============================================================================
+#include "game/wincheck.h"
+
+// ============================================================================
+// TEST 17: Normal 5-in-a-row detected (baseline — no portals)
+// ============================================================================
+static void test17_wincheck_normal()
+{
+    std::cout << "\n=== TEST 17: Win Detection — Normal 5-in-a-row (no portals) ===\n";
+
+    Board board(15);
+    board.newGame<FREESTYLE>();
+
+    // BLACK plays 5 in horizontal row at y=7: x=3,4,5,6,7.
+    // WHITE dummy stones are scattered to corners so they form no threats.
+    board.move<FREESTYLE>(Pos{3, 7});   board.move<FREESTYLE>(Pos{0, 0});
+    board.move<FREESTYLE>(Pos{4, 7});   board.move<FREESTYLE>(Pos{14, 14});
+    board.move<FREESTYLE>(Pos{5, 7});   board.move<FREESTYLE>(Pos{0, 14});
+    board.move<FREESTYLE>(Pos{6, 7});   board.move<FREESTYLE>(Pos{14, 0});
+    board.move<FREESTYLE>(Pos{7, 7});   // BLACK 5th stone → win
+
+    // After BLACK's 5th move: BLACK has A_FIVE, WHITE (scattered corners) has none
+    Color justMoved = ~board.sideToMove();  // BLACK
+
+    CHECK(board.p4Count(justMoved, A_FIVE) >= 1,
+          "Normal 5-in-a-row: p4Count(BLACK, A_FIVE) >= 1");
+    CHECK(board.p4Count(board.sideToMove(), A_FIVE) == 0,
+          "Normal 5-in-a-row: WHITE has no A_FIVE (scattered dummies)");
+
+    // Undo last move: back to 4-in-a-row
+    board.undo<FREESTYLE>();
+    CHECK(board.ply() == 8,
+          "After undo: ply == 8 (4B+4W)");
+}
+
+// ============================================================================
+// TEST 18: Portal-spanning 5-in-a-row — Horizontal
+// ============================================================================
+static void test18_wincheck_portal_horizontal()
+{
+    std::cout << "\n=== TEST 18: Win Detection — Portal-spanning Horizontal 5 ===\n";
+
+    // Portal A=(5,7) <-> B=(10,7) [same row, horizontal]
+    // BLACK: (2,7)(3,7)(4,7) left of A, (11,7)(12,7) right of B
+    // Virtual line through portal = 5 contiguous blacks
+    Board board(15);
+    board.addPortal(Pos{5, 7}, Pos{10, 7});
+    board.newGame<FREESTYLE>();
+
+    board.move<FREESTYLE>(Pos{2, 7});   board.move<FREESTYLE>(Pos{0, 0});
+    board.move<FREESTYLE>(Pos{3, 7});   board.move<FREESTYLE>(Pos{14, 14});
+    board.move<FREESTYLE>(Pos{4, 7});   board.move<FREESTYLE>(Pos{0, 14});
+    board.move<FREESTYLE>(Pos{11, 7});  board.move<FREESTYLE>(Pos{14, 0});
+    board.move<FREESTYLE>(Pos{12, 7});  // BLACK 5th virtual stone
+
+    Color justMoved = ~board.sideToMove();
+    std::cout << "  p4Count(BLACK, A_FIVE) = " << board.p4Count(justMoved, A_FIVE) << "\n";
+    printCellInfo(board, Pos{4, 7});
+    printCellInfo(board, Pos{11, 7});
+
+    CHECK(board.p4Count(justMoved, A_FIVE) >= 1,
+          "Portal H five: p4Count(BLACK, A_FIVE) >= 1");
+
+    // Undo test: just verify board state
+    board.undo<FREESTYLE>();
+    CHECK(board.ply() == 8, "After undo: ply restored");
+}
+
+// ============================================================================
+// TEST 19: Portal-spanning 5-in-a-row — Vertical
+// ============================================================================
+static void test19_wincheck_portal_vertical()
+{
+    std::cout << "\n=== TEST 19: Win Detection — Portal-spanning Vertical 5 ===\n";
+
+    // Portal A=(7,3) <-> B=(7,9) [same column, vertical]
+    // BLACK: (7,0)(7,1)(7,2) above A, (7,10)(7,11) below B
+    Board board(15);
+    board.addPortal(Pos{7, 3}, Pos{7, 9});
+    board.newGame<FREESTYLE>();
+
+    board.move<FREESTYLE>(Pos{7, 0});   board.move<FREESTYLE>(Pos{0, 0});
+    board.move<FREESTYLE>(Pos{7, 1});   board.move<FREESTYLE>(Pos{14, 14});
+    board.move<FREESTYLE>(Pos{7, 2});   board.move<FREESTYLE>(Pos{0, 14});
+    board.move<FREESTYLE>(Pos{7, 10});  board.move<FREESTYLE>(Pos{14, 0});
+    board.move<FREESTYLE>(Pos{7, 11});  // BLACK 5th virtual stone
+
+    Color justMoved = ~board.sideToMove();
+    std::cout << "  p4Count(BLACK, A_FIVE) = " << board.p4Count(justMoved, A_FIVE) << "\n";
+    printCellInfo(board, Pos{7, 2});
+    printCellInfo(board, Pos{7, 10});
+
+    CHECK(board.p4Count(justMoved, A_FIVE) >= 1,
+          "Portal V five: p4Count(BLACK, A_FIVE) >= 1");
+
+    // Undo test
+    board.undo<FREESTYLE>();
+    CHECK(board.ply() == 8, "After undo: ply restored");
+}
+
+// ============================================================================
+// TEST 20: WALL interrupts a 5-in-a-row (WALL acts as boundary)
+// ============================================================================
+static void test20_wincheck_wall_blocks()
+{
+    std::cout << "\n=== TEST 20: Win Detection — WALL blocks 5-in-a-row ===\n";
+
+    // WALL at (5,7) splits BLACK stones: (3,4,7) | WALL | (6,7,8,7)
+    // Total = 5 stones but WALL in the middle → NO five-in-a-row
+    Board board(15);
+    board.addWall(Pos{5, 7});
+    board.newGame<FREESTYLE>();
+
+    board.move<FREESTYLE>(Pos{3, 7});  board.move<FREESTYLE>(Pos{0, 0});
+    board.move<FREESTYLE>(Pos{4, 7});  board.move<FREESTYLE>(Pos{14, 14});
+    board.move<FREESTYLE>(Pos{6, 7});  board.move<FREESTYLE>(Pos{0, 14});
+    board.move<FREESTYLE>(Pos{7, 7});  board.move<FREESTYLE>(Pos{14, 0});
+    board.move<FREESTYLE>(Pos{8, 7});  // 5th stone, but WALL splits — no A_FIVE
+
+    Color justMoved = ~board.sideToMove();
+    std::cout << "  p4Count(BLACK, A_FIVE) = " << board.p4Count(justMoved, A_FIVE)
+              << "  (expect 0 — WALL blocks)\n";
+
+    CHECK(board.p4Count(justMoved, A_FIVE) == 0,
+          "WALL splits 2+3: no A_FIVE");
+
+    // Now extend right side to a true 5 (6,7,8,9,10)
+    board.move<FREESTYLE>(Pos{0, 4});
+    board.move<FREESTYLE>(Pos{9, 7});
+    board.move<FREESTYLE>(Pos{0, 5});
+    board.move<FREESTYLE>(Pos{10, 7});  // 5 in a row on right side
+
+    justMoved = ~board.sideToMove();
+    std::cout << "  After extending right: p4Count(BLACK, A_FIVE) = "
+              << board.p4Count(justMoved, A_FIVE) << "\n";
+    CHECK(board.p4Count(justMoved, A_FIVE) >= 1,
+          "Right-side 5 clear of WALL: A_FIVE detected");
+}
+
+// ============================================================================
+// TEST 21: B_FLEX4 (open four) detected through portal
+// ============================================================================
+static void test21_wincheck_flex4_portal()
+{
+    std::cout << "\n=== TEST 21: Win Detection — B_FLEX4 through portal ===\n";
+
+    // Portal A=(5,7) <-> B=(10,7) [horizontal]
+    // BLACK open four: (2,7)(3,7)(4,7) left of A, (11,7) right of B
+    // Virtual: _XXX[A..B]X_ — 4 stones with both ends open
+    Board board(15);
+    board.addPortal(Pos{5, 7}, Pos{10, 7});
+    board.newGame<FREESTYLE>();
+
+    board.move<FREESTYLE>(Pos{2, 7});   board.move<FREESTYLE>(Pos{0, 0});
+    board.move<FREESTYLE>(Pos{3, 7});   board.move<FREESTYLE>(Pos{0, 1});
+    board.move<FREESTYLE>(Pos{4, 7});   board.move<FREESTYLE>(Pos{0, 2});
+    board.move<FREESTYLE>(Pos{11, 7});  // BLACK 4th stone
+
+    Color justMoved = ~board.sideToMove();
+    std::cout << "  p4Count(BLACK, A_FIVE)         = " << board.p4Count(justMoved, A_FIVE) << "\n";
+    std::cout << "  p4Count(BLACK, B_FLEX4)        = " << board.p4Count(justMoved, B_FLEX4) << "\n";
+    std::cout << "  p4Count(BLACK, C_BLOCK4_FLEX3) = " << board.p4Count(justMoved, C_BLOCK4_FLEX3) << "\n";
+    printCellInfo(board, Pos{1, 7});
+    printCellInfo(board, Pos{12, 7});
+
+    bool highThreat = board.p4Count(justMoved, A_FIVE) >= 1
+                   || board.p4Count(justMoved, B_FLEX4) >= 1
+                   || board.p4Count(justMoved, C_BLOCK4_FLEX3) >= 1;
+    CHECK(highThreat,
+          "Portal open-four: sees A_FIVE or B_FLEX4 or C_BLOCK4_FLEX3");
+}
+
+// ============================================================================
+// TEST 22: quickWinCheck() integration
+// ============================================================================
+static void test22_wincheck_quickwin_integration()
+{
+    std::cout << "\n=== TEST 22: quickWinCheck() Integration ===\n";
+
+    // Sub-test A: No threat → VALUE_ZERO
+    {
+        Board board(15);
+        board.newGame<FREESTYLE>();
+        board.move<FREESTYLE>(Pos{7, 7});
+        board.move<FREESTYLE>(Pos{0, 0});
+        Value v = quickWinCheck<FREESTYLE>(board, 0);
+        CHECK(v == VALUE_ZERO, "2-stone board: quickWinCheck == VALUE_ZERO");
+    }
+
+    // Sub-test B: Normal win → verify via p4Count then quickWinCheck
+    // Using scattered dummies so WHITE has no threats.
+    {
+        Board board(15);
+        board.newGame<FREESTYLE>();
+        board.move<FREESTYLE>(Pos{3, 7});  board.move<FREESTYLE>(Pos{0, 0});
+        board.move<FREESTYLE>(Pos{4, 7});  board.move<FREESTYLE>(Pos{14, 14});
+        board.move<FREESTYLE>(Pos{5, 7});  board.move<FREESTYLE>(Pos{0, 14});
+        board.move<FREESTYLE>(Pos{6, 7});  board.move<FREESTYLE>(Pos{14, 0});
+        board.move<FREESTYLE>(Pos{7, 7});  // BLACK wins
+        // WHITE is sideToMove; verify WHITE has no A_FIVE (scattered dummies)
+        Color stm = board.sideToMove();  // WHITE
+        Color opp = ~stm;               // BLACK
+        std::cout << "  p4Count(WHITE,A_FIVE)=" << board.p4Count(stm, A_FIVE)
+                  << "  p4Count(BLACK,A_FIVE)=" << board.p4Count(opp, A_FIVE) << "\n";
+        CHECK(board.p4Count(stm, A_FIVE) == 0,
+              "Normal win setup: WHITE has no A_FIVE (scattered dummies)");
+        CHECK(board.p4Count(opp, A_FIVE) >= 1,
+              "Normal win setup: BLACK has A_FIVE");
+        Value v = quickWinCheck<FREESTYLE>(board, 0);
+        std::cout << "  Normal win: quickWinCheck = " << (int)v << "\n";
+        CHECK(v < 0, "After BLACK normal win: quickWinCheck < 0 for WHITE (mated)");
+    }
+
+    // Sub-test C: Portal-spanning win → verify p4Count then quickWinCheck
+    {
+        Board board(15);
+        board.addPortal(Pos{5, 7}, Pos{10, 7});
+        board.newGame<FREESTYLE>();
+        board.move<FREESTYLE>(Pos{2, 7});   board.move<FREESTYLE>(Pos{0, 0});
+        board.move<FREESTYLE>(Pos{3, 7});   board.move<FREESTYLE>(Pos{14, 14});
+        board.move<FREESTYLE>(Pos{4, 7});   board.move<FREESTYLE>(Pos{0, 14});
+        board.move<FREESTYLE>(Pos{11, 7});  board.move<FREESTYLE>(Pos{14, 0});
+        board.move<FREESTYLE>(Pos{12, 7});  // BLACK portal-spanning win
+        Color stm = board.sideToMove();  // WHITE
+        Color opp = ~stm;               // BLACK
+        std::cout << "  p4Count(WHITE,A_FIVE)=" << board.p4Count(stm, A_FIVE)
+                  << "  p4Count(BLACK,A_FIVE)=" << board.p4Count(opp, A_FIVE) << "\n";
+        CHECK(board.p4Count(stm, A_FIVE) == 0,
+              "Portal win setup: WHITE has no A_FIVE");
+        CHECK(board.p4Count(opp, A_FIVE) >= 1,
+              "Portal win setup: BLACK has A_FIVE via portal");
+        Value v = quickWinCheck<FREESTYLE>(board, 0);
+        std::cout << "  Portal win: quickWinCheck = " << (int)v << "\n";
+        CHECK(v < 0, "After portal-spanning win: quickWinCheck < 0 for WHITE (mated)");
+    }
+
+    // Sub-test D: WALL blocks → no win for BLACK, no win for WHITE
+    {
+        Board board(15);
+        board.addWall(Pos{5, 7});
+        board.newGame<FREESTYLE>();
+        board.move<FREESTYLE>(Pos{3, 7});  board.move<FREESTYLE>(Pos{0, 0});
+        board.move<FREESTYLE>(Pos{4, 7});  board.move<FREESTYLE>(Pos{14, 14});
+        board.move<FREESTYLE>(Pos{6, 7});  board.move<FREESTYLE>(Pos{0, 14});
+        board.move<FREESTYLE>(Pos{7, 7});  board.move<FREESTYLE>(Pos{14, 0});
+        board.move<FREESTYLE>(Pos{8, 7});  // WALL splits — no A_FIVE
+        Color stm = board.sideToMove();    // WHITE after BLACK's 5th move
+        Color opp = ~stm;                 // BLACK
+        std::cout << "  p4Count(BLACK,A_FIVE)=" << board.p4Count(opp, A_FIVE)
+                  << "  p4Count(WHITE,A_FIVE)=" << board.p4Count(stm, A_FIVE) << "\n";
+        CHECK(board.p4Count(opp, A_FIVE) == 0,
+              "WALL-blocked: p4Count(BLACK,A_FIVE) == 0");
+        CHECK(board.p4Count(stm, A_FIVE) == 0,
+              "WALL-blocked: p4Count(WHITE,A_FIVE) == 0 (scattered dummies)");
+        Value v = quickWinCheck<FREESTYLE>(board, 0);
+        std::cout << "  WALL-blocked: quickWinCheck = " << (int)v << "\n";
+        CHECK(v == VALUE_ZERO, "WALL splits 5: quickWinCheck == VALUE_ZERO");
+    }
+}
+
+// ============================================================================
 // MAIN
 // ============================================================================
 
@@ -794,6 +1057,12 @@ int main()
     test14_stress_move_undo();
     test15_two_portals();
     test16_trace();
+    test17_wincheck_normal();
+    test18_wincheck_portal_horizontal();
+    test19_wincheck_portal_vertical();
+    test20_wincheck_wall_blocks();
+    test21_wincheck_flex4_portal();
+    test22_wincheck_quickwin_integration();
 
     std::cout << "\n================================================================\n";
     std::cout << "  RESULTS: " << testsPassed << " passed, " << testsFailed << " failed\n";
