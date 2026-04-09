@@ -31,7 +31,7 @@ LogPanel::LogPanel(bool dualColumn) : Gtk::Box(Gtk::Orientation::HORIZONTAL), du
         prefixTextBuffer_ = prefixTextView_.get_buffer();
 
         prefixScrolledWindow_.set_child(prefixTextView_);
-        prefixScrolledWindow_.set_policy(Gtk::PolicyType::NEVER, Gtk::PolicyType::NEVER);
+        prefixScrolledWindow_.set_policy(Gtk::PolicyType::NEVER, Gtk::PolicyType::EXTERNAL);
         prefixScrolledWindow_.set_vadjustment(scrolledWindow_.get_vadjustment());
         
         prefixScrolledWindow_.set_size_request(85, -1);
