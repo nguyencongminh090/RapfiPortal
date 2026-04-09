@@ -165,7 +165,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
 
         Pos pos = f4Pos;
         for (int i = 0; i < MaxFindDist; i++) {
-            pos -= DIRECTION[dir];
+            pos = board.portalStep(pos, dir, -1);
 
             if (const Cell &c = board.cell(pos); c.piece == oppo)
                 continue;
@@ -179,7 +179,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
         }
         pos = f4Pos;
         for (int i = 0; i < MaxFindDist; i++) {
-            pos += DIRECTION[dir];
+            pos = board.portalStep(pos, dir, 1);
 
             if (const Cell &c = board.cell(pos); c.piece == oppo)
                 continue;
@@ -209,7 +209,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
             int i, j;
             Pos pos = f4Pos;
             for (i = 0; i < MaxFindDist; i++) {
-                pos -= DIRECTION[dir];
+                pos = board.portalStep(pos, dir, -1);
 
                 if (const Cell &c = board.cell(pos); c.piece == oppo)
                     continue;
@@ -219,7 +219,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
             }
             pos = f4Pos;
             for (j = MaxFindDist - i; j > 0; j--) {
-                pos += DIRECTION[dir];
+                pos = board.portalStep(pos, dir, 1);
 
                 if (const Cell &c = board.cell(pos); c.piece == oppo)
                     continue;
@@ -248,7 +248,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
 
             Pos pos = lastFlex4AttackPos;
             for (int i = 0; i < MaxFindDist; i++) {
-                pos -= DIRECTION[dir];
+                pos = board.portalStep(pos, dir, -1);
 
                 if (const Cell &c = board.cell(pos); c.piece == oppo)
                     continue;
@@ -269,7 +269,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
             }
             pos = lastFlex4AttackPos;
             for (int i = 0; i < MaxFindDist; i++) {
-                pos += DIRECTION[dir];
+                pos = board.portalStep(pos, dir, 1);
 
                 if (const Cell &c = board.cell(pos); c.piece == oppo)
                     continue;
@@ -305,7 +305,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
             int i, j, empty;
             Pos pos = lastFlex4AttackPos;
             for (i = 0, empty = 0; i < MaxFindDist; i++) {
-                pos -= DIRECTION[dir];
+                pos = board.portalStep(pos, dir, -1);
 
                 if (const Cell &c = board.cell(pos); c.piece == oppo)
                     continue;
@@ -325,7 +325,7 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
             }
             pos = lastFlex4AttackPos;
             for (j = MaxFindDist - i; j > 0; j--) {
-                pos += DIRECTION[dir];
+                pos = board.portalStep(pos, dir, 1);
 
                 if (const Cell &c = board.cell(pos); c.piece == oppo)
                     continue;
@@ -384,7 +384,7 @@ ScoredMove *findB4F3Defence(const Board &board, ScoredMove *const moveList)
         }
 
         for (int i = 0; i < 4; i++) {
-            pos -= DIRECTION[dir];
+            pos = board.portalStep(pos, dir, -1);
 
             if ((defenceMask >> (3 - i)) & 0x1) {
                 assert(board.isEmpty(pos));
@@ -402,7 +402,7 @@ ScoredMove *findB4F3Defence(const Board &board, ScoredMove *const moveList)
         pos       = f3Pos;
         prevFound = false;
         for (int i = 0; i < 4; i++) {
-            pos += DIRECTION[dir];
+            pos = board.portalStep(pos, dir, 1);
             if ((defenceMask >> (4 + i)) & 0x1) {
                 assert(board.isEmpty(pos));
                 *list++   = pos;
@@ -456,7 +456,7 @@ ScoredMove *findB4F3Defence(const Board &board, ScoredMove *const moveList)
         int i, j;
         Pos pos = b4Pos;
         for (i = 0; i < MaxFindDist; i++) {
-            pos -= DIRECTION[dir];
+            pos = board.portalStep(pos, dir, -1);
 
             if (const Cell &c = board.cell(pos); c.piece == oppo)
                 continue;
@@ -470,7 +470,7 @@ ScoredMove *findB4F3Defence(const Board &board, ScoredMove *const moveList)
         }
         pos = b4Pos;
         for (j = MaxFindDist - i; j > 0; j--) {
-            pos += DIRECTION[dir];
+            pos = board.portalStep(pos, dir, 1);
 
             if (const Cell &c = board.cell(pos); c.piece == oppo)
                 continue;
@@ -492,7 +492,7 @@ ScoredMove *findB4F3Defence(const Board &board, ScoredMove *const moveList)
 
         Pos pos = b4Pos;
         for (int i = 0; i < MaxFindDist; i++) {
-            pos -= DIRECTION[dir];
+            pos = board.portalStep(pos, dir, -1);
 
             if (const Cell &c = board.cell(pos); c.piece == self)
                 continue;
@@ -504,7 +504,7 @@ ScoredMove *findB4F3Defence(const Board &board, ScoredMove *const moveList)
         }
         pos = b4Pos;
         for (int i = 0; i < MaxFindDist; i++) {
-            pos += DIRECTION[dir];
+            pos = board.portalStep(pos, dir, 1);
 
             if (const Cell &c = board.cell(pos); c.piece == self)
                 continue;
