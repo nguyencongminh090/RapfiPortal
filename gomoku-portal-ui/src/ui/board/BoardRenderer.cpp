@@ -187,15 +187,80 @@ void BoardRenderer::drawLastMoveHighlight(const Cairo::RefPtr<Cairo::Context>& c
 }
 
 void BoardRenderer::drawHoverHighlight(const Cairo::RefPtr<Cairo::Context>& cr,
-                                        const BoardGeometry& geo,
-                                        util::Coord pos) {
+                                       const BoardGeometry& geo,
+                                       util::Coord pos,
+                                       const model::Board& board,
+                                       std::optional<HoverSetupInfo> setupHover) {
     double px, py;
     geo.cellToPixel(pos.x, pos.y, px, py);
-    double half = geo.cellSize * 0.42;
 
-    cr->set_source_rgba(0.5, 0.5, 0.5, 0.15);
-    cr->rectangle(px - half, py - half, half * 2, half * 2);
-    cr->fill();
+    cr->save();
+    
+    if (setupHover) {
+        // Setup Mode Hover
+        switch (setupHover->tool) {
+            case HoverSetupInfo::Tool::Wall:
+                if (!board.topology().hasWall(pos) && !board.topology().hasPortal(pos)) {
+                    cr->set_source_rgba(1.0, 1.0, 1.0, 0.4); // White backdrop
+                    cr->rectangle(px - geo.cellSize/2, py - geo.cellSize/2, geo.cellSize, geo.cellSize);
+                    cr->fill();
+                    
+                    cr->push_group();
+                    drawWall(cr, geo, pos.x, pos.y);
+                    cr->pop_group_to_source();
+                    cr->paint_with_alpha(0.6); // 60% opacity for pending wall
+                }
+                break;
+
+            case HoverSetupInfo::Tool::PortalPair:
+                if (!board.topology().hasWall(pos) && !board.topology().hasPortal(pos)) {
+                    cr->set_source_rgba(1.0, 1.0, 1.0, 0.4);
+                    cr->rectangle(px - geo.cellSize/2, py - geo.cellSize/2, geo.cellSize, geo.cellSize);
+                    cr->fill();
+                    
+                    int pairIndex = static_cast<int>(board.topology().portals().size());
+                    cr->push_group();
+                    drawPortal(cr, geo, pos.x, pos.y, pairIndex);
+                    cr->pop_group_to_source();
+                    cr->paint_with_alpha(0.6); // 60% opacity for pending portal
+                    
+                    // If it's the second endpoint (B), draw a link line
+                    if (setupHover->pendingPortalA && *setupHover->pendingPortalA != pos) {
+                        double ax, ay;
+                        geo.cellToPixel(setupHover->pendingPortalA->x, setupHover->pendingPortalA->y, ax, ay);
+                        const auto& color = portalColor(pairIndex);
+                        cr->set_source_rgba(color.r, color.g, color.b, 0.4);
+                        cr->set_line_width(2.0);
+                        std::vector<double> dashes = {5.0, 5.0};
+                        cr->set_dash(dashes, 0.0);
+                        cr->move_to(ax, ay);
+                        cr->line_to(px, py);
+                        cr->stroke();
+                        cr->set_dash(std::vector<double>{}, 0.0); // Reset
+                    }
+                }
+                break;
+
+            case HoverSetupInfo::Tool::Eraser:
+                if (board.topology().hasWall(pos) || board.topology().hasPortal(pos)) {
+                    cr->set_source_rgba(0.9, 0.2, 0.2, 0.5); // Red overlay
+                    cr->rectangle(px - geo.cellSize/2, py - geo.cellSize/2, geo.cellSize, geo.cellSize);
+                    cr->fill();
+                }
+                break;
+
+            default: break;
+        }
+    } else {
+        // Normal Play Mode Hover
+        if (board.isEmpty(pos.x, pos.y) && !board.topology().hasWall(pos) && !board.topology().hasPortal(pos)) {
+            cr->set_source_rgba(0.8, 0.8, 0.8, 0.5);
+            cr->rectangle(px - geo.cellSize/2, py - geo.cellSize/2, geo.cellSize, geo.cellSize);
+            cr->fill();
+        }
+    }
+
+    cr->restore();
 }
 
 // =============================================================================
@@ -386,6 +451,92 @@ void BoardRenderer::drawMoveNumber(const Cairo::RefPtr<Cairo::Context>& cr,
 }
 
 // =============================================================================
+// Analysis Overlays
+// =============================================================================
+
+void BoardRenderer::drawAnalysisOverlays(const Cairo::RefPtr<Cairo::Context>& cr,
+                                         const BoardGeometry& geo,
+                                         model::Color nextColor,
+                                         const model::AnalysisInfo& info,
+                                         const std::optional<model::AnalysisMove>& hoverPV) {
+    cr->save();
+
+    // 1. Draw N-Best scores
+    cr->select_font_face("Sans",
+                         Cairo::ToyFontFace::Slant::NORMAL,
+                         Cairo::ToyFontFace::Weight::NORMAL);
+    cr->set_font_size(geo.cellSize * 0.28);
+    
+    for (const auto& mv : info.nBest) {
+        if (!mv.coord.isValid(geo.boardSize) || mv.score == 0) continue;
+        
+        double px, py;
+        geo.cellToPixel(mv.coord.x, mv.coord.y, px, py);
+        
+        // Draw score box in bottom right corner of the cell
+        std::string scoreTxt = std::to_string(mv.score);
+        Cairo::TextExtents te;
+        cr->get_text_extents(scoreTxt, te);
+        
+        double boxH = te.height + 4;
+        double boxW = te.width + 6;
+        double boxX = px + geo.cellSize * 0.5 - boxW - 2;
+        double boxY = py + geo.cellSize * 0.5 - boxH - 2;
+        
+        cr->set_source_rgba(0.2, 0.2, 0.2, 0.7);
+        cr->rectangle(boxX, boxY, boxW, boxH);
+        cr->fill();
+        
+        cr->set_source_rgb(1.0, 1.0, 1.0);
+        cr->move_to(boxX + 3, boxY + boxH - 3);
+        cr->show_text(scoreTxt);
+    }
+    
+    // 2. Draw phantom PV line if hovered
+    if (hoverPV) {
+        model::Color currentColor = nextColor;
+        int stepNum = 1;
+        
+        for (const auto& cell : hoverPV->pv) {
+            if (!cell.isValid(geo.boardSize)) break;
+            
+            double px, py;
+            geo.cellToPixel(cell.x, cell.y, px, py);
+            
+            // Draw phantom stone
+            cr->set_source_rgba(currentColor == model::Color::Black ? 0.0 : 1.0,
+                                currentColor == model::Color::Black ? 0.0 : 1.0,
+                                currentColor == model::Color::Black ? 0.0 : 1.0,
+                                0.4);
+            cr->arc(px, py, geo.cellSize * 0.42, 0, 2 * M_PI);
+            cr->fill();
+            
+            // Draw sequence number inside stone
+            cr->set_source_rgb(currentColor == model::Color::Black ? 1.0 : 0.0,
+                               currentColor == model::Color::Black ? 1.0 : 0.0,
+                               currentColor == model::Color::Black ? 1.0 : 0.0);
+            
+            cr->select_font_face("Sans",
+                                 Cairo::ToyFontFace::Slant::NORMAL,
+                                 Cairo::ToyFontFace::Weight::BOLD);
+            cr->set_font_size(geo.cellSize * 0.4);
+                                 
+            std::string numTxt = std::to_string(stepNum++);
+            Cairo::TextExtents te;
+            cr->get_text_extents(numTxt, te);
+            cr->move_to(px - te.width / 2.0 - te.x_bearing,
+                        py - te.height / 2.0 - te.y_bearing);
+            cr->show_text(numTxt);
+            
+            // Toggle color
+            currentColor = (currentColor == model::Color::Black) ? model::Color::White : model::Color::Black;
+        }
+    }
+    
+    cr->restore();
+}
+
+// =============================================================================
 // Full Board Draw — Orchestrator
 // =============================================================================
 
@@ -393,7 +544,8 @@ void BoardRenderer::drawBoard(const Cairo::RefPtr<Cairo::Context>& cr,
                                const BoardGeometry& geo,
                                const model::Board& board,
                                std::optional<util::Coord> lastMove,
-                               std::optional<util::Coord> hoverCell) {
+                               std::optional<util::Coord> hoverCell,
+                               std::optional<HoverSetupInfo> setupHover) {
     cr->save();
 
     // 1. Background + grid
@@ -407,8 +559,8 @@ void BoardRenderer::drawBoard(const Cairo::RefPtr<Cairo::Context>& cr,
     }
 
     // 3. Hover highlight
-    if (hoverCell && hoverCell->isValid(geo.boardSize)) {
-        drawHoverHighlight(cr, geo, *hoverCell);
+    if (hoverCell && board.inBounds(hoverCell->x, hoverCell->y)) {
+        drawHoverHighlight(cr, geo, *hoverCell, board, setupHover);
     }
 
     // 4. Draw all cells

@@ -3,6 +3,7 @@
  */
 
 #include "BoardCanvas.hpp"
+#include <gtkmm/eventcontrollerscroll.h>
 
 namespace ui::board {
 
@@ -36,6 +37,13 @@ BoardCanvas::BoardCanvas(model::Board& board) : board_(board) {
     motionCtrl->signal_leave().connect(
         sigc::mem_fun(*this, &BoardCanvas::on_leave));
     add_controller(motionCtrl);
+
+    // Scroll gesture (for history navigation)
+    auto scrollCtrl = Gtk::EventControllerScroll::create();
+    scrollCtrl->set_flags(Gtk::EventControllerScroll::Flags::VERTICAL);
+    scrollCtrl->signal_scroll().connect(
+        sigc::mem_fun(*this, &BoardCanvas::on_scroll), false);
+    add_controller(scrollCtrl);
 }
 
 void BoardCanvas::refresh() {
@@ -44,6 +52,21 @@ void BoardCanvas::refresh() {
 
 void BoardCanvas::setShowMoveNumbers(bool show) {
     showMoveNumbers_ = show;
+    queue_draw();
+}
+
+void BoardCanvas::setSetupHover(std::optional<HoverSetupInfo> info) {
+    setupHover_ = info;
+    queue_draw();
+}
+
+void BoardCanvas::setAnalysisInfo(const model::AnalysisInfo& info) {
+    analysisInfo_ = info;
+    queue_draw();
+}
+
+void BoardCanvas::setAnalysisHover(std::optional<model::AnalysisMove> pv) {
+    analysisHover_ = pv;
     queue_draw();
 }
 
@@ -64,7 +87,7 @@ void BoardCanvas::draw_content(const Cairo::RefPtr<Cairo::Context>& cr,
     }
 
     // Full board draw
-    BoardRenderer::drawBoard(cr, geo_, board_, lastMove, hoverCell_);
+    BoardRenderer::drawBoard(cr, geo_, board_, lastMove, hoverCell_, setupHover_);
 
     // Move numbers overlay (optional)
     if (showMoveNumbers_) {
@@ -77,6 +100,10 @@ void BoardCanvas::draw_content(const Cairo::RefPtr<Cairo::Context>& cr,
                                           isBlack);
         }
     }
+
+    // Analysis Overlays
+    auto turnColor = (board_.ply() % 2 == 0) ? model::Color::Black : model::Color::White;
+    BoardRenderer::drawAnalysisOverlays(cr, geo_, turnColor, analysisInfo_, analysisHover_);
 }
 
 // =============================================================================
@@ -112,6 +139,17 @@ void BoardCanvas::on_leave() {
         hoverCell_ = std::nullopt;
         queue_draw();
     }
+}
+
+bool BoardCanvas::on_scroll(double /*dx*/, double dy) {
+    if (dy < 0) {
+        // Scrolled up -> undo
+        signalScrollUp.emit();
+    } else if (dy > 0) {
+        // Scrolled down -> redo
+        signalScrollDown.emit();
+    }
+    return true; // Event handled
 }
 
 }  // namespace ui::board

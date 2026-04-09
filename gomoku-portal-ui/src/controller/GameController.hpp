@@ -63,10 +63,13 @@ public:
     /// In HumanVsEngine: places if it's the human's turn, then asks engine.
     void onCellClicked(int x, int y);
 
-    /// Undo the last move (and engine's response if in HvE mode).
+    /// Called when the user wants to undo.
     void undoMove();
 
-    /// Pass the current turn.
+    /// Called when the user wants to redo.
+    void redoMove();
+
+    /// Called when the user passes their turn.
     void passMove();
 
     // =========================================================================

@@ -141,6 +141,41 @@ void GameController::undoMove() {
     signalBoardChanged.emit();
 }
 
+void GameController::redoMove() {
+    if (engine_.state() == engine::EngineState::Thinking ||
+        engine_.state() == engine::EngineState::Stopping) {
+        return;
+    }
+
+    if (!board_.canRedo()) return;
+
+    if (mode_ == GameMode::HumanVsEngine) {
+        // Try to redo 2 moves (human then engine) so it remains human's turn
+        if (board_.redoMove()) {
+            if (board_.canRedo()) {
+                board_.redoMove();
+            }
+        }
+        
+        // Sync position to engine silently
+        if (engine_.state() == engine::EngineState::Idle) {
+            auto record = model::GameRecord::fromBoard(board_);
+            auto entries = record.toBoardEntries(board_.sideToMove());
+            engine_.loadPositionSilent(entries);
+        }
+    } else {
+        // FreePlay mode redo 1 move
+        board_.redoMove();
+        if (engine_.state() == engine::EngineState::Idle) {
+            auto record = model::GameRecord::fromBoard(board_);
+            auto entries = record.toBoardEntries(board_.sideToMove());
+            engine_.loadPositionSilent(entries);
+        }
+    }
+
+    signalBoardChanged.emit();
+}
+
 void GameController::passMove() {
     board_.pass(board_.sideToMove());
     signalBoardChanged.emit();

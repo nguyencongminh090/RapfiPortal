@@ -1,0 +1,81 @@
+#include "SettingsManager.hpp"
+#include <glibmm/fileutils.h>
+#include <glibmm/miscutils.h>
+#include <giomm/file.h>
+#include <iostream>
+
+namespace util {
+
+std::string SettingsManager::getSettingsPath() const {
+    std::string configDir = Glib::get_user_config_dir() + "/gomoku-portal-ui";
+    auto dir = Gio::File::create_for_path(configDir);
+    if (!dir->query_exists()) {
+        try {
+            dir->make_directory();
+        } catch (const Glib::Error&) {}
+    }
+    return configDir + "/settings.ini";
+}
+
+void SettingsManager::load() {
+    std::string path = getSettingsPath();
+    try {
+        if (!Glib::file_test(path, Glib::FileTest::EXISTS)) return;
+        keyFile_->load_from_file(path);
+        
+        if (keyFile_->has_key("UI", "preferDarkTheme")) {
+            preferDarkTheme_ = keyFile_->get_boolean("UI", "preferDarkTheme");
+        }
+        if (keyFile_->has_key("Game", "lastBoardSize")) {
+            lastBoardSize_ = keyFile_->get_integer("Game", "lastBoardSize");
+            if (lastBoardSize_ < 5 || lastBoardSize_ > 22) lastBoardSize_ = 15;
+        }
+        if (keyFile_->has_key("Window", "width")) {
+            windowWidth_ = keyFile_->get_integer("Window", "width");
+        }
+        if (keyFile_->has_key("Window", "height")) {
+            windowHeight_ = keyFile_->get_integer("Window", "height");
+        }
+        if (keyFile_->has_key("Window", "maximized")) {
+            windowMaximized_ = keyFile_->get_boolean("Window", "maximized");
+        }
+
+        if (keyFile_->has_key("Engine", "turnTime")) {
+            engineTurnTime_ = keyFile_->get_integer("Engine", "turnTime");
+        }
+        if (keyFile_->has_key("Engine", "matchTime")) {
+            engineMatchTime_ = keyFile_->get_integer("Engine", "matchTime");
+        }
+        if (keyFile_->has_key("Engine", "maxMemory")) {
+            engineMaxMemory_ = keyFile_->get_integer("Engine", "maxMemory");
+        }
+        if (keyFile_->has_key("Engine", "nBest")) {
+            engineNBest_ = keyFile_->get_integer("Engine", "nBest");
+        }
+        
+    } catch (const Glib::Error& e) {
+        std::cerr << "Settings error: " << e.what() << "\n";
+    }
+}
+
+void SettingsManager::save() {
+    std::string path = getSettingsPath();
+    try {
+        keyFile_->set_boolean("UI", "preferDarkTheme", preferDarkTheme_);
+        keyFile_->set_integer("Game", "lastBoardSize", lastBoardSize_);
+        keyFile_->set_integer("Window", "width", windowWidth_);
+        keyFile_->set_integer("Window", "height", windowHeight_);
+        keyFile_->set_boolean("Window", "maximized", windowMaximized_);
+        
+        keyFile_->set_integer("Engine", "turnTime", engineTurnTime_);
+        keyFile_->set_integer("Engine", "matchTime", engineMatchTime_);
+        keyFile_->set_integer("Engine", "maxMemory", engineMaxMemory_);
+        keyFile_->set_integer("Engine", "nBest", engineNBest_);
+        
+        keyFile_->save_to_file(path);
+    } catch (const Glib::Error& e) {
+        std::cerr << "Settings save error: " << e.what() << "\n";
+    }
+}
+
+} // namespace util

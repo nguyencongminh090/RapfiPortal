@@ -31,8 +31,13 @@ app_sources = files(
     'src/ui/board/BoardRenderer.cpp',
     'src/ui/board/BoardCanvas.cpp',
     'src/controller/GameController.cpp',
+    'src/controller/SetupController.cpp',
+    'src/controller/AnalysisController.cpp',
     'src/controller/DatabaseController.cpp',
     'src/ui/panels/DatabasePanel.cpp',
+    'src/ui/panels/AnalysisPanel.cpp',
+    'src/ui/panels/EngineSettingsPanel.cpp',
+    'src/util/SettingsManager.cpp',
 )
 
 executable('gomoku-portal-ui',

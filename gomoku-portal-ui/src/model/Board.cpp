@@ -19,12 +19,14 @@ void Board::reset(int size) {
     size_ = size;
     cells_.assign(size * size, Cell::Empty);
     history_.clear();
+    redoStack_.clear();
     topology_.clear();
 }
 
 void Board::resetKeepTopology() {
     cells_.assign(size_ * size_, Cell::Empty);
     history_.clear();
+    redoStack_.clear();
     applyTopologyToGrid();
 }
 
@@ -34,6 +36,7 @@ bool Board::placeStone(int x, int y, Color color) {
 
     cells_[idx(x, y)] = colorToCell(color);
     history_.push_back(Move{{x, y}, color, ply() - 1});
+    redoStack_.clear(); // Clear redo stack on new action
     // Note: ply() already incremented because we pushed to history_
     // Fix: set ply to history size - 1
     history_.back().ply = static_cast<int>(history_.size()) - 1;
@@ -59,7 +62,30 @@ Move Board::undoLast() {
     if (!last.isPass() && inBounds(last.coord.x, last.coord.y)) {
         cells_[idx(last.coord.x, last.coord.y)] = Cell::Empty;
     }
+    
+    // Add to redo stack
+    redoStack_.push_back(last);
+    
     return last;
+}
+
+bool Board::redoMove() {
+    if (redoStack_.empty()) return false;
+    
+    Move next = redoStack_.back();
+    redoStack_.pop_back();
+    
+    if (next.isPass()) {
+        pass(next.color);
+    } else {
+        // Direct place without clearing redo stack
+        if (inBounds(next.coord.x, next.coord.y)) {
+            cells_[idx(next.coord.x, next.coord.y)] = colorToCell(next.color);
+        }
+        history_.push_back(next);
+    }
+    
+    return true;
 }
 
 void Board::setTopology(const PortalTopology& topo) {

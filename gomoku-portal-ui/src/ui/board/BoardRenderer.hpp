@@ -10,6 +10,7 @@
 
 #include "../../model/Board.hpp"
 #include "../../model/Cell.hpp"
+#include "../../model/AnalysisInfo.hpp"
 #include "../../util/Coord.hpp"
 
 #include <cairomm/context.h>
@@ -50,6 +51,12 @@ struct PortalColor {
     double r, g, b;
 };
 
+struct HoverSetupInfo {
+    enum class Tool { None, Wall, PortalPair, Eraser };
+    Tool tool = Tool::None;
+    std::optional<util::Coord> pendingPortalA;
+};
+
 /// Pure rendering functions for the board.
 /// All methods are static — no state, no widget dependency.
 class BoardRenderer {
@@ -63,7 +70,15 @@ public:
                           const BoardGeometry& geo,
                           const model::Board& board,
                           std::optional<util::Coord> lastMove = {},
-                          std::optional<util::Coord> hoverCell = {});
+                          std::optional<util::Coord> hoverCell = {},
+                          std::optional<HoverSetupInfo> setupHover = {});
+
+    /// Draw PV variations and evaluation scores over the board.
+    static void drawAnalysisOverlays(const Cairo::RefPtr<Cairo::Context>& cr,
+                                     const BoardGeometry& geo,
+                                     model::Color nextColor,
+                                     const model::AnalysisInfo& info,
+                                     const std::optional<model::AnalysisMove>& hoverPV = {});
 
     // =========================================================================
     // Individual Element Renderers
@@ -86,10 +101,12 @@ public:
                                       const BoardGeometry& geo,
                                       util::Coord pos);
 
-    /// Draw hover indicator (subtle highlight on the cell under the cursor).
+    /// Draw hover indicator depending on the active setup tool.
     static void drawHoverHighlight(const Cairo::RefPtr<Cairo::Context>& cr,
                                    const BoardGeometry& geo,
-                                   util::Coord pos);
+                                   util::Coord pos,
+                                   const model::Board& board,
+                                   std::optional<HoverSetupInfo> setupHover);
 
     /// Draw a Black piece (bold X cross).
     static void drawBlackPiece(const Cairo::RefPtr<Cairo::Context>& cr,

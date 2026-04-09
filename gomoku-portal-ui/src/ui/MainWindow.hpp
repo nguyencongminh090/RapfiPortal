@@ -18,22 +18,29 @@
 #pragma once
 
 #include "../controller/GameController.hpp"
+#include "../controller/SetupController.hpp"
+#include "../controller/AnalysisController.hpp"
 #include "../ui/board/BoardCanvas.hpp"
 #include "../ui/widgets/EvalBar.hpp"
 #include "../ui/widgets/StatusIndicator.hpp"
 #include "../ui/widgets/ClockWidget.hpp"
 #include "../ui/panels/LogPanel.hpp"
 #include "../ui/panels/DatabasePanel.hpp"
+#include "../ui/panels/AnalysisPanel.hpp"
+#include "../ui/panels/EngineSettingsPanel.hpp"
 
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/box.h>
 #include <gtkmm/button.h>
+#include <gtkmm/checkbutton.h>
 #include <gtkmm/comboboxtext.h>
 #include <gtkmm/headerbar.h>
 #include <gtkmm/label.h>
 #include <gtkmm/notebook.h>
 #include <gtkmm/paned.h>
 #include <gtkmm/separator.h>
+#include <gtkmm/spinbutton.h>
+#include <gtkmm/togglebutton.h>
 #include <glibmm/main.h>
 
 namespace ui {
@@ -51,6 +58,7 @@ private:
     // =========================================================================
     Gtk::Box       mainVBox_{Gtk::Orientation::VERTICAL};
     Gtk::Box       toolbarBox_{Gtk::Orientation::HORIZONTAL};
+    Gtk::Box       setupToolbarBox_{Gtk::Orientation::HORIZONTAL};
     Gtk::Paned     centerPaned_{Gtk::Orientation::HORIZONTAL};
     Gtk::Box       boardArea_{Gtk::Orientation::HORIZONTAL};
     Gtk::Box       statusBar_{Gtk::Orientation::HORIZONTAL};
@@ -59,17 +67,34 @@ private:
     // Toolbar Buttons & Controls
     // =========================================================================
     Gtk::Button btnNewGame_{"New Game"};
+    Gtk::SpinButton spinBoardSize_;
     Gtk::ComboBoxText comboMode_;
+    Gtk::ToggleButton btnSetupMode_{"Setup Mode"};
     Gtk::Button btnUndo_{"Undo"};
     Gtk::Button btnConnect_{"Connect"};
     Gtk::Button btnThink_{"Think"};
     Gtk::Button btnStop_{"Stop"};
+    Gtk::Button btnSaveGame_{"Save"};
+    Gtk::Button btnLoadGame_{"Load"};
+    Gtk::ToggleButton btnThemeToggle_{"🌙"};
+
+    // =========================================================================
+    // Setup Controls
+    // =========================================================================
+    Gtk::CheckButton rbWall_{"Wall"};
+    Gtk::CheckButton rbPortal_{"Portal Pair"};
+    Gtk::CheckButton rbEraser_{"Eraser"};
+    Gtk::Button btnClearTopology_{"Clear All Topology"};
+
+    controller::SetupController setupCtrl_;
+    controller::AnalysisController analysisCtrl_;
 
     // =========================================================================
     // Board & Widgets
     // =========================================================================
     board::BoardCanvas   boardCanvas_;
     widgets::EvalBar     evalBar_;
+    widgets::ClockWidget clockWidget_;
     widgets::StatusIndicator statusIndicator_;
     Gtk::Label           engineNameLabel_{"No engine"};
 
@@ -78,7 +103,9 @@ private:
     // =========================================================================
     Gtk::Notebook       sideNotebook_;
     panels::LogPanel    logPanel_;
-    panels::DatabasePanel databasePanel_;
+    panels::DatabasePanel dbPanel_;
+    panels::AnalysisPanel analysisPanel_;
+    panels::EngineSettingsPanel engineSettingsPanel_;
 
     // =========================================================================
     // Timer for engine polling
@@ -96,6 +123,7 @@ private:
     void setupLayout();
     void setupToolbar();
     void setupSignals();
+    void setupShortcuts();
     void startPollingTimer();
 
     // =========================================================================
@@ -107,6 +135,15 @@ private:
     void onConnect();
     void onThink();
     void onStop();
+    
+    void onSaveGame();
+    void onLoadGame();
+    void onThemeToggle();
+    
+    void onSetupToggled();
+    void onSetupToolChanged();
+    void onClearTopology();
+    
     bool onPollTimer();
 
     // GameController signal handlers

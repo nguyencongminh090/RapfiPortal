@@ -59,6 +59,12 @@ public:
     /// Throws if history is empty.
     Move undoLast();
 
+    /// Redo the previously undone move (if no new moves were played).
+    bool redoMove();
+
+    /// Check if redo is possible.
+    [[nodiscard]] bool canRedo() const { return !redoStack_.empty(); }
+
     /// Set the portal topology (walls + portal pairs).
     /// Marks cells as Wall/PortalA/PortalB on the board grid.
     void setTopology(const PortalTopology& topo);
@@ -123,6 +129,7 @@ private:
     int                    size_;
     std::vector<Cell>      cells_;     ///< size_*size_, row-major
     std::vector<Move>      history_;
+    std::vector<Move>      redoStack_; ///< Cleared on new move
     PortalTopology         topology_;
 
     /// Convert (x, y) to 1D index.
