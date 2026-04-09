@@ -5,6 +5,7 @@
 #include "AnalysisController.hpp"
 #include "GameController.hpp"
 #include "../util/StringUtils.hpp"
+#include "../util/Coord.hpp"
 
 #include <iostream>
 
@@ -14,23 +15,7 @@ namespace {
 /// Handles formats: "7,7"  "(7,7)"  "7,7;"  "(7,7);"
 /// Returns nullopt if the token cannot be parsed.
 std::optional<util::Coord> parsePVCoord(std::string_view token) {
-    // Strip leading whitespace and '('
-    while (!token.empty() && (token.front() == ' ' || token.front() == '('))
-        token.remove_prefix(1);
-    // Strip trailing whitespace, ')', ';'
-    while (!token.empty() && (token.back() == ' ' || token.back() == ')' || token.back() == ';'))
-        token.remove_suffix(1);
-
-    if (token.empty()) return std::nullopt;
-
-    auto comma = token.find(',');
-    if (comma == std::string_view::npos) return std::nullopt;
-
-    auto x = util::parseInt(token.substr(0, comma));
-    auto y = util::parseInt(token.substr(comma + 1));
-
-    if (!x.has_value() || !y.has_value()) return std::nullopt;
-    return util::Coord{*x, *y};
+    return util::Coord::parse(token);
 }
 
 } // anonymous namespace

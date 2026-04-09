@@ -349,11 +349,15 @@ public:
     /// PORTAL: Check if a position is a portal cell.
     [[nodiscard]] bool isPortalCell(Pos pos) const
     {
+        if (int(pos) < 0 || int(pos) >= FULL_BOARD_CELL_COUNT) return false;
         return portalPartner[pos] != Pos::NONE;
     }
 
     /// PORTAL: Check if a position is a WALL cell placed by addWall().
-    [[nodiscard]] bool isWallCell(Pos pos) const { return wallMask[pos]; }
+    [[nodiscard]] bool isWallCell(Pos pos) const { 
+        if (int(pos) < 0 || int(pos) >= FULL_BOARD_CELL_COUNT) return false;
+        return wallMask[pos]; 
+    }
 
     /// PORTAL: Get number of active portal pairs.
     int portalCount() const { return numPortals; }
@@ -361,6 +365,7 @@ public:
     /// PORTAL: Check if a cell is portal-affected in a specific direction (debug/test)
     [[nodiscard]] bool isPortalAffected(Pos pos, int dir) const
     {
+        if (int(pos) < 0 || int(pos) >= FULL_BOARD_CELL_COUNT) return false;
         return portalAffected[dir][int(pos)];
     }
 

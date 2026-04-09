@@ -9,6 +9,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include "../util/Coord.hpp"
 
 namespace engine {
 
@@ -179,12 +180,8 @@ std::string EngineProtocol::loadModel(const std::string& path) {
 // =============================================================================
 
 std::tuple<int, int, bool> EngineProtocol::parseCoordPair(const std::string& s) {
-    auto parts = util::split(s, ',');
-    if (parts.size() == 2) {
-        auto x = util::parseInt(parts[0]);
-        auto y = util::parseInt(parts[1]);
-        if (x && y) return {*x, *y, true};
-    }
+    auto c = util::Coord::parse(s);
+    if (c) return {c->x, c->y, true};
     return {-1, -1, false};
 }
 

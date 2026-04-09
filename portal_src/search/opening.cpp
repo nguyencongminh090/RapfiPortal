@@ -51,8 +51,36 @@ std::vector<Pos> generateOpening(const Board &board, GameRule rule)
 
     switch (rule.opRule) {
     case GameRule::FREEOPEN:
-        if (board.ply() == 0)
+        if (board.ply() == 0) {
+            // PORTAL: First move logic. If there are WALLs, pick an empty adjacent cell. 
+            // If there are only portays (no walls), or nothing, play center.
+            bool hasWalls = false;
+            std::vector<Pos> adjCells;
+            FOR_EVERY_POSITION(&board, p) {
+                if (board.isWallCell(p)) {
+                    hasWalls = true;
+                    for (int dx = -1; dx <= 1; dx++) {
+                        for (int dy = -1; dy <= 1; dy++) {
+                            if (dx == 0 && dy == 0) continue;
+                            Pos adj(p.x() + dx, p.y() + dy);
+                            // Ensure the adjacent cell is empty and is neither a Wall nor a Portal.
+                            if (board.isInBoard(adj) && board.isEmpty(adj) && !board.isPortalCell(adj) && !board.isWallCell(adj)) {
+                                adjCells.push_back(adj);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (hasWalls) {
+                if (!adjCells.empty()) {
+                    std::sort(adjCells.begin(), adjCells.end());
+                    adjCells.erase(std::unique(adjCells.begin(), adjCells.end()), adjCells.end());
+                    return {adjCells[prng() % adjCells.size()]};
+                }
+            }
             return {board.centerPos()};
+        }
         break;
     case GameRule::SWAP1:
         if (board.ply() == 0 && board.size() >= 13) {

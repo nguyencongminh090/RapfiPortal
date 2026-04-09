@@ -21,6 +21,7 @@
 #include "../search/searchthread.h"
 
 #include <algorithm>
+#include <bitset>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
@@ -550,6 +551,11 @@ void Board::move(Pos pos)
     Value deltaValueBlack            = VALUE_ZERO;
     int   f4CountBeforeMove[SIDE_NB] = {p4Count(BLACK, B_FLEX4), p4Count(WHITE, B_FLEX4)};
     int   updateCacheIdx             = 0;
+    std::bitset<FULL_BOARD_CELL_COUNT> seen;
+    
+    // PORTAL BUG FIX: Mark the placed stone as seen so it isn't erroneously updated 
+    // by the portal update zone as an empty neighbor.
+    seen[pos] = true;
 
     constexpr int L = PatternConfig::HalfLineLen<R>;
 
@@ -768,6 +774,10 @@ void Board::undo()
     moveCount--;
     const UpdateCache &pc             = updateCache[moveCount];
     int                updateCacheIdx = 0;
+    std::bitset<FULL_BOARD_CELL_COUNT> seen;
+    
+    // PORTAL BUG FIX: Mirror move() by marking lastPos as seen.
+    seen[lastPos] = true;
 
     constexpr int L = PatternConfig::HalfLineLen<R>;
 
