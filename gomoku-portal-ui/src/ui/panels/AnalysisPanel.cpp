@@ -88,9 +88,7 @@ void AnalysisPanel::onAnalysisUpdated() {
         
         // Convert Coord to string
         std::string moveStr = "-";
-        if (mv.coord.isValid(15)) {
-            // Assume 15 for now. In reality we should pass board size, but 15 is standard.
-            // Move string can be extracted from pvText if we want.
+        if (mv.coord.isValid(boardSize_)) {  // BUG-006 FIX: use dynamic board size
             auto pos = mv.pvText.find(" ");
             moveStr = (pos != std::string::npos) ? mv.pvText.substr(0, pos) : mv.pvText;
         }

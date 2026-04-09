@@ -8,20 +8,58 @@
 
 #include <iostream>
 
+namespace {
+
+/// Parse a single PV token into a Coord.
+/// Handles formats: "7,7"  "(7,7)"  "7,7;"  "(7,7);"
+/// Returns nullopt if the token cannot be parsed.
+std::optional<util::Coord> parsePVCoord(std::string_view token) {
+    // Strip leading whitespace and '('
+    while (!token.empty() && (token.front() == ' ' || token.front() == '('))
+        token.remove_prefix(1);
+    // Strip trailing whitespace, ')', ';'
+    while (!token.empty() && (token.back() == ' ' || token.back() == ')' || token.back() == ';'))
+        token.remove_suffix(1);
+
+    if (token.empty()) return std::nullopt;
+
+    auto comma = token.find(',');
+    if (comma == std::string_view::npos) return std::nullopt;
+
+    auto x = util::parseInt(token.substr(0, comma));
+    auto y = util::parseInt(token.substr(comma + 1));
+
+    if (!x.has_value() || !y.has_value()) return std::nullopt;
+    return util::Coord{*x, *y};
+}
+
+} // anonymous namespace
+
 namespace controller {
 
 AnalysisController::AnalysisController(GameController& gameCtrl)
     : gameCtrl_(gameCtrl) {
 }
 
+AnalysisController::~AnalysisController() {
+    for (auto& conn : connections_)
+        conn.disconnect();
+}
+
 void AnalysisController::connectSignals() {
-    gameCtrl_.signalEngineMessage.connect(
-        sigc::mem_fun(*this, &AnalysisController::onEngineMessage));
-        
-    gameCtrl_.signalBoardChanged.connect([this]() {
-        // If board resets or user moves, we should probably clear analysis
-        // But for now, just let the next search overwrite it.
-    });
+    // BUG-011 FIX: guard against double-connection (e.g. if called after reconnect).
+    if (!connections_.empty()) return;
+
+    connections_.push_back(
+        gameCtrl_.signalEngineMessage.connect(
+            sigc::mem_fun(*this, &AnalysisController::onEngineMessage)));
+
+    // Board changed: clear stale analysis so display stays consistent.
+    connections_.push_back(
+        gameCtrl_.signalBoardChanged.connect([this]() {
+            // Let the next search overwrite info_ naturally.
+            // No forced clear here to avoid flicker when analysis panel is visible.
+        }));
 }
 
 void AnalysisController::onEngineMessage(const std::string& msg) {
@@ -65,23 +103,25 @@ void AnalysisController::parseDepthLine(const std::string& line) {
             } catch (...) {}
         }
         else if (tokens[i] == "pv") {
-            // all subsequent are moves
             auto pvPos = line.find("pv ");
             if (pvPos != std::string::npos) {
                 mv.pvText = line.substr(pvPos + 3);
             }
+            // BUG-009 FIX: use robust parsePVCoord() that handles parentheses, semicolons, etc.
             for (size_t j = i + 1; j < tokens.size(); ++j) {
-                auto args = util::split(tokens[j], ',');
-                if (args.size() >= 2) {
-                    try {
-                        mv.pv.push_back({std::stoi(std::string(args[0])), std::stoi(std::string(args[1]))});
-                    } catch (...) {}
+                auto coord = parsePVCoord(tokens[j]);
+                if (coord.has_value()) {
+                    mv.pv.push_back(*coord);
+                } else {
+                    // Log unrecognised token at DEBUG level so failures are visible
+                    std::cerr << "[AnalysisController] unrecognised PV token: '"
+                              << tokens[j] << "'\n";
                 }
             }
             if (!mv.pv.empty()) {
                 mv.coord = mv.pv.front();
             }
-            break; // Done parsing
+            break;
         }
     }
     

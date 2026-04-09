@@ -28,8 +28,13 @@ public:
     /// Fired when the hovered/selected variation changes (to update board)
     sigc::signal<void()> signalVariationHovered;
 
+    /// Update the board size used for move coordinate validation.
+    /// Call this whenever the board size changes (e.g. from MainWindow::onBoardChanged).
+    void setBoardSize(int size) { boardSize_ = size; }
+
 private:
     controller::AnalysisController& analysisCtrl_;
+    int boardSize_ = 15;  // BUG-006 FIX: updated via setBoardSize(), not hardcoded
 
     // UI Elements
     Gtk::Label lblSummary_;

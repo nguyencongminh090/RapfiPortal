@@ -51,6 +51,11 @@ void Board::pass(Color color) {
     history_.push_back(Move::pass(color, ply()));
 }
 
+void Board::passInternal(Color color, int ply) {
+    // BUG-007 FIX: intentionally does NOT clear redoStack_
+    history_.push_back(Move::pass(color, ply));
+}
+
 Move Board::undoLast() {
     if (history_.empty())
         throw std::runtime_error("Board::undoLast() called on empty history");
@@ -71,20 +76,19 @@ Move Board::undoLast() {
 
 bool Board::redoMove() {
     if (redoStack_.empty()) return false;
-    
+
     Move next = redoStack_.back();
     redoStack_.pop_back();
-    
+
     if (next.isPass()) {
-        pass(next.color);
+        passInternal(next.color, next.ply);  // BUG-007 FIX: preserves remaining redo entries
     } else {
-        // Direct place without clearing redo stack
         if (inBounds(next.coord.x, next.coord.y)) {
             cells_[idx(next.coord.x, next.coord.y)] = colorToCell(next.color);
         }
         history_.push_back(next);
     }
-    
+
     return true;
 }
 

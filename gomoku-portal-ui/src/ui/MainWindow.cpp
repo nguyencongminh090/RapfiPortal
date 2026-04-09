@@ -414,9 +414,9 @@ void MainWindow::onLoadGame() {
                 if (ifs) {
                     int size = 15;
                     ifs >> size;
-                    gameCtrl_.newGame(size);
                     spinBoardSize_.set_value(size);
 
+                    std::vector<std::pair<int,int>> moves;
                     std::string line;
                     while (std::getline(ifs, line)) {
                         if (line.empty()) continue;
@@ -424,22 +424,12 @@ void MainWindow::onLoadGame() {
                         if (comma != std::string::npos) {
                             int x = std::stoi(line.substr(0, comma));
                             int y = std::stoi(line.substr(comma + 1));
-                            if (x == -1 && y == -1) {
-                                gameCtrl_.passMove(); // Assuming pass is fine, although gameCtrl passing might need to be called on board
-                            } else {
-                                gameCtrl_.board().placeStone(x, y, gameCtrl_.board().sideToMove());
-                            }
+                            moves.emplace_back(x, y);
                         }
                     }
-                    
-                    // Sync up engine
-                    if (gameCtrl_.engine().state() == engine::EngineState::Idle) {
-                        auto record = model::GameRecord::fromBoard(gameCtrl_.board());
-                        auto entries = record.toBoardEntries(gameCtrl_.board().sideToMove());
-                        gameCtrl_.engine().loadPositionSilent(entries);
-                    }
-                    
-                    gameCtrl_.signalBoardChanged.emit();
+
+                    // BUG-004 FIX: Use GameController method — no direct board mutation.
+                    gameCtrl_.loadGameFromMoves(size, moves);
                     logPanel_.appendLog("Game loaded from: " + path);
                 }
             }
@@ -535,6 +525,9 @@ void MainWindow::onClearTopology() {
 // =============================================================================
 
 void MainWindow::onBoardChanged() {
+    // BUG-006 FIX: propagate board size to analysis panel for correct coord validation.
+    analysisPanel_.setBoardSize(gameCtrl_.board().size());
+
     if (setupCtrl_.isActive()) {
         board::HoverSetupInfo info;
         switch (setupCtrl_.tool()) {

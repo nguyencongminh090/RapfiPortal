@@ -67,7 +67,11 @@ model::DatabaseRecord DatabaseController::parseRecord(const std::string& text) {
     if (coords.size() == 2) {
         auto x = util::parseInt(coords[0]);
         auto y = util::parseInt(coords[1]);
-        if (x && y) {
+        // BUG-012 FIX: use has_value() explicitly.
+        // "if (x && y)" looks like an integer zero-check but x/y are optional<int>;
+        // x=optional(0) IS truthy, so the old code was correct — this change is
+        // purely for maintainability to prevent future misreading of the guard.
+        if (x.has_value() && y.has_value()) {
             rec.coord = {*x, *y};
         }
     }

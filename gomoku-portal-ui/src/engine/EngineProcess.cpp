@@ -101,11 +101,15 @@ void EngineProcess::sendLine(const std::string& command) {
 void EngineProcess::kill() {
     running_ = false;
 
+    // Step 1: Close stdin first. This signals EOF to the engine process,
+    // which will then close its stdout, causing fgets() in readThreadFunc()
+    // to return NULL and the read loop to exit cleanly.
     if (stdinFd_ >= 0) {
         close(stdinFd_);
         stdinFd_ = -1;
     }
 
+    // Step 2: Terminate the engine process.
     if (pid_ > 0) {
         ::kill(pid_, SIGTERM);
 
@@ -121,13 +125,25 @@ void EngineProcess::kill() {
         pid_ = -1;
     }
 
+    // Step 3: Join the read thread BEFORE closing the FILE*.
+    // The read thread will have exited because fgets returned NULL
+    // (engine closed its stdout after receiving EOF on stdin, or after SIGKILL).
+    if (readThread_.joinable()) {
+        readThread_.join();
+    }
+
+    // Step 4: Now it is safe to fclose — the read thread is no longer using stdoutFile_.
+    // fclose() releases both the FILE buffer and the underlying fd atomically.
+    if (stdoutFile_) {
+        fclose(stdoutFile_);
+        stdoutFile_ = nullptr;
+    }
+
+    // stdoutFd_ was set to -1 in readThreadFunc() after fdopen().
+    // This close() is a safety net for the case where readThreadFunc never ran.
     if (stdoutFd_ >= 0) {
         close(stdoutFd_);
         stdoutFd_ = -1;
-    }
-
-    if (readThread_.joinable()) {
-        readThread_.join();
     }
 }
 
@@ -158,16 +174,19 @@ int EngineProcess::drainOutput() {
 }
 
 void EngineProcess::readThreadFunc() {
-    // Read stdout line-by-line using a FILE* wrapper for buffered I/O
-    FILE* fp = fdopen(stdoutFd_, "r");
-    if (!fp) {
-        std::cerr << "[EngineProcess] fdopen() failed\n";
+    // fdopen transfers ownership of stdoutFd_ to stdoutFile_.
+    // After this point stdoutFd_ must NOT be closed directly — only via fclose(stdoutFile_).
+    stdoutFile_ = fdopen(stdoutFd_, "r");
+    stdoutFd_ = -1;  // ownership transferred; prevent kill() from double-closing
+
+    if (!stdoutFile_) {
+        std::cerr << "[EngineProcess] fdopen() failed: " << strerror(errno) << "\n";
         running_ = false;
         return;
     }
 
     char buf[4096];
-    while (running_ && fgets(buf, sizeof(buf), fp)) {
+    while (running_ && fgets(buf, sizeof(buf), stdoutFile_)) {
         std::string line(buf);
 
         // Strip trailing newline/carriage-return
@@ -180,8 +199,8 @@ void EngineProcess::readThreadFunc() {
         }
     }
 
-    // Don't fclose — stdoutFd_ may be closed by kill() already.
-    // fdopen transfers ownership, but we handle the fd lifecycle in kill().
+    // fgets returned NULL: engine closed stdout (EOF) or running_ went false.
+    // Do NOT fclose here — kill() owns the fclose lifecycle after thread join.
     running_ = false;
 }
 

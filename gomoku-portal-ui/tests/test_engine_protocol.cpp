@@ -164,6 +164,12 @@ void test_output_parser() {
         CHECK(r.text == "depth 12 score 45 nodes 12345", "MESSAGE text extracted");
     }
 
+    {
+        // BUG-009 Regression test
+        auto r = EngineProtocol::parse("MESSAGE depth 12 ev 450 pv 7,7 8,8 9,9");
+        CHECK(r.type == ParsedLine::Type::Message, "depth line → Message");
+    }
+
     // ERROR
     {
         auto r = EngineProtocol::parse("ERROR Board is empty now.");

@@ -21,6 +21,8 @@ public:
     /// Connect to signals from GameController.
     void connectSignals();
 
+    ~AnalysisController();
+
     /// Get the latest analyzed state
     [[nodiscard]] const model::AnalysisInfo& info() const { return info_; }
 
@@ -30,10 +32,10 @@ public:
 private:
     GameController& gameCtrl_;
     model::AnalysisInfo info_;
-    
-    // Internal state to track when we should fire 'Updated' signal
-    // (since mutlipv lines might come sequentially).
     int lastDepthUpdated_ = 0;
+
+    // BUG-011 FIX: store connections for lifecycle management + double-connect guard
+    std::vector<sigc::connection> connections_;
 
     void onEngineMessage(const std::string& msg);
     

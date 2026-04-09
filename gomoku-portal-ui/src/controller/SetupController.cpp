@@ -18,11 +18,11 @@ bool SetupController::enterSetupMode() {
         return false;
     }
 
-    // Entering setup clears all stones
-    if (gameCtrl_.board().ply() > 0) {
-        // Keep the topology, just reset the game state
-        gameCtrl_.board().resetKeepTopology();
-    }
+    // BUG-008 FIX: Always call resetKeepTopology(), even when ply==0.
+    // If the redo stack is non-empty (user undid all moves), resetKeepTopology()
+    // clears it, preventing ghost moves from a previous topology being redone
+    // after the topology has been modified in setup mode.
+    gameCtrl_.board().resetKeepTopology();
 
     active_ = true;
     pendingPortalA_ = std::nullopt;
@@ -33,11 +33,14 @@ bool SetupController::enterSetupMode() {
 void SetupController::exitSetupMode() {
     active_ = false;
     pendingPortalA_ = std::nullopt;
-    
-    // Sync the new topology to the engine
+
+    // BUG-005 FIX: Mark topology dirty so startThinking() re-syncs on next think,
+    // instead of re-syncing unconditionally on every think call.
+    gameCtrl_.markTopologyDirty();
+
+    // Sync the new topology to the engine now (one-time, not on every think).
     gameCtrl_.syncBoardToEngine();
-    
-    // Refresh board canvas to hide hover state
+
     gameCtrl_.signalBoardChanged.emit();
 }
 

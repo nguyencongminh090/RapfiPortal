@@ -120,22 +120,25 @@ void GameController::undoMove() {
 
     if (board_.ply() == 0) return;
 
+    // BUG-010 FIX: helper that always sends TAKEBACK regardless of pass.
+    // Protocol doc: TAKEBACK coordinates are ignored by the engine — it just decrements ply.
+    // Sending TAKEBACK -1,-1 for pass moves keeps engine ply in sync with board ply.
+    auto sendTakeBack = [this](const model::Move& m) {
+        if (engine_.state() != engine::EngineState::Idle) return;
+        // For pass moves use sentinel coords; engine ignores them anyway.
+        int x = m.isPass() ? -1 : m.coord.x;
+        int y = m.isPass() ? -1 : m.coord.y;
+        engine_.takeBack(x, y);
+    };
+
     if (mode_ == GameMode::HumanVsEngine && board_.ply() >= 2) {
-        // Undo both engine's move and human's move
         auto move2 = board_.undoLast();
         auto move1 = board_.undoLast();
-
-        // Tell engine to take back both
-        if (engine_.state() == engine::EngineState::Idle) {
-            if (!move2.isPass()) engine_.takeBack(move2.coord.x, move2.coord.y);
-            if (!move1.isPass()) engine_.takeBack(move1.coord.x, move1.coord.y);
-        }
+        sendTakeBack(move2);
+        sendTakeBack(move1);
     } else {
-        // FreePlay or only 1 move: undo one
         auto move = board_.undoLast();
-        if (engine_.state() == engine::EngineState::Idle && !move.isPass()) {
-            engine_.takeBack(move.coord.x, move.coord.y);
-        }
+        sendTakeBack(move);
     }
 
     signalBoardChanged.emit();
@@ -181,6 +184,38 @@ void GameController::passMove() {
     signalBoardChanged.emit();
 }
 
+void GameController::loadGameFromMoves(int boardSize,
+                                       const std::vector<std::pair<int,int>>& moves)
+{
+    // Stop engine if currently thinking.
+    if (engine_.state() == engine::EngineState::Thinking ||
+        engine_.state() == engine::EngineState::Stopping) {
+        engine_.stopThinking();
+    }
+
+    // Atomically reset board to the new size (clears history + redoStack + topology).
+    board_.reset(boardSize);
+
+    // Replay all moves directly on the board model.
+    for (auto [x, y] : moves) {
+        if (x == -1 && y == -1) {
+            board_.pass(board_.sideToMove());
+        } else {
+            board_.placeStone(x, y, board_.sideToMove());
+        }
+    }
+
+    // Sync the final position to the engine silently (no think).
+    if (engine_.state() == engine::EngineState::Idle) {
+        auto record  = model::GameRecord::fromBoard(board_);
+        auto entries = record.toBoardEntries(board_.sideToMove());
+        engine_.loadPositionSilent(entries);
+    }
+
+    // Notify UI once.
+    signalBoardChanged.emit();
+}
+
 // =============================================================================
 // Engine Lifecycle
 // =============================================================================
@@ -188,15 +223,24 @@ void GameController::passMove() {
 void GameController::connectEngine(const std::string& enginePath) {
     engine::EngineConfig cfg;
     cfg.executablePath = enginePath;
-    cfg.boardSize = board_.size();
-    cfg.timeoutTurn = turnTimeMs_;
-    cfg.timeoutMatch = matchTimeMs_;
+    cfg.boardSize      = board_.size();
+    cfg.timeoutTurn    = turnTimeMs_;
+    cfg.timeoutMatch   = matchTimeMs_;
     cfg.maxMemoryBytes = maxMemory_;
 
-    if (engine_.connect(cfg)) {
-        // Start a game in the engine with the current board state
-        engine_.startGame(cfg);
-        syncBoardToEngine();
+    if (!engine_.connect(cfg)) return;
+
+    engine_.startGame(cfg);
+
+    // Sync topology (walls + portals) to the engine.
+    syncBoardToEngine();
+
+    // BUG-003 FIX: If a game is already in progress, sync the move history too.
+    // Without this the engine starts from an empty board while the UI has pieces.
+    if (board_.ply() > 0) {
+        auto record  = model::GameRecord::fromBoard(board_);
+        auto entries = record.toBoardEntries(board_.sideToMove());
+        engine_.loadPositionSilent(entries);  // YXBOARD — no auto-think
     }
 }
 

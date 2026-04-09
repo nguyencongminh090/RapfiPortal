@@ -377,6 +377,71 @@ void test_move() {
 }
 
 // =============================================================================
+// BUG-007 Regression: redo of pass move preserves remaining redo stack
+// =============================================================================
+
+void test_redo_after_pass() {
+    std::cout << "=== BUG-007 Regression: redo after pass ===\n";
+
+    Board board(15);
+
+    // Build: Black(7,7), White-pass, Black(8,8)
+    board.placeStone(7, 7, Color::Black);
+    board.pass(Color::White);
+    board.placeStone(8, 8, Color::Black);
+
+    // Undo all 3 → redoStack has 3 entries
+    board.undoLast();
+    board.undoLast();
+    board.undoLast();
+    CHECK(board.ply() == 0, "ply=0 after 3 undos");
+    CHECK(board.canRedo(), "redo available");
+
+    // Redo 1: should get Black(7,7), redo stack still has 2
+    board.redoMove();
+    CHECK(board.ply() == 1, "ply=1 after redo1");
+    CHECK(board.cellAt(7, 7) == Cell::Black, "Black at (7,7) after redo1");
+    CHECK(board.canRedo(), "redo still available after redo1");
+
+    // Redo 2: pass move — redo stack should still have 1
+    board.redoMove();
+    CHECK(board.ply() == 2, "ply=2 after redo2 (pass)");
+    CHECK(board.lastMove().isPass(), "last move is pass after redo2");
+    CHECK(board.canRedo(), "redo still available after redo2 (pass)");
+
+    // Redo 3: Black(8,8)
+    board.redoMove();
+    CHECK(board.ply() == 3, "ply=3 after redo3");
+    CHECK(board.cellAt(8, 8) == Cell::Black, "Black at (8,8) after redo3");
+    CHECK(!board.canRedo(), "no more redo after redo3");
+}
+
+// =============================================================================
+// BUG-008 Regression: enterSetupMode clears redo stack even when ply==0
+// =============================================================================
+
+void test_setup_mode_clears_redo_at_ply0() {
+    std::cout << "=== BUG-008 Regression: setup mode clears redo at ply==0 ===\n";
+
+    Board board(15);
+
+    // Place 2 stones, undo both → ply==0, redoStack has 2 entries
+    board.placeStone(7, 7, Color::Black);
+    board.placeStone(8, 8, Color::White);
+    board.undoLast();
+    board.undoLast();
+    CHECK(board.ply() == 0,     "ply==0 before setup");
+    CHECK(board.canRedo(),      "redo available before setup");
+
+    // Simulate enterSetupMode: always call resetKeepTopology()
+    board.resetKeepTopology();
+    CHECK(board.ply() == 0,     "ply==0 after resetKeepTopology");
+    CHECK(!board.canRedo(),     "BUG-008: redo cleared by resetKeepTopology");
+    CHECK(board.isEmpty(7, 7),  "stone cleared");
+    CHECK(board.isEmpty(8, 8),  "stone cleared");
+}
+
+// =============================================================================
 // Main
 // =============================================================================
 
@@ -394,6 +459,8 @@ int main() {
     test_board_topology();
     test_board_reset();
     test_game_record();
+    test_redo_after_pass();
+    test_setup_mode_clears_redo_at_ply0();
 
     std::cout << "\n  RESULTS: " << passed << " passed, " << failed << " failed\n";
     return failed > 0 ? 1 : 0;

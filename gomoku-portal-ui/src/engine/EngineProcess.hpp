@@ -66,9 +66,10 @@ public:
 
 private:
     // Process handles
-    pid_t           pid_     = -1;
-    int             stdinFd_ = -1;          ///< Write end of stdin pipe
-    int             stdoutFd_ = -1;         ///< Read end of stdout pipe
+    pid_t           pid_      = -1;
+    int             stdinFd_  = -1;         ///< Write end of stdin pipe
+    int             stdoutFd_ = -1;         ///< Read end of stdout pipe (valid until fdopen)
+    FILE*           stdoutFile_ = nullptr;  ///< Owns stdoutFd_ after fdopen(); closed via fclose()
 
     // Read thread
     std::thread     readThread_;

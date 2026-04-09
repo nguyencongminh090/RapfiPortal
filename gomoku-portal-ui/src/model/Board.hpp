@@ -140,6 +140,11 @@ private:
 
     /// Remove topology markings from the cell grid (walls/portals → Empty).
     void clearTopologyFromGrid();
+
+    /// Push a pass move to history WITHOUT clearing redoStack_.
+    /// Used only by redoMove() to preserve remaining redo entries.
+    /// For new user actions, use the public pass() which does clear redoStack_.
+    void passInternal(Color color, int ply);
 };
 
 }  // namespace model

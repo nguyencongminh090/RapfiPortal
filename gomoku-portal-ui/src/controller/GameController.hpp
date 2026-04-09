@@ -72,6 +72,13 @@ public:
     /// Called when the user passes their turn.
     void passMove();
 
+    /// Load a full game from a plain move list.
+    /// Atomically replaces board state, clears redo stack,
+    /// syncs the engine (YXBOARD), and emits signalBoardChanged.
+    /// @param boardSize  Size of the board for this game.
+    /// @param moves      Ordered list of (x, y) pairs; (-1,-1) = pass.
+    void loadGameFromMoves(int boardSize, const std::vector<std::pair<int,int>>& moves);
+
     // =========================================================================
     // Engine Lifecycle
     // =========================================================================
@@ -107,6 +114,10 @@ public:
     /// Set the number of candidate moves (NBEST).
     void setNBest(int n);
 
+    /// Mark topology as dirty (needs re-sync to engine before next think).
+    /// Called by SetupController after topology is modified.
+    void markTopologyDirty() { topologyDirty_ = true; }
+
     // =========================================================================
     // Polling (call from GTK main loop timer)
     // =========================================================================
@@ -138,10 +149,12 @@ private:
     engine::EngineController engine_;
     GameMode mode_ = GameMode::FreePlay;
     HumanSide humanSide_ = HumanSide::Black;
-    int turnTimeMs_ = 5000;
-    int matchTimeMs_ = 0;
-    int64_t maxMemory_ = 350 * 1024 * 1024;  // 350MB default
-    int nbest_ = 1;
+    int     turnTimeMs_    = 5000;
+    int     matchTimeMs_   = 0;
+    int64_t maxMemory_     = 350 * 1024 * 1024;  // 350MB default
+    int     nbest_         = 1;
+    bool    topologyDirty_ = false;  // BUG-005: true when topology changed since last sync
+    bool    nbest_dirty_   = true;   // BUG-005: true when nbest_ changed since last YXNBEST send
 
     // Signal connections for cleanup
     std::vector<sigc::connection> connections_;
