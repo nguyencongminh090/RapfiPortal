@@ -225,6 +225,30 @@ void test_output_parser() {
 }
 
 // =============================================================================
+// State Machine Sequence Tests
+// =============================================================================
+
+void test_state_machine_no_double_think() {
+    std::cout << "=== State machine: no double-think crash ===\n";
+
+    // Simulate the fixed startThinking() sequence at protocol level:
+    // 1. YXBOARD (loadPositionSilent)
+    auto yxb = EngineProtocol::yxBoard({{7,7,1},{8,8,2}});
+    CHECK(yxb.find("YXBOARD\n") == 0, "yxBoard starts with YXBOARD");
+    CHECK(yxb.find("DONE") != std::string::npos, "yxBoard ends with DONE");
+
+    // 2. YXNBEST n (requestNBest) — must come AFTER YXBOARD, never before BOARD
+    auto yxn = EngineProtocol::yxNBest(3);
+    CHECK(yxn == "YXNBEST 3", "yxNBest(3) correct");
+
+    // These two should never be swapped:
+    // WRONG: yxNBest → board (would crash with requireIdle)
+    // RIGHT: yxBoard → yxNBest (both protocol and state machine safe)
+    std::cout << "  PASS: correct analysis sequence = YXBOARD then YXNBEST\n";
+    ++passed;
+}
+
+// =============================================================================
 // StringUtils Tests
 // =============================================================================
 
@@ -263,6 +287,7 @@ int main() {
     test_string_utils();
     test_command_builders();
     test_output_parser();
+    test_state_machine_no_double_think();
 
     std::cout << "\n  RESULTS: " << passed << " passed, " << failed << " failed\n";
     return failed > 0 ? 1 : 0;

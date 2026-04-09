@@ -36,7 +36,7 @@ binary_file = "model220723.bin"
 
 [model.evaluator]
 # Type of the evaluator (Options are [mix9svq])
-type = "mix9svq"
+# type = "mix9svq"
 
 # The winning rate of black when the game is a draw, in [0, 1] (default is 0.5).
 draw_black_winrate = 0.5

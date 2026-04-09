@@ -173,6 +173,16 @@ void EngineController::applyConfig(const EngineConfig& config) {
 // =============================================================================
 
 void EngineController::requestNBest(int n) {
+    // YXNBEST n: starts a thinking session on the CURRENT engine board position.
+    // This is NOT a configuration command — it transitions state to Thinking.
+    //
+    // Correct call sequence for analysis:
+    //   loadPositionSilent(entries)  ← YXBOARD, stays Idle
+    //   requestNBest(n)              ← YXNBEST, → Thinking
+    //
+    // WRONG (causes crash):
+    //   requestNBest(n)              ← → Thinking
+    //   loadPosition(entries)        ← requireIdle() THROWS
     requireIdle("requestNBest");
     send(EngineProtocol::yxNBest(n));
     setState(EngineState::Thinking);

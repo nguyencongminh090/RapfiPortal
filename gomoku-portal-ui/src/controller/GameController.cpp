@@ -249,16 +249,25 @@ void GameController::disconnectEngine() {
 }
 
 void GameController::startThinking() {
-    if (engine_.state() == engine::EngineState::Idle) {
+    if (engine_.state() != engine::EngineState::Idle) return;
+
+    // Sync topology only when it has changed (BUG-005 fix — avoids N+1 applyAndReinit).
+    if (topologyDirty_) {
         syncBoardToEngine();
-        engine_.requestNBest(nbest_);
-        // Use BOARD to load position and start thinking
-        auto record = model::GameRecord::fromBoard(board_);
-        auto entries = record.toBoardEntries(
-            board_.sideToMove() == model::Color::Black
-                ? model::Color::Black : model::Color::White);
-        engine_.loadPosition(entries);
+        topologyDirty_ = false;
     }
+
+    // Step 1: Load the current board position SILENTLY (YXBOARD).
+    //   → engine processes the position but does NOT start thinking.
+    //   → state stays Idle after this call.
+    auto record  = model::GameRecord::fromBoard(board_);
+    auto entries = record.toBoardEntries(board_.sideToMove());
+    engine_.loadPositionSilent(entries);            // YXBOARD — state stays Idle ✓
+
+    // Step 2: NOW start thinking with N-best output (YXNBEST n).
+    //   → this requires Idle state (OK — we are still Idle after step 1).
+    //   → sets state to Thinking after sending the command.
+    engine_.requestNBest(nbest_);                   // YXNBEST — state → Thinking ✓
 }
 
 void GameController::stopThinking() {
@@ -316,12 +325,9 @@ bool GameController::isEngineTurn() const {
 void GameController::requestEngineMove() {
     if (engine_.state() != engine::EngineState::Idle) return;
 
-    // Load position via BOARD and let engine think
-    auto record = model::GameRecord::fromBoard(board_);
-    auto entries = record.toBoardEntries(
-        board_.sideToMove() == model::Color::Black
-            ? model::Color::Black : model::Color::White);
-    engine_.loadPosition(entries);
+    auto record  = model::GameRecord::fromBoard(board_);
+    auto entries = record.toBoardEntries(board_.sideToMove());
+    engine_.loadPosition(entries);    // BOARD → auto-starts thinking → Thinking ✓
 }
 
 // =============================================================================

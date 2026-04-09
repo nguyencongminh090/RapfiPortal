@@ -154,7 +154,8 @@ private:
     int64_t maxMemory_     = 350 * 1024 * 1024;  // 350MB default
     int     nbest_         = 1;
     bool    topologyDirty_ = false;  // BUG-005: true when topology changed since last sync
-    bool    nbest_dirty_   = true;   // BUG-005: true when nbest_ changed since last YXNBEST send
+    // NOTE: nbest_ is sent every startThinking() call via requestNBest() —
+    // no dirty flag needed because YXNBEST starts the thinking session itself.
 
     // Signal connections for cleanup
     std::vector<sigc::connection> connections_;

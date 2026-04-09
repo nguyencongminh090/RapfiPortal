@@ -103,7 +103,9 @@ public:
     // Analysis
     // =========================================================================
 
-    /// Send YXNBEST n
+    /// Send YXNBEST n — starts engine thinking on the current board with N-best output.
+    /// IMPORTANT: This transitions state to Thinking. Load the desired position via
+    /// loadPositionSilent() BEFORE calling this. Do NOT call loadPosition() after this.
     void requestNBest(int n);
 
     /// Send STOP to interrupt thinking (valid in THINKING state).
