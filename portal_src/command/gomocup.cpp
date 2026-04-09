@@ -738,10 +738,22 @@ void getPosition(bool startThink)
             int                color = -1;
             {
                 std::stringstream ss;
-                char              comma;
                 ss << coordStr;
-                pos = parseLegalCoord(ss, *board);
-                ss >> comma >> color;
+                int x = -2, y = -2;
+                char comma1, comma2;
+                if (ss >> x >> comma1 >> y >> comma2 >> color) {
+                    Pos p = inputCoordConvert(x, y, board->size());
+                    if (board->isInBoard(p)) {
+                        if (color == 3 || board->isLegal(p)) {
+                            // If color is 3 (WALL), it's okay if it's already a WALL.
+                            pos = p;
+                        } else {
+                            ERRORL("Coord is not valid or empty.");
+                        }
+                    } else {
+                        ERRORL("Coord is not valid or empty.");
+                    }
+                }
             }
 
             if (pos.has_value()) {

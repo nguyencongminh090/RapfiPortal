@@ -21,7 +21,7 @@ message_mode = "ucilike"
 coord_conversion_mode = "flipY_X"
 
 # Default candidate range (Options are [square2, square2_line3, square3, square3_line4, square4, full_board])
-default_candidate_range = "square3_line4"
+default_candidate_range = "full_board"
 
 # Memory reserved for stuff other than hash table in max_memory option
 memory_reserved_mb = 0
