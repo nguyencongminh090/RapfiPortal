@@ -906,7 +906,7 @@ bool Board::checkForbiddenPoint(Pos pos) const
 
         Pos posi = pos;
         for (int i = 0; i < MaxFindDist; i++) {
-            posi -= DIRECTION[dir];
+            posi = portalStep(posi, dir, -1);
 
             if (const Cell &c = cell(posi); c.piece == EMPTY) {
                 if (c.pattern4[BLACK] == B_FLEX4 || c.pattern(BLACK, dir) == F5
@@ -922,7 +922,7 @@ bool Board::checkForbiddenPoint(Pos pos) const
         }
         posi = pos;
         for (int i = 0; i < MaxFindDist; i++) {
-            posi += DIRECTION[dir];
+            posi = portalStep(posi, dir, 1);
 
             if (const Cell &c = cell(posi); c.piece == EMPTY) {
                 if (c.pattern4[BLACK] == B_FLEX4 || c.pattern(BLACK, dir) == F5
@@ -978,11 +978,17 @@ void Board::expandCandArea(Pos pos, int fillDist, int lineDist)
 
     area.expand(pos, boardSize, std::max(fillDist, lineDist));
 
-    for (int i = std::max(3, fillDist + 1); i <= lineDist; i++) {
-        for (int dir = 0; dir < 4; dir++) {
-            Pos posi = pos + DIRECTION[dir] * i;
-            if (candCondition(posi))
-                cells[posi].cand++;
+    for (int dir = 0; dir < 4; dir++) {
+        Pos posi1 = pos;
+        Pos posi2 = pos;
+        for (int i = 1; i <= lineDist; i++) {
+            posi1 = portalStep(posi1, dir, -1);
+            posi2 = portalStep(posi2, dir, 1);
+            
+            if (i >= std::max(3, fillDist + 1)) {
+                if (candCondition(posi1)) cells[posi1].cand++;
+                if (candCondition(posi2)) cells[posi2].cand++;
+            }
         }
     }
     for (int xi = -fillDist; xi <= fillDist; xi++) {

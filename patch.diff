@@ -1,0 +1,35 @@
+--- portal_src/game/board.h
++++ portal_src/game/board.h
+@@ -609,17 +609,18 @@
+ inline Pos Board::portalStep(Pos cur, int dir, int sign) const
+ {
+-    // Next physical position (may be out of bounds — handled by WALL bits)
+-    const int  rawNext = int(cur) + int(DIRECTION[dir]) * sign;
+-
+-    // Bounds check: out-of-board cells act as WALL (no portal there)
+-    if (rawNext < 0 || rawNext >= FULL_BOARD_CELL_COUNT)
+-        return Pos{int16_t(rawNext)};
+-
+-    Pos next{int16_t(rawNext)};
+-
+-    // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells.
+-    const Pos partner = portalPartner[next];
+-    if (partner != Pos::NONE) {
+-        return Pos(int16_t(int(partner) + int(DIRECTION[dir]) * sign));
++    for (int guard = 0; guard < 2 * MAX_PORTAL_PAIRS; guard++) {
++        const int rawNext = int(cur) + int(DIRECTION[dir]) * sign;
++        if (rawNext < 0 || rawNext >= FULL_BOARD_CELL_COUNT)
++            return Pos{int16_t(rawNext)};
++
++        Pos next{int16_t(rawNext)};
++        const Pos partner = portalPartner[next];
++        if (partner != Pos::NONE) {
++            cur = partner;
++        } else {
++            return next;
++        }
+     }
+-
+-    return next;
++    return cur;
+ }

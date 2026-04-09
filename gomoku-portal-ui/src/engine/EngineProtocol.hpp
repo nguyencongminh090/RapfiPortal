@@ -57,8 +57,6 @@ public:
     /// "ABOUT"
     static std::string about();
 
-    /// "YXSHOWINFO" — must be sent first to enable GUI mode
-    static std::string yxShowInfo();
 
     // =========================================================================
     // Command Builders — Gameplay
@@ -124,8 +122,6 @@ public:
     /// "INFO PONDERING {0|1}"
     static std::string infoPondering(bool enable);
 
-    /// "INFO SHOW_DETAIL {level}" — 0=none, 1=realtime, 2=detail, 3=both
-    static std::string infoShowDetail(int level);
 
     /// "INFO MAX_NODE {n}" — ULLONG_MAX for unlimited
     static std::string infoMaxNode(unsigned long long n);

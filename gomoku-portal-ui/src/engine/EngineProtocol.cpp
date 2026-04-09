@@ -24,7 +24,6 @@ std::string EngineProtocol::start(int boardSize) {
 std::string EngineProtocol::restart() { return "RESTART"; }
 std::string EngineProtocol::end()     { return "END"; }
 std::string EngineProtocol::about()   { return "ABOUT"; }
-std::string EngineProtocol::yxShowInfo() { return "YXSHOWINFO"; }
 
 // =============================================================================
 // Command Builders — Gameplay
@@ -114,9 +113,6 @@ std::string EngineProtocol::infoPondering(bool enable) {
     return std::string("INFO PONDERING ") + (enable ? "1" : "0");
 }
 
-std::string EngineProtocol::infoShowDetail(int level) {
-    return "INFO SHOW_DETAIL " + std::to_string(level);
-}
 
 std::string EngineProtocol::infoMaxNode(unsigned long long n) {
     return "INFO MAX_NODE " + std::to_string(n);

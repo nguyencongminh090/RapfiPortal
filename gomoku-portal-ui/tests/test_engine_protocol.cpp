@@ -41,7 +41,6 @@ void test_command_builders() {
     CHECK(EngineProtocol::restart()   == "RESTART",            "restart()");
     CHECK(EngineProtocol::end()       == "END",                "end()");
     CHECK(EngineProtocol::about()     == "ABOUT",              "about()");
-    CHECK(EngineProtocol::yxShowInfo()== "YXSHOWINFO",         "yxShowInfo()");
     CHECK(EngineProtocol::begin()     == "BEGIN",              "begin()");
     CHECK(EngineProtocol::stop()      == "STOP",              "stop()");
 
@@ -74,8 +73,6 @@ void test_command_builders() {
           "infoPondering(true)");
     CHECK(EngineProtocol::infoPondering(false) == "INFO PONDERING 0",
           "infoPondering(false)");
-    CHECK(EngineProtocol::infoShowDetail(3) == "INFO SHOW_DETAIL 3",
-          "infoShowDetail(3)");
 
     // Analysis
     CHECK(EngineProtocol::yxNBest(5)   == "YXNBEST 5",       "yxNBest(5)");

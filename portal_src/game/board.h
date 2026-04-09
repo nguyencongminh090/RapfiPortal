@@ -608,27 +608,29 @@ inline void Board::flipBitKey(Pos pos, Color c)
 /// Otherwise → normal step.
 inline Pos Board::portalStep(Pos cur, int dir, int sign) const
 {
-    // Next physical position (may be out of bounds — handled by WALL bits)
-    const int  rawNext = int(cur) + int(DIRECTION[dir]) * sign;
+    // PORTAL: Resolve chains of adjacent portals by looping
+    for (int guard = 0; guard < 2 * MAX_PORTAL_PAIRS; guard++) {
+        // Next physical position (may be out of bounds — handled by WALL bits)
+        const int rawNext = int(cur) + int(DIRECTION[dir]) * sign;
 
-    // Bounds check: out-of-board cells act as WALL (no portal there)
-    if (rawNext < 0 || rawNext >= FULL_BOARD_CELL_COUNT)
-        return Pos{int16_t(rawNext)};
+        // Bounds check: out-of-board cells act as WALL (no portal there)
+        if (rawNext < 0 || rawNext >= FULL_BOARD_CELL_COUNT)
+            return Pos{int16_t(rawNext)};
 
-    Pos next{int16_t(rawNext)};
+        Pos next{int16_t(rawNext)};
 
-    // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells.
-    // Portals teleport in ALL directions unconditionally.
-    // For collinear portals (A and B on the same physical line in direction dir),
-    // the buildPortalKey duplicate-detection prevents infinite loops.
-    const Pos partner = portalPartner[next];
-    if (partner != Pos::NONE) {
-        // Skip both portal cells (zero-width); continue from after partner.
-        // exit = partner + DIRECTION[dir] * sign
-        return Pos(int16_t(int(partner) + int(DIRECTION[dir]) * sign));
+        // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells.
+        const Pos partner = portalPartner[next];
+        if (partner != Pos::NONE) {
+            // Teleport to partner, then loop to step again from the partner's cell!
+            cur = partner;
+        } else {
+            return next; // Empty, stone, or boundary wall
+        }
     }
 
-    return next;
+    // Fallback if infinite portal loop detected
+    return cur;
 }
 
 // --- PORTAL: buildPortalKey<R>() --------------------------------------------

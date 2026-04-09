@@ -34,8 +34,6 @@ struct EngineConfig {
     int  maxDepth  = 99;                    ///< Max search depth
     bool pondering = false;                 ///< Enable pondering (think on opponent's time)
 
-    // --- Display ---
-    int  showDetail = 1;                    ///< 0=none, 1=realtime, 2=detail, 3=both
 };
 
 }  // namespace engine

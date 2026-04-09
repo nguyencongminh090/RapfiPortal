@@ -161,7 +161,8 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
         const Cell &f4Cell = board.cell(f4Pos);
         assert(f4Cell.pattern(oppo, dir) == F4);
 
-        list[0] = f4Pos;  // Add first defence
+        int foundCount = 0;
+        list[foundCount++] = f4Pos;  // Add first defence
 
         Pos pos = f4Pos;
         for (int i = 0; i < MaxFindDist; i++) {
@@ -170,10 +171,10 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
             if (const Cell &c = board.cell(pos); c.piece == oppo)
                 continue;
             else if (c.piece == EMPTY) {
-                list[1] = pos;  // Second defence
+                list[foundCount++] = pos;  // Second defence
                 if (c.pattern(oppo, dir) == F4
                     && (c.pattern4[oppo] != FORBID || !board.checkForbiddenPoint(pos)))
-                    return list + 2;
+                    return list + foundCount;
             }
             break;
         }
@@ -186,16 +187,17 @@ ScoredMove *findFourDefence(const Board &board, ScoredMove *const moveList)
             else if (c.piece == EMPTY) {
                 if (c.pattern(oppo, dir) == F4
                     && (c.pattern4[oppo] != FORBID || !board.checkForbiddenPoint(pos))) {
-                    list[1] = pos;  // Second defence
-                    return list + 2;
+                    if (foundCount > 1) list[1] = pos; // Overwrite if it's the real F4 pattern completion
+                    else list[foundCount++] = pos;
+                    return list + (foundCount > 1 ? 2 : foundCount);
                 }
                 else
-                    list[2] = pos;  // Third defence
+                    list[foundCount++] = pos;  // Third defence
             }
             break;
         }
 
-        return list + 3;
+        return list + foundCount;
     };
 
     // Find all defend pos for double B3 attack line pattern (XOOO**_ + XOOO**_)

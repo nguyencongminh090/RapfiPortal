@@ -40,8 +40,7 @@ bool EngineController::connect(const EngineConfig& config) {
 
     setState(EngineState::Idle);
 
-    // Initialize GUI mode — must be first command
-    send(EngineProtocol::yxShowInfo());
+    // (YXSHOWINFO removed)
 
     return true;
 }
@@ -164,7 +163,6 @@ void EngineController::applyConfig(const EngineConfig& config) {
     send(EngineProtocol::infoStrength(config.strength));
     send(EngineProtocol::infoMaxDepth(config.maxDepth));
     send(EngineProtocol::infoPondering(config.pondering));
-    send(EngineProtocol::infoShowDetail(config.showDetail));
 }
 
 // =============================================================================
