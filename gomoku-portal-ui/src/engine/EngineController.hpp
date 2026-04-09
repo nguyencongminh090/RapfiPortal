@@ -173,6 +173,9 @@ public:
     // Main thread polling (call from Glib::signal_idle or Glib::signal_timeout)
     // =========================================================================
 
+    /// Check if Stopping state has timed out.
+    void checkStoppingTimeout();
+
     /// Process pending engine output. Returns number of lines processed.
     /// Must be called periodically from the GTK main thread.
     int pollOutput();
@@ -181,6 +184,7 @@ private:
     EngineProcess process_;
     EngineState   state_ = EngineState::Disconnected;
     EngineConfig  currentConfig_;
+    std::chrono::time_point<std::chrono::steady_clock> stoppingStartTime_;
 
     /// Switch to a new state and emit signalStateChanged.
     void setState(EngineState newState);

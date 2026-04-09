@@ -48,7 +48,14 @@ void GameController::newGame(int boardSize) {
         engine_.stopThinking();
     }
 
+    model::PortalTopology savedTopo = board_.topology();
+    int prevBoardSize = board_.size();
+
     board_.reset(boardSize);
+
+    if (boardSize == prevBoardSize) {
+        board_.setTopology(savedTopo);
+    }
     signalBoardChanged.emit();
 
     // If engine connected, start a new game in the engine too
@@ -58,10 +65,15 @@ void GameController::newGame(int boardSize) {
         cfg.timeoutTurn = turnTimeMs_;
         cfg.timeoutMatch = matchTimeMs_;
         cfg.maxMemoryBytes = maxMemory_;
+
         engine_.startGame(cfg);
+        syncBoardToEngine();
+        topologyDirty_ = false;
+
+        engine_.applyConfig(cfg);
 
         if (isEngineTurn()) {
-            requestEngineMove();
+            requestEngineMoveFromScratch();
         }
     }
 }
@@ -72,7 +84,7 @@ void GameController::setGameMode(GameMode mode, HumanSide side) {
     
     // If we switch to a mode where engine should move, trigger it
     if (isEngineTurn() && engine_.state() == engine::EngineState::Idle) {
-        requestEngineMove();
+        requestEngineMoveFromScratch();
     }
 }
 
@@ -104,7 +116,7 @@ void GameController::onCellClicked(int x, int y) {
 
                 // Now tell the engine about the move and ask it to respond
                 if (engine_.state() == engine::EngineState::Idle) {
-                    requestEngineMove();
+                    requestEngineMoveAfterHuman(x, y);
                 }
             }
         }
@@ -304,6 +316,7 @@ void GameController::setNBest(int n)            { nbest_ = n; }
 
 bool GameController::pollEngine() {
     if (engine_.state() == engine::EngineState::Disconnected) return false;
+    engine_.checkStoppingTimeout();
     return engine_.pollOutput() > 0;
 }
 
@@ -322,12 +335,20 @@ bool GameController::isEngineTurn() const {
     }
 }
 
-void GameController::requestEngineMove() {
+void GameController::requestEngineMoveAfterHuman(int humanX, int humanY) {
     if (engine_.state() != engine::EngineState::Idle) return;
+    engine_.makeMove(humanX, humanY);  // sends "TURN x,y" → sets state Thinking
+}
 
-    auto record  = model::GameRecord::fromBoard(board_);
-    auto entries = record.toBoardEntries(board_.sideToMove());
-    engine_.loadPosition(entries);    // BOARD → auto-starts thinking → Thinking ✓
+void GameController::requestEngineMoveFromScratch() {
+    if (engine_.state() != engine::EngineState::Idle) return;
+    if (board_.ply() == 0) {
+        engine_.requestEngineMove();  // sends "BEGIN" → state Thinking
+    } else {
+        auto record  = model::GameRecord::fromBoard(board_);
+        auto entries = record.toBoardEntries(board_.sideToMove());
+        engine_.loadPosition(entries);   // BOARD → state Thinking
+    }
 }
 
 // =============================================================================

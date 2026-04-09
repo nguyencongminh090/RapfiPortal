@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <chrono>
 
 namespace engine {
 
@@ -72,8 +73,6 @@ void EngineController::startGame(
 
     send(EngineProtocol::start(config.boardSize));
     // Engine replies OK via restart() internally — we'll get it in pollOutput
-
-    send(EngineProtocol::infoClearPortals());
 
     // Add walls
     for (auto [x, y] : walls)
@@ -192,6 +191,16 @@ void EngineController::stopThinking() {
     if (state_ != EngineState::Thinking) return;  // Silently ignore if not thinking
     send(EngineProtocol::stop());
     setState(EngineState::Stopping);
+    stoppingStartTime_ = std::chrono::steady_clock::now();
+}
+
+void EngineController::checkStoppingTimeout() {
+    if (state_ != EngineState::Stopping) return;
+    auto elapsed = std::chrono::steady_clock::now() - stoppingStartTime_;
+    if (elapsed > std::chrono::seconds(5)) {
+        // Engine did not respond to STOP in 5s — force Idle
+        setState(EngineState::Idle);
+    }
 }
 
 void EngineController::traceBoard() {

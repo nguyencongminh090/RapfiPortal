@@ -755,12 +755,15 @@ void getPosition(bool startThink)
         }
     }
 
-    // PORTAL: Collect any inline WALLs (color=3) into pendingPortals,
-    // then call applyAndReinit() so initPortals() sees all WALLs + portals.
     if (hasInlineWalls) {
         for (auto [pos, color] : position) {
-            if (color == 3 && board->isInBoard(pos))
-                pendingPortals.walls.push_back(pos);
+            if (color == 3 && board->isInBoard(pos)) {
+                bool exists = false;
+                for (auto w : pendingPortals.walls) {
+                    if (w == pos) { exists = true; break; }
+                }
+                if (!exists) pendingPortals.walls.push_back(pos);
+            }
         }
         applyAndReinit();  // PORTAL: inline WALLs now active
     }

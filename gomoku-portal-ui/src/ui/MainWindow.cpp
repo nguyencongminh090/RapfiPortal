@@ -387,6 +387,17 @@ void MainWindow::onSaveGame() {
                 std::ofstream ofs(path);
                 if (ofs) {
                     ofs << gameCtrl_.board().size() << "\n";
+                    
+                    const auto& topo = gameCtrl_.board().topology();
+                    ofs << "WALLS " << topo.walls().size() << "\n";
+                    for (const auto& w : topo.walls()) {
+                        ofs << w.x << "," << w.y << "\n";
+                    }
+                    ofs << "PORTALS " << topo.portals().size() << "\n";
+                    for (const auto& p : topo.portals()) {
+                        ofs << p.a.x << "," << p.a.y << " " << p.b.x << "," << p.b.y << "\n";
+                    }
+
                     for (const auto& move : gameCtrl_.board().history()) {
                         if (move.isPass()) {
                             ofs << "-1,-1\n";
@@ -416,19 +427,48 @@ void MainWindow::onLoadGame() {
                     ifs >> size;
                     spinBoardSize_.set_value(size);
 
+                    model::PortalTopology topo;
+                    std::string section;
                     std::vector<std::pair<int,int>> moves;
-                    std::string line;
-                    while (std::getline(ifs, line)) {
-                        if (line.empty()) continue;
+                    
+                    auto loadMovesFromLine = [](const std::string& line, std::vector<std::pair<int,int>>& mvs) {
+                        if (line.empty()) return;
                         auto comma = line.find(',');
                         if (comma != std::string::npos) {
                             int x = std::stoi(line.substr(0, comma));
                             int y = std::stoi(line.substr(comma + 1));
-                            moves.emplace_back(x, y);
+                            mvs.emplace_back(x, y);
+                        }
+                    };
+
+                    while (ifs >> section) {
+                        if (section == "WALLS") {
+                            int n; ifs >> n;
+                            for (int i = 0; i < n; i++) {
+                                int wx, wy; char c;
+                                ifs >> wx >> c >> wy;
+                                topo.addWall({wx, wy});
+                            }
+                        } else if (section == "PORTALS") {
+                            int n; ifs >> n;
+                            for (int i = 0; i < n; i++) {
+                                int ax, ay, bx, by; char c1, c2;
+                                ifs >> ax >> c1 >> ay >> bx >> c2 >> by;
+                                topo.addPortal({ax,ay}, {bx,by});
+                            }
+                        } else {
+                            loadMovesFromLine(section, moves);
+                            std::string line;
+                            while (std::getline(ifs, line)) {
+                                loadMovesFromLine(line, moves);
+                            }
+                            break;
                         }
                     }
 
-                    // BUG-004 FIX: Use GameController method — no direct board mutation.
+                    gameCtrl_.board().reset(size);
+                    gameCtrl_.board().setTopology(topo);
+                    gameCtrl_.syncBoardToEngine();
                     gameCtrl_.loadGameFromMoves(size, moves);
                     logPanel_.appendLog("Game loaded from: " + path);
                 }
@@ -549,14 +589,16 @@ void MainWindow::onEngineStateChanged(engine::EngineState state) {
     // Enable/disable buttons based on state
     bool idle = (state == engine::EngineState::Idle);
     bool thinking = (state == engine::EngineState::Thinking);
+    bool stopping = (state == engine::EngineState::Stopping);
+    bool busy = thinking || stopping;
     bool disconnected = (state == engine::EngineState::Disconnected);
 
     if (!setupCtrl_.isActive()) {
         btnThink_.set_sensitive(idle);
         btnStop_.set_sensitive(thinking);
-        btnNewGame_.set_sensitive(!thinking);
-        btnUndo_.set_sensitive(!thinking);
-        comboMode_.set_sensitive(!thinking);
+        btnNewGame_.set_sensitive(!busy);
+        btnUndo_.set_sensitive(!busy);
+        comboMode_.set_sensitive(!busy);
     }
 
     if (disconnected) {

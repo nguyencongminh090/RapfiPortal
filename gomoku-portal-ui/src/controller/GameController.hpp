@@ -163,8 +163,11 @@ private:
     /// Check if the engine should move now (in HvE mode).
     bool isEngineTurn() const;
 
-    /// Ask engine to play the current position.
-    void requestEngineMove();
+    /// Ask engine to play the current position after a human move.
+    void requestEngineMoveAfterHuman(int humanX, int humanY);
+
+    /// Ask engine to play the current position from scratch (BEGIN or BOARD).
+    void requestEngineMoveFromScratch();
 
     // Engine signal handlers
     void onEngineMove(int x, int y);
