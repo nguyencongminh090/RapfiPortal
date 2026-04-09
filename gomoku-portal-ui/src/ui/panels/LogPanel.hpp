@@ -14,17 +14,22 @@ namespace ui::panels {
 
 class LogPanel : public Gtk::Box {
 public:
-    LogPanel();
+    explicit LogPanel(bool dualColumn = false);
 
     /// Append a new log message
     void appendLog(const std::string& msg);
+    void appendLog(const std::string& prefix, const std::string& msg);
 
     /// Clear all logs
     void clearLogs();
 
 private:
+    bool dualColumn_;
+    Gtk::ScrolledWindow prefixScrolledWindow_;
     Gtk::ScrolledWindow scrolledWindow_;
+    Gtk::TextView prefixTextView_;
     Gtk::TextView textView_;
+    Glib::RefPtr<Gtk::TextBuffer> prefixTextBuffer_;
     Glib::RefPtr<Gtk::TextBuffer> textBuffer_;
 };
 

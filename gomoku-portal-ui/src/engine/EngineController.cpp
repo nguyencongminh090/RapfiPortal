@@ -236,6 +236,7 @@ int EngineController::pollOutput() {
 
 void EngineController::onLineReceived(const std::string& line) {
     auto parsed = EngineProtocol::parse(line);
+    signalRawComm.emit(false, line);
 
     switch (parsed.type) {
     case ParsedLine::Type::Move:
@@ -320,6 +321,7 @@ void EngineController::send(const std::string& cmd) {
         throw std::runtime_error("[EngineController] Cannot send command while disconnected");
     }
     process_.sendLine(cmd);
+    signalRawComm.emit(true, cmd);
 }
 
 }  // namespace engine

@@ -141,6 +141,9 @@ public:
     /// Engine sent analysis info line (for analysis panel).
     sigc::signal<void(const model::AnalysisInfo&)> signalAnalysisInfo;
 
+    /// Raw communication line (isSend, text)
+    sigc::signal<void(bool, const std::string&)> signalRawComm;
+
     /// Engine identified itself.
     sigc::signal<void(const std::string&)> signalEngineName;
 

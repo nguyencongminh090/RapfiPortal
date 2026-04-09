@@ -7,7 +7,7 @@
 
 namespace ui::panels {
 
-LogPanel::LogPanel() : Gtk::Box(Gtk::Orientation::VERTICAL) {
+LogPanel::LogPanel(bool dualColumn) : Gtk::Box(Gtk::Orientation::HORIZONTAL), dualColumn_(dualColumn) {
     // Setup TextView
     textView_.set_editable(false);
     textView_.set_cursor_visible(false);
@@ -21,11 +21,38 @@ LogPanel::LogPanel() : Gtk::Box(Gtk::Orientation::VERTICAL) {
     scrolledWindow_.set_policy(Gtk::PolicyType::AUTOMATIC, Gtk::PolicyType::AUTOMATIC);
     scrolledWindow_.set_expand(true);
 
+    if (dualColumn_) {
+        prefixTextView_.set_editable(false);
+        prefixTextView_.set_cursor_visible(false);
+        prefixTextView_.set_wrap_mode(Gtk::WrapMode::NONE);
+        prefixTextView_.set_monospace(true);
+        prefixTextView_.add_css_class("dim-label");
+
+        prefixTextBuffer_ = prefixTextView_.get_buffer();
+
+        prefixScrolledWindow_.set_child(prefixTextView_);
+        prefixScrolledWindow_.set_policy(Gtk::PolicyType::NEVER, Gtk::PolicyType::NEVER);
+        prefixScrolledWindow_.set_vadjustment(scrolledWindow_.get_vadjustment());
+        
+        prefixScrolledWindow_.set_size_request(85, -1);
+        
+        append(prefixScrolledWindow_);
+    }
+
     append(scrolledWindow_);
 }
 
 void LogPanel::appendLog(const std::string& msg) {
+    appendLog("", msg);
+}
+
+void LogPanel::appendLog(const std::string& prefix, const std::string& msg) {
     if (!textBuffer_) return;
+
+    if (dualColumn_ && prefixTextBuffer_) {
+        auto pIter = prefixTextBuffer_->end();
+        prefixTextBuffer_->insert(pIter, prefix + "\n");
+    }
 
     auto iter = textBuffer_->end();
     textBuffer_->insert(iter, msg + "\n");
@@ -43,6 +70,9 @@ void LogPanel::appendLog(const std::string& msg) {
 void LogPanel::clearLogs() {
     if (textBuffer_) {
         textBuffer_->set_text("");
+    }
+    if (prefixTextBuffer_) {
+        prefixTextBuffer_->set_text("");
     }
 }
 

@@ -136,6 +136,9 @@ public:
     // Signals (emitted on GTK main thread via drainOutput)
     // =========================================================================
 
+    /// Raw communication line (isSend, text)
+    sigc::signal<void(bool, const std::string&)> signalRawComm;
+
     /// Engine played a move at (x, y).
     sigc::signal<void(int, int)>             signalEngineMove;
 

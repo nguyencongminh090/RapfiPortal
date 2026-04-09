@@ -25,6 +25,11 @@ GameController::GameController() {
         engine_.signalStateChanged.connect(
             sigc::mem_fun(*this, &GameController::onEngineStateChange)));
     connections_.push_back(
+        engine_.signalRawComm.connect(
+            [this](bool isSend, const std::string& msg) {
+                signalRawComm.emit(isSend, msg);
+            }));
+    connections_.push_back(
         engine_.signalAboutInfo.connect(
             sigc::mem_fun(*this, &GameController::onEngineName)));
 }
