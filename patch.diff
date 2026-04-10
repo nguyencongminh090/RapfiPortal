@@ -1,35 +1,13 @@
 --- portal_src/game/board.h
 +++ portal_src/game/board.h
-@@ -609,17 +609,18 @@
- inline Pos Board::portalStep(Pos cur, int dir, int sign) const
- {
--    // Next physical position (may be out of bounds — handled by WALL bits)
--    const int  rawNext = int(cur) + int(DIRECTION[dir]) * sign;
--
--    // Bounds check: out-of-board cells act as WALL (no portal there)
--    if (rawNext < 0 || rawNext >= FULL_BOARD_CELL_COUNT)
--        return Pos{int16_t(rawNext)};
--
--    Pos next{int16_t(rawNext)};
--
--    // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells.
--    const Pos partner = portalPartner[next];
--    if (partner != Pos::NONE) {
--        return Pos(int16_t(int(partner) + int(DIRECTION[dir]) * sign));
-+    for (int guard = 0; guard < 2 * MAX_PORTAL_PAIRS; guard++) {
-+        const int rawNext = int(cur) + int(DIRECTION[dir]) * sign;
-+        if (rawNext < 0 || rawNext >= FULL_BOARD_CELL_COUNT)
-+            return Pos{int16_t(rawNext)};
-+
-+        Pos next{int16_t(rawNext)};
-+        const Pos partner = portalPartner[next];
-+        if (partner != Pos::NONE) {
-+            cur = partner;
-+        } else {
-+            return next;
+@@ -744,2 +744,9 @@
+         
++        if (pos.x() == 8 && pos.y() == 12 && dir == 0) {
++            std::cerr << "TRACE I13 H: key = " << std::hex << key << std::dec << " ";
++            for (int i = 0; i < 9; i++) {
++                if (i == 4) continue;
++                std::cerr << "P=" << windowCells[i].index() << " C=" << (windowCells[i] == Pos::PASS ? -1 : pieceAt(windowCells[i])) << " ";
++            }
++            std::cerr << std::endl;
 +        }
-     }
--
--    return next;
-+    return cur;
- }
+         return key;

@@ -1,0 +1,110 @@
+OK
+MESSAGE Hash: 5fe14dcd21e46adc
+MESSAGE Ply: 12
+MESSAGE NonPassCount: 12
+MESSAGE PassCount[Black]: 0  PassCount[White]: 0
+MESSAGE SideToMove: Black
+MESSAGE LastPos: K11
+MESSAGE Eval[Black]: -250
+MESSAGE LastP4[Black][A]: None  LastP4[White][A]: None
+MESSAGE LastP4[Black][B]: H10  LastP4[White][B]: H11
+MESSAGE LastP4[Black][C]: None  LastP4[White][C]: None
+MESSAGE LastF4[Black]: G9  LastF4[White]: G10
+MESSAGE ----------------Board----------------
+MESSAGE Portals: 2 pair(s)
+MESSAGE   P0: (4,9) <-> (6,4)
+MESSAGE   P1: (11,6) <-> (9,12)
+MESSAGE . . . . . * . . . * . . . * . . . 1 
+MESSAGE . . . . . . * * * * * * * . . . . 2 
+MESSAGE * . * . * . * * * * * * * . . . . 3 
+MESSAGE * * * * * * * * * * * * * . . . . 4 
+MESSAGE . * * * * * * * X * * * * . . . 5 
+MESSAGE . * * * * * * * * * * * . . . . 6 
+MESSAGE * * * * X * X * * * * * * . . 7 
+MESSAGE * * * * O X X * * * * * * * . . . 8 
+MESSAGE . * * * * O X * * * * * * * . . . 9 
+MESSAGE . * * * * O O * * * * * * . . . 10 
+MESSAGE * * * * * * * * * O O * * * * . . 11 
+MESSAGE * * * * * * * * * * * * * . . . 12 
+MESSAGE . * * * * * * * * * * * * . . . 13 
+MESSAGE . . * * . . * * * * * * * * . . . 14 
+MESSAGE . . . . . * * . . * * . . * * . . 15 
+MESSAGE . . . . . . . . . . . . . . . . . 16 
+MESSAGE . . . . . . . . . . . . . . . . . 17
+MESSAGE A B C D E F G H I J K L M N O P Q 
+MESSAGE ----------Pattern4----Black----------
+MESSAGE . . . . . . . . . . . . . . . . . 1 
+MESSAGE . . . . . . L . . L . . L . . . . 2 
+MESSAGE . . . . . . . L . L . L . . . . . 3 
+MESSAGE . K . L . . . . L I K . . . . . . 4 
+MESSAGE . . E . L . L G . L L L . . . . 5 
+MESSAGE . . . E G E H K L L . . . . . . 6 
+MESSAGE . L K H . H . G I . . . . . . 7 
+MESSAGE . . . L . . . I K K . . . . . . . 8 
+MESSAGE . . L . H . . . L . . . . . . . . 9 
+MESSAGE . L . G L . . . . . . . . . . . 10 
+MESSAGE . . K . L . . . . . . . . . . . . 11 
+MESSAGE . . . L . . . . . . . . . . . . 12 
+MESSAGE . . . . . . . . . . . . . . . . 13 
+MESSAGE . . . . . . . . . . L . . . . . . 14 
+MESSAGE . . . . . . . . . . . L . . . . . 15 
+MESSAGE . . . . . . . . . . . . . . . . . 16 
+MESSAGE . . . . . . . . . . . . . . . . . 17
+MESSAGE A B C D E F G H I J K L M N O P Q 
+MESSAGE ----------Pattern4----White----------
+MESSAGE . . . . . . . . . . . . . . . . . 1 
+MESSAGE . . . . . . . . . . . . . . . . . 2 
+MESSAGE . . . . . . . . . . . . . . . . . 3 
+MESSAGE . . . . . . . . . . . . . . . . . 4 
+MESSAGE . K . . K H L . . . . . . . . . 5 
+MESSAGE . . E . . L . . . . . . . . . . 6 
+MESSAGE . . . B . L . L . L . . . . . 7 
+MESSAGE . . . . . . . L . L L L I L . . . 8 
+MESSAGE . . . L . . . J J L L L L . . . . 9 
+MESSAGE . . L . H . . G G I L . . . . . 10 
+MESSAGE . L . . . L K B H . . H H K . . . 11 
+MESSAGE . . . . L . L D J J L . . . . . 12 
+MESSAGE . . . L . . . J L L L L . . . . 13 
+MESSAGE . . . . . . L L . . L . L L . . . 14 
+MESSAGE . . . . . . . . . . . . . . . . . 15 
+MESSAGE . . . . . . . . . . . . . . . . . 16 
+MESSAGE . . . . . . . . . . . . . . . . . 17
+MESSAGE A B C D E F G H I J K L M N O P Q 
+MESSAGE ----------Score-------Black----------
+MESSAGE  -3   0   0   0   3   6   3   3   3   6   3   3   3   3   0   0  -3 1 
+MESSAGE  -3   6   6   9   9  12  20  12   9  20  12  12  20   9   6   6   0 2 
+MESSAGE   3   0  11  12   9  12  12  17  12  20  14  20  12  12   9   6   0 3 
+MESSAGE   0  23   6  22   9  14   9  12  21  36  26  12  12  12  12   9   0 4 
+MESSAGE   3  16  68   7  27  26  27  51 [X]  23  22  22  14  12  12   3 5 
+MESSAGE   0   6  31  62  48  73  50  23  22  18  13  12  12  12  12   3 6 
+MESSAGE   6  20  26 129 [X]  46 [X]  59  36  15  12  13  13  12   3 7 
+MESSAGE   3   6   3  17 [O] [X] [X]  52  25  30  16  17  25  17  12  12   3 8 
+MESSAGE   3   5  16  12  48 [O] [X]  14  32  15  19  17  17  13  12  12   3 9 
+MESSAGE   0  20  15  48  32 [O] [O]  30  35  26  17  12  12  12  12   3 10 
+MESSAGE   6  13  27  12  19  10  16 127  28 [O] [O]  29  27  20  13  12   3 11 
+MESSAGE   3  10   9  19  14  10  17  44  19  18  15  12  12  12  12   3 12 
+MESSAGE   3  12  14  17   9   9  10  22  17  18  17  17  12  12  12   3 13 
+MESSAGE   0   9  13   9  12   9  18  15  12  12  26  13  17  17  12   9   0 14 
+MESSAGE   0   6   6  12  12  10  13  12   9  12  13  21  12  13  10   6   0 15 
+MESSAGE   0   3   6   9  12   9  12  12  12   9  12  12  13   9   6   6   0 16 
+MESSAGE  -3   0   0   0   3   3   3   3   3   3   3   3   3   0   0   0  -3 17
+MESSAGE   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q 
+MESSAGE ----------Score-------White----------
+MESSAGE  -3   0   0   0   3   3   3   3   3   3   3   3   3   0   0   0  -3 1 
+MESSAGE  -3   6   6   9   9  12  13  12   9  13  12  12  13   9   6   6   0 2 
+MESSAGE   0   0  10  12   9  12  12  10  12  13  13  13  12  12   9   6   0 3 
+MESSAGE   3  13   6  17   9  13   9  12  15  21  16  12  12  12  12   9   0 4 
+MESSAGE   3  26  37   8  30  40  27  30 [X]  16  17  17  13  12  12   3 5 
+MESSAGE   0   6  62  31  24  47  31  13  14  12  14  12  12  12  12   3 6 
+MESSAGE   3  13  16 213 [X]  29 [X]  37  21  21  12  14  14  12   3 7 
+MESSAGE   6   9   6  13 [O] [X] [X]  38  20  30  20  22  38  22  12  12   3 8 
+MESSAGE   3   7  11  21  27 [O] [X]  28  37  21  23  22  22  14  12  12   3 9 
+MESSAGE   0  13  21  27  46 [O] [O]  57  61  46  25  12  12  12  12   3 10 
+MESSAGE   3  20  18  12  14  17  29 248  50 [O] [O]  49  42  28  14  12   3 11 
+MESSAGE   6   8   9  14  19  11  22  79  32  30  21  12  12  12  12   3 12 
+MESSAGE   3  12  13  22   9   9  11  32  22  24  22  22  12  12  12   3 13 
+MESSAGE   0   9  14   9  12   9  24  21  12  12  25  14  22  22  12   9   0 14 
+MESSAGE   0   6   6  12  12  11  14  12   9  12  14  15  12  14  11   6   0 15 
+MESSAGE   0   3   6   9  12   9  12  12  12   9  12  12  11   9   6   6   0 16 
+MESSAGE  -3   0   0   0   3   3   3   3   3   3   3   3   3   0   0   0  -3 17
+MESSAGE   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q 

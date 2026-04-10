@@ -667,13 +667,6 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
     Pos cur = pos;
     for (int i = L - 1; i >= 0; i--) {
         cur = portalStep(cur, dir, -1);
-        // Chain-skip adjacent portal cells (zero-width).
-        // Guard prevents runaway in degenerate multi-portal configs.
-        for (int guard = 0; guard < 2 * MAX_PORTAL_PAIRS; guard++) {
-            if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) break;
-            if (portalPartner[cur] == Pos::NONE) break;  // not a portal cell
-            cur = portalStep(cur, dir, -1);
-        }
 
         // OOB: remaining left slots stay UNSET → emitted as WALL
         if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT)
@@ -694,12 +687,6 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
     cur = pos;
     for (int i = L + 1; i < WindowLen; i++) {
         cur = portalStep(cur, dir, +1);
-        // Chain-skip adjacent portal cells (zero-width).
-        for (int guard = 0; guard < 2 * MAX_PORTAL_PAIRS; guard++) {
-            if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) break;
-            if (portalPartner[cur] == Pos::NONE) break;
-            cur = portalStep(cur, dir, +1);
-        }
 
         if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT)
             break;
@@ -729,8 +716,8 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
         else {
             switch (cells[p].piece) {
             case EMPTY: bits = 0b11; break;
-            case BLACK: bits = 0b10; break;
-            case WHITE: bits = 0b01; break;
+            case BLACK: bits = 0b01; break;
+            case WHITE: bits = 0b10; break;
             default:    bits = 0b00; break;  // WALL cell (addWall, boundary)
             }
         }
