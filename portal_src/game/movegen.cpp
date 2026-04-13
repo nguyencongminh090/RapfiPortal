@@ -626,6 +626,7 @@ ScoredMove *generate(const Board &board, ScoredMove *moveList)
 
 template ScoredMove *generate<VCF>(const Board &, ScoredMove *);
 template ScoredMove *generate<VCF | RULE_RENJU>(const Board &, ScoredMove *);
+template ScoredMove *generate<VCF | COMB>(const Board &, ScoredMove *);
 template ScoredMove *generate<ALL>(const Board &, ScoredMove *);
 
 template <GenType Type>
