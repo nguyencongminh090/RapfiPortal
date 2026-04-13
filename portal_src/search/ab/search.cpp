@@ -993,7 +993,9 @@ moves_loop:
 
         int  distOppo = Pos::distance(move, (ss - 1)->currentMove);
         int  distSelf = Pos::distance(move, (ss - 2)->currentMove);
-        bool distract = distSelf > (Rule == RENJU ? 5 : 4) && distOppo > 4;
+        // PORTAL FIX: Khoảng cách vật lý vô nghĩa khi có Portal. 
+        // Nếu bàn cờ có portal, tắt cờ distract để tránh cắt tỉa nhầm đòn phòng thủ/tấn công xuyên cổng.
+        bool distract = board.portalCount() == 0 && distSelf > (Rule == RENJU ? 5 : 4) && distOppo > 4;
 
         // Step 12. Pruning at shallow depth
         // Do pruning only when we have non-losing moves, otherwise we may have a false mate.
@@ -1075,8 +1077,9 @@ moves_loop:
             extension = PvNode ? TTM_EXT_PV : TTM_EXT_NONPV;
 
             // Additional extension for near B4 ttmove
-            if (ss->moveP4[self] >= E_BLOCK4 && distSelf <= 6)
-                extension += (distSelf <= 4 ? NEARB4_EXT_DIST4 : NEARB4_EXT_DIST6);
+            // PORTAL FIX: Miễn là bàn cờ có portal, luôn cho phép gia hạn độ sâu khi có đe dọa B4.
+            if (ss->moveP4[self] >= E_BLOCK4 && (distSelf <= 6 || board.portalCount() > 0))
+                extension += (distSelf <= 4 && board.portalCount() == 0 ? NEARB4_EXT_DIST4 : NEARB4_EXT_DIST6);
         }
 
         // Fail high reduction (~8 elo)
@@ -1131,13 +1134,13 @@ moves_loop:
 
             // Increase reduction for useless defend move (~6 elo)
             if (oppo4 && ss->moveP4[oppo] < E_BLOCK4) {
-                r += (distOppo > 4 ? OPPO_USELESS_DEFEND_REDUCTION : 0);
-                r += (distSelf > 4 ? SELF_USELESS_DEFEND_REDUCTION : 0);
+                r += (distOppo > 4 && board.portalCount() == 0 ? OPPO_USELESS_DEFEND_REDUCTION : 0);
+                r += (distSelf > 4 && board.portalCount() == 0 ? SELF_USELESS_DEFEND_REDUCTION : 0);
             }
 
             // Decrease reduction for continuous attack (~5 elo)
             if (!oppo4 && (ss - 2)->moveP4[self] >= H_FLEX3
-                && (ss->moveP4[self] >= H_FLEX3 || distSelf <= 4 && ss->moveP4[self] >= J_FLEX2_2X))
+                && (ss->moveP4[self] >= H_FLEX3 || (distSelf <= 4 || board.portalCount() > 0) && ss->moveP4[self] >= J_FLEX2_2X))
                 r -= CONTINUOUS_ATTACK_EXT;
 
             if constexpr (Rule == Rule::RENJU) {

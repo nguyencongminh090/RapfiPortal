@@ -438,14 +438,22 @@ top:
     case QVCF_MOVES:
         curMove = moves;
         {
-            Pos selfLast = board.getLastActualMoveOfSide(board.sideToMove());
-            endMove =
-                (allowPlainB4InVCF ? generateNeighbors<VCF>
-                                   : generateNeighbors<VCF | COMB>)(board,
-                                                                    curMove,
-                                                                    selfLast,
-                                                                    RANGE_SQUARE2_LINE4,
-                                                                    arraySize(RANGE_SQUARE2_LINE4));
+            if (board.portalCount() > 0) {
+                // PORTAL MODE: Đòn ép cờ VCF có thể nhảy vọt không gian.
+                // Phải quét toàn bộ bàn cờ để không bị mù các đòn combo xuyên cổng.
+                endMove = (allowPlainB4InVCF ? generate<VCF> : generate<VCF | COMB>)(board, curMove);
+            } else {
+                // STANDARD MODE (TỐI ƯU GỐC): Giữ nguyên thuật toán rà quét cục bộ
+                // để đảm bảo tốc độ tính toán VCF siêu sâu (20-30 plies).
+                Pos selfLast = board.getLastActualMoveOfSide(board.sideToMove());
+                endMove =
+                    (allowPlainB4InVCF ? generateNeighbors<VCF>
+                                       : generateNeighbors<VCF | COMB>)(board,
+                                                                        curMove,
+                                                                        selfLast,
+                                                                        RANGE_SQUARE2_LINE4,
+                                                                        arraySize(RANGE_SQUARE2_LINE4));
+            }
         }
 
         scoreAllMoves<BALANCED>();
