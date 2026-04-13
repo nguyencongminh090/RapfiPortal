@@ -121,7 +121,7 @@ Board::Board(int boardSize, CandidateRange candRange)
     updateCache = new UpdateCache[1 + boardCellCount * 2];
 
     // PORTAL: Initialize portal data to safe defaults
-    std::fill_n(portalPartner, FULL_BOARD_CELL_COUNT, Pos::NONE);
+    std::fill_n(portalPartner, FULL_BOARD_CELL_COUNT, Pos::PASS);
     std::memset(portalAffected, 0, sizeof(portalAffected));
     std::memset(wallMask, 0, sizeof(wallMask));
 
@@ -230,7 +230,7 @@ void Board::addPortal(Pos a, Pos b)
 void Board::clearPortals()
 {
     numPortals = 0;
-    std::fill_n(portalPartner, FULL_BOARD_CELL_COUNT, Pos::NONE);
+    std::fill_n(portalPartner, FULL_BOARD_CELL_COUNT, Pos::PASS);
     std::memset(portalAffected, 0, sizeof(portalAffected));
     std::memset(wallMask, 0, sizeof(wallMask));
     std::memset(portalUpdateZone, 0, sizeof(portalUpdateZone));
@@ -266,7 +266,7 @@ void Board::initPortals()
     constexpr int L = PatternConfig::HalfLineLen<R>;
 
     // --- Step 1: Reset portal data ---
-    std::fill_n(portalPartner, FULL_BOARD_CELL_COUNT, Pos::NONE);
+    std::fill_n(portalPartner, FULL_BOARD_CELL_COUNT, Pos::PASS);
     std::memset(portalAffected, 0, sizeof(portalAffected));
     std::memset(portalUpdateZone, 0, sizeof(portalUpdateZone));
 
@@ -323,7 +323,7 @@ void Board::initPortals()
                             break;
 
                         // Don't mark portal cells themselves
-                        if (portalPartner[cur] != Pos::NONE)
+                        if (portalPartner[cur] != Pos::PASS)
                             continue;
 
                         // Skip if it's a boundary/wall cell
@@ -646,12 +646,9 @@ void Board::move(Pos pos)
                     // move() writes 2 cache entries for the cell, undo() reads 2,
                     // but undo() restores pattern4 twice, leaving a stale value.
                     bool alreadyInMainLoop = false;
-                    for (int d = 0; d < 4; d++) {
-                        int dist = physicalDistAlongDir(pos, cellPos, d);
-                        if (dist >= 0 && dist <= L) {  // dist==0 → pos itself
-                            alreadyInMainLoop = true;
-                            break;
-                        }
+                    int dist = physicalDistAlongDir(pos, cellPos, dir);
+                    if (dist >= 0 && dist <= L) {
+                        alreadyInMainLoop = true;
                     }
                     if (alreadyInMainLoop)
                         continue;
@@ -782,12 +779,10 @@ void Board::undo()
 
             // PORTAL: Use getKeyAt (dual-path) to restore pattern
             c.pattern2x[dir]  = PatternConfig::lookupPattern<R>(getKeyAt<R>(posi, dir));
-            c.pattern4[BLACK] = pc[updateCacheIdx].pattern4[BLACK];
-            c.pattern4[WHITE] = pc[updateCacheIdx].pattern4[WHITE];
-            c.score[BLACK]    = pc[updateCacheIdx].score[BLACK];
-            c.score[WHITE]    = pc[updateCacheIdx].score[WHITE];
+            PatternCode pcode[SIDE_NB] = {c.pcode<BLACK>(), c.pcode<WHITE>()};
+            c.updatePattern4AndScore<R>(pcode[BLACK], pcode[WHITE]);
             if constexpr (MT == MoveType::NORMAL || MT == MoveType::NO_EVALUATOR) {
-                c.valueBlack = pc[updateCacheIdx].valueBlack;
+                c.valueBlack = Config::getValueBlack(R, pcode[BLACK], pcode[WHITE]);
             }
             updateCacheIdx++;
         }
@@ -813,12 +808,9 @@ void Board::undo()
                     // PORTAL: Same all-direction check as move() — must mirror
                     // exactly so updateCacheIdx stays in sync.
                     bool alreadyInMainLoop = false;
-                    for (int d = 0; d < 4; d++) {
-                        int dist = physicalDistAlongDir(lastPos, cellPos, d);
-                        if (dist >= 0 && dist <= L) {
-                            alreadyInMainLoop = true;
-                            break;
-                        }
+                    int dist = physicalDistAlongDir(lastPos, cellPos, dir);
+                    if (dist >= 0 && dist <= L) {
+                        alreadyInMainLoop = true;
                     }
                     if (alreadyInMainLoop)
                         continue;
@@ -829,12 +821,10 @@ void Board::undo()
 
                     c.pattern2x[dir]  = PatternConfig::lookupPattern<R>(
                         getKeyAt<R>(cellPos, dir));
-                    c.pattern4[BLACK] = pc[updateCacheIdx].pattern4[BLACK];
-                    c.pattern4[WHITE] = pc[updateCacheIdx].pattern4[WHITE];
-                    c.score[BLACK]    = pc[updateCacheIdx].score[BLACK];
-                    c.score[WHITE]    = pc[updateCacheIdx].score[WHITE];
+                    PatternCode pcode[SIDE_NB] = {c.pcode<BLACK>(), c.pcode<WHITE>()};
+                    c.updatePattern4AndScore<R>(pcode[BLACK], pcode[WHITE]);
                     if constexpr (MT == MoveType::NORMAL || MT == MoveType::NO_EVALUATOR) {
-                        c.valueBlack = pc[updateCacheIdx].valueBlack;
+                        c.valueBlack = Config::getValueBlack(R, pcode[BLACK], pcode[WHITE]);
                     }
                     updateCacheIdx++;
                 }

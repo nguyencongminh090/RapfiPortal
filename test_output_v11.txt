@@ -1,0 +1,211 @@
+MESSAGE Load config from /media/ngmint/Data/Programming/C++/ModifyCode/Rapfi_modif/April6/rapfi-master/Executable/config.toml
+MESSAGE Setting default thread num to 8.
+OK
+MESSAGE Hash: f6fc647e92671e7d
+MESSAGE Ply: 12
+MESSAGE NonPassCount: 12
+MESSAGE PassCount[Black]: 0  PassCount[White]: 0
+MESSAGE SideToMove: Black
+MESSAGE LastPos: K7
+MESSAGE Eval[Black]: 84
+MESSAGE LastP4[Black][A]: None  LastP4[White][A]: None
+MESSAGE LastP4[Black][B]: J10  LastP4[White][B]: K10
+MESSAGE LastP4[Black][C]: I13  LastP4[White][C]: None
+MESSAGE LastF4[Black]: I11  LastF4[White]: J11
+MESSAGE ----------------Board----------------
+MESSAGE Portals: 2 pair(s)
+MESSAGE   P0: (9,12) <-> (4,10)
+MESSAGE   P1: (6,5) <-> (12,7)
+MESSAGE * * * * * * * * * * * * * * * * * 1 
+MESSAGE * * * * * * * * * * * * * * * * * 2 
+MESSAGE * * * * * * * * * * * * * * * * * 3 
+MESSAGE * * * * * * * * * * * * * * * * * 4 
+MESSAGE * * * * * * * * * * * * * * * * * 5 
+MESSAGE * * * * * * * * * * * * * * * * 6 
+MESSAGE * * * * * * * * * * O * * * * * * 7 
+MESSAGE * * * * X * * * * O * * * * * 8 
+MESSAGE * * * * * * * * * * * * * * * * * 9 
+MESSAGE * * * * * * * * * O * * * * * * * 10 
+MESSAGE * * * * * X X X O * * * * * * * 11 
+MESSAGE * * * * * * * X O * * * * * * * 12 
+MESSAGE * * * * * X O * * * * * * * * 13 
+MESSAGE * * * * * * * * * * * * * * * * * 14 
+MESSAGE * * * * * * * * * * * * * * * * * 15 
+MESSAGE * * * * * * * * * * * * * * * * * 16 
+MESSAGE * * * * * * * * * * * * * * * * * 17
+MESSAGE A B C D E F G H I J K L M N O P Q 
+MESSAGE ----------Pattern4----Black----------
+MESSAGE . . . . . . . . . . . . . . . . . 1 
+MESSAGE . . . . . . . . . . . . . . . . . 2 
+MESSAGE . . . . . . . . . . . . . . . . . 3 
+MESSAGE . . . . . . . . . . . . . . . . . 4 
+MESSAGE . L . . L . . . . . . . . . . . . 5 
+MESSAGE . . L . L . . . . . . . . L . . 6 
+MESSAGE . . . K L L . . . . . . . L . . . 7 
+MESSAGE . L L I . L K . . . . . . . . 8 
+MESSAGE . . . L G K I K L . . . . . . . . 9 
+MESSAGE . . L . L H G I . . . . . . . . . 10 
+MESSAGE . L . . E . . . . . . . . . . . 11 
+MESSAGE . . . . . L H . . L . . . . . . 12 
+MESSAGE . . . . L . . C L . . . . . . 13 
+MESSAGE . . . L . E H L . G . L . . . . . 14 
+MESSAGE . . . . E . K . L . K . . . . . . 15 
+MESSAGE . . . K . . L . . L . . . . . . . 16 
+MESSAGE . . . . . . . . . . . . . . . . . 17
+MESSAGE A B C D E F G H I J K L M N O P Q 
+MESSAGE ----------Pattern4----White----------
+MESSAGE . . . . . . . . . . . . . . . . . 1 
+MESSAGE . . . . . . . . . . . . . . . . . 2 
+MESSAGE . . . . . . . . . . . . . . . . . 3 
+MESSAGE . . . . . . . L . . K . . L . . . 4 
+MESSAGE . . . . . . . I L . H . L L . . . 5 
+MESSAGE . . . . . . L J L H L L . . . . 6 
+MESSAGE . . . . . . L L L I . J L L . . . 7 
+MESSAGE . . . . . . L L G . J . . . . 8 
+MESSAGE . . . . . . . . J G H D L . . . . 9 
+MESSAGE . . . . L . L L J . B L J L . . . 10 
+MESSAGE . . . . L . . . . K . . L . . . 11 
+MESSAGE . . . . H . L . . H L . . . . . 12 
+MESSAGE . . . . K . . . . L . . . . . 13 
+MESSAGE . . . . . . B . L . . . L . . . . 14 
+MESSAGE . . . . . E . . . L . . . . . . . 15 
+MESSAGE . . . . K . . . . . L . . . . . . 16 
+MESSAGE . . . . . . . . . . . . . . . . . 17
+MESSAGE A B C D E F G H I J K L M N O P Q 
+MESSAGE ----------Score-------Black----------
+MESSAGE -55 -75 -75 -75 -73 -73 -73 -73 -73 -73 -73 -73 -73 -75 -75 -75 -55 1 
+MESSAGE -75 -36 -36 -15 -69 -69 -69 -69 -69 -69 -69 -69 -69 -15 -36 -36 -75 2 
+MESSAGE -75 -36 -15 -69 -69 -69 -54 -69 -69 -69 -54 -69 -69 -69  -5 -36 -75 3 
+MESSAGE -15 -15 -69 -69 -45 -69 -54 -38 -54 -69 -17 -69 -69 -38 -54 -15 -75 4 
+MESSAGE -73 -17 -69 -69 -32 -69 -69   7 -24 -69  26 -69 -24 -38 -69 -23 -73 5 
+MESSAGE -73 -69  -8 -69 -23 -54 -24   0  20  99  29 -24 -54 -10 -69 -73 6 
+MESSAGE -73 -69 -45   4  14  28   5   9   0  93 [O]  55 -23  17 -54 -69 -73 7 
+MESSAGE -36 -17 -17  25 [X] -11  25  -4 109 [O]  68 -69 -69 -15 -73 8 
+MESSAGE -73 -15 -69  23  83  15  37   4  31 104 101 114 -24 -69 -15 -69 -73 9 
+MESSAGE -73 -69   5 -69   8 100 102  92  35 [O] 204 -24   0   5 -69 -69 -73 10 
+MESSAGE -73 -17 -69 -15 106 [X] [X] [X] [O]  23  -5  -5 -33 -54 -69 -73 11 
+MESSAGE -36 -69 -69 -45  52 -14  82 [X] [O]  94  12 -15 -15  -5 -15 -73 12 
+MESSAGE -73 -15 -15 -15  38 [X] [O] 149   3  11 -15 -69 -69 -69 -73 13 
+MESSAGE -75 -15 -69 -32 -19  64 205  -1  20  67 -69  -3 -38 -15 -69 -15 -75 14 
+MESSAGE -75 -36  -9 -36  73  63   4 -10   7  10  11 -15 -45 -54   0 -36 -75 15 
+MESSAGE -75 -36 -18  15   1 -36 -17  -7  -7 -17 -20   0 -69 -15 -36 -15 -75 16 
+MESSAGE -55 -27 -15 -15 -73 -75 -36 -40 -73 -75 -36 -40 -73 -75 -75 -75 -55 17
+MESSAGE   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q 
+MESSAGE ----------Score-------White----------
+MESSAGE -55 -75 -75 -75 -73 -73 -73 -73 -73 -73 -73 -73 -73 -75 -75 -75 -55 1 
+MESSAGE -75 -36 -36 -15 -69 -69 -69 -69 -69 -69 -69 -69 -69 -15 -36 -36 -75 2 
+MESSAGE -75 -36 -15 -69 -69 -69 -45 -69 -69 -69 -45 -69 -69 -69  -9 -36 -75 3 
+MESSAGE -15 -15 -69 -69 -54 -69 -45 -32 -45 -69 -11 -69 -69 -32 -45 -15 -75 4 
+MESSAGE -73 -20 -69 -69 -38 -69 -69  10 -23 -69  31 -69 -23 -32 -69 -22 -73 5 
+MESSAGE -73 -69  -6 -69 -24 -45 -23  -1  18  90  13 -23 -45  -6 -69 -73 6 
+MESSAGE -73 -69 -54   1  22  34  -2   7  -8  86 [O]  46 -19  20 -45 -69 -73 7 
+MESSAGE -40 -20 -20  25 [X] -15  29   0 112 [O]  60 -69 -69 -15 -73 8 
+MESSAGE -73 -15 -69  31  90  18  36  10  27 104  99 109 -23 -69 -15 -69 -73 9 
+MESSAGE -73 -69   9 -69  13 105  99  90  39 [O] 212 -23  -1  -2 -69 -69 -73 10 
+MESSAGE -73 -20 -69 -15 100 [X] [X] [X] [O]  21  -9  -9 -26 -45 -69 -73 11 
+MESSAGE -40 -69 -69 -54  52 -17  84 [X] [O]  96   9 -15 -15  -9 -15 -73 12 
+MESSAGE -73 -15 -15 -15  39 [X] [O] 152  11   3 -15 -69 -69 -69 -73 13 
+MESSAGE -75 -15 -69 -38 -20  63 213   2  16  69 -69   3 -32 -15 -69 -15 -75 14 
+MESSAGE -75 -36  -5 -36  72  64   1 -11   6   9  15 -15 -54 -45   0 -36 -75 15 
+MESSAGE -75 -36 -18  18   4 -36 -20  -7 -11 -20 -17   1 -69 -15 -36 -15 -75 16 
+MESSAGE -55 -27 -15 -15 -73 -75 -40 -36 -73 -75 -40 -36 -73 -75 -75 -75 -55 17
+MESSAGE   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q 
+MESSAGE depth 2-3 ev +M5 n 3557 n/ms 1185 tm 3 pv I13 F11
+MESSAGE depth 3-3 ev +M5 n 3660 n/ms 1220 tm 3 pv I13 F11
+MESSAGE depth 4-3 ev +M5 n 3702 n/ms 1234 tm 3 pv I13 F11
+MESSAGE depth 5-3 ev +M5 n 3750 n/ms 1250 tm 3 pv I13 F11
+MESSAGE depth 6-3 ev +M5 n 3792 n/ms 1264 tm 3 pv I13 F11
+MESSAGE depth 7-3 ev +M5 n 3835 n/ms 1278 tm 3 pv I13 F11
+MESSAGE depth 8-3 ev +M5 n 3878 n/ms 1292 tm 3 pv I13 F11
+MESSAGE depth 9-3 ev +M5 n 3936 n/ms 1312 tm 3 pv I13 F11
+MESSAGE depth 10-3 ev +M5 n 3977 n/ms 1325 tm 3 pv I13 F11
+MESSAGE depth 11-3 ev +M5 n 4046 n/ms 1348 tm 3 pv I13 F11
+MESSAGE depth 12-3 ev +M5 n 4110 n/ms 1370 tm 3 pv I13 F11
+MESSAGE depth 13-3 ev +M5 n 4192 n/ms 1397 tm 3 pv I13 F11
+MESSAGE depth 14-3 ev +M5 n 4249 n/ms 1416 tm 3 pv I13 F11
+MESSAGE depth 15-3 ev +M5 n 4295 n/ms 1431 tm 3 pv I13 F11
+MESSAGE depth 16-3 ev +M5 n 4349 n/ms 1449 tm 3 pv I13 F11
+MESSAGE depth 17-3 ev +M5 n 4515 n/ms 1505 tm 3 pv I13 F11
+MESSAGE depth 18-3 ev +M5 n 4571 n/ms 1523 tm 3 pv I13 F11
+MESSAGE depth 19-3 ev +M5 n 4609 n/ms 1536 tm 3 pv I13 F11
+MESSAGE depth 20-3 ev +M5 n 4661 n/ms 1553 tm 3 pv I13 F11
+MESSAGE depth 21-3 ev +M5 n 4713 n/ms 1571 tm 3 pv I13 F11
+MESSAGE depth 22-3 ev +M5 n 4755 n/ms 1585 tm 3 pv I13 F11
+MESSAGE depth 23-3 ev +M5 n 4801 n/ms 1600 tm 3 pv I13 F11
+MESSAGE depth 24-3 ev +M5 n 4958 n/ms 1652 tm 3 pv I13 F11
+MESSAGE depth 25-3 ev +M5 n 5016 n/ms 1672 tm 3 pv I13 F11
+MESSAGE depth 26-3 ev +M5 n 5065 n/ms 1266 tm 4 pv I13 F11
+MESSAGE depth 27-3 ev +M5 n 5118 n/ms 1279 tm 4 pv I13 F11
+MESSAGE depth 28-3 ev +M5 n 5178 n/ms 1294 tm 4 pv I13 F11
+MESSAGE depth 29-3 ev +M5 n 5234 n/ms 1308 tm 4 pv I13 F11
+MESSAGE depth 30-3 ev +M5 n 5318 n/ms 1329 tm 4 pv I13 F11
+MESSAGE depth 31-3 ev +M5 n 5403 n/ms 1350 tm 4 pv I13 F11
+MESSAGE depth 32-3 ev +M5 n 5501 n/ms 1375 tm 4 pv I13 F11
+MESSAGE depth 33-3 ev +M5 n 5600 n/ms 1400 tm 4 pv I13 F11
+MESSAGE depth 34-3 ev +M5 n 5680 n/ms 1420 tm 4 pv I13 F11
+MESSAGE depth 35-3 ev +M5 n 5764 n/ms 1441 tm 4 pv I13 F11
+MESSAGE depth 36-3 ev +M5 n 5865 n/ms 1466 tm 4 pv I13 F11
+MESSAGE depth 37-3 ev +M5 n 5942 n/ms 1485 tm 4 pv I13 F11
+MESSAGE depth 38-3 ev +M5 n 6016 n/ms 1504 tm 4 pv I13 F11
+MESSAGE depth 39-3 ev +M5 n 6077 n/ms 1519 tm 4 pv I13 F11
+MESSAGE depth 40-3 ev +M5 n 6154 n/ms 1538 tm 4 pv I13 F11
+MESSAGE depth 41-3 ev +M5 n 6240 n/ms 1560 tm 4 pv I13 F11
+MESSAGE depth 42-3 ev +M5 n 6330 n/ms 1582 tm 4 pv I13 F11
+MESSAGE depth 43-3 ev +M5 n 6432 n/ms 1608 tm 4 pv I13 F11
+MESSAGE depth 44-3 ev +M5 n 6542 n/ms 1635 tm 4 pv I13 F11
+MESSAGE depth 45-3 ev +M5 n 6650 n/ms 1662 tm 4 pv I13 F11
+MESSAGE depth 46-3 ev +M5 n 6711 n/ms 1677 tm 4 pv I13 F11
+MESSAGE depth 47-3 ev +M5 n 6798 n/ms 1699 tm 4 pv I13 F11
+MESSAGE depth 48-3 ev +M5 n 6908 n/ms 1727 tm 4 pv I13 F11
+MESSAGE depth 49-3 ev +M5 n 7012 n/ms 1753 tm 4 pv I13 F11
+MESSAGE depth 50-3 ev +M5 n 7097 n/ms 1419 tm 5 pv I13 F11
+MESSAGE depth 51-3 ev +M5 n 7366 n/ms 1473 tm 5 pv I13 F11
+MESSAGE depth 52-3 ev +M5 n 7462 n/ms 1492 tm 5 pv I13 F11
+MESSAGE depth 53-3 ev +M5 n 7570 n/ms 1514 tm 5 pv I13 F11
+MESSAGE depth 54-3 ev +M5 n 7682 n/ms 1536 tm 5 pv I13 F11
+MESSAGE depth 55-3 ev +M5 n 7791 n/ms 1558 tm 5 pv I13 F11
+MESSAGE depth 56-3 ev +M5 n 7886 n/ms 1577 tm 5 pv I13 F11
+MESSAGE depth 57-3 ev +M5 n 7982 n/ms 1596 tm 5 pv I13 F11
+MESSAGE depth 58-3 ev +M5 n 8071 n/ms 1614 tm 5 pv I13 F11
+MESSAGE depth 59-3 ev +M5 n 8181 n/ms 1636 tm 5 pv I13 F11
+MESSAGE depth 60-3 ev +M5 n 8285 n/ms 1657 tm 5 pv I13 F11
+MESSAGE depth 61-3 ev +M5 n 8394 n/ms 1678 tm 5 pv I13 F11
+MESSAGE depth 62-3 ev +M5 n 8509 n/ms 1701 tm 5 pv I13 F11
+MESSAGE depth 63-3 ev +M5 n 8773 n/ms 1754 tm 5 pv I13 F11
+MESSAGE depth 64-3 ev +M5 n 8867 n/ms 1773 tm 5 pv I13 F11
+MESSAGE depth 65-3 ev +M5 n 9034 n/ms 1806 tm 5 pv I13 F11
+MESSAGE depth 66-3 ev +M5 n 9250 n/ms 1541 tm 6 pv I13 F11
+MESSAGE depth 67-3 ev +M5 n 9412 n/ms 1568 tm 6 pv I13 F11
+MESSAGE depth 68-3 ev +M5 n 9592 n/ms 1598 tm 6 pv I13 F11
+MESSAGE depth 69-3 ev +M5 n 9784 n/ms 1630 tm 6 pv I13 F11
+MESSAGE depth 70-3 ev +M5 n 9963 n/ms 1660 tm 6 pv I13 F11
+MESSAGE depth 71-3 ev +M5 n 10K n/ms 1691 tm 6 pv I13 F11
+MESSAGE depth 72-3 ev +M5 n 10K n/ms 1719 tm 6 pv I13 F11
+MESSAGE depth 73-3 ev +M5 n 10K n/ms 1749 tm 6 pv I13 F11
+MESSAGE depth 74-3 ev +M5 n 10K n/ms 1782 tm 6 pv I13 F11
+MESSAGE depth 75-3 ev +M5 n 10K n/ms 1810 tm 6 pv I13 F11
+MESSAGE depth 76-3 ev +M5 n 11K n/ms 1836 tm 6 pv I13 F11
+MESSAGE depth 77-3 ev +M5 n 11K n/ms 1904 tm 6 pv I13 F11
+MESSAGE depth 78-3 ev +M5 n 11K n/ms 1938 tm 6 pv I13 F11
+MESSAGE depth 79-3 ev +M5 n 11K n/ms 1983 tm 6 pv I13 F11
+MESSAGE depth 80-3 ev +M5 n 16K n/ms 2098 tm 8 pv I13 F11
+MESSAGE depth 81-3 ev +M5 n 16K n/ms 2101 tm 8 pv I13 F11
+MESSAGE depth 82-3 ev +M5 n 16K n/ms 1870 tm 9 pv I13 F11
+MESSAGE depth 83-3 ev +M5 n 16K n/ms 1873 tm 9 pv I13 F11
+MESSAGE depth 84-3 ev +M5 n 16K n/ms 1876 tm 9 pv I13 F11
+MESSAGE depth 85-3 ev +M5 n 16K n/ms 1878 tm 9 pv I13 F11
+MESSAGE depth 86-3 ev +M5 n 16K n/ms 1881 tm 9 pv I13 F11
+MESSAGE depth 87-3 ev +M5 n 16K n/ms 1884 tm 9 pv I13 F11
+MESSAGE depth 88-3 ev +M5 n 16K n/ms 1886 tm 9 pv I13 F11
+MESSAGE depth 89-3 ev +M5 n 17K n/ms 1889 tm 9 pv I13 F11
+MESSAGE depth 90-3 ev +M5 n 17K n/ms 1892 tm 9 pv I13 F11
+MESSAGE depth 91-3 ev +M5 n 17K n/ms 1895 tm 9 pv I13 F11
+MESSAGE depth 92-3 ev +M5 n 17K n/ms 1897 tm 9 pv I13 F11
+MESSAGE depth 93-3 ev +M5 n 17K n/ms 1903 tm 9 pv I13 F11
+MESSAGE depth 94-3 ev +M5 n 17K n/ms 1906 tm 9 pv I13 F11
+MESSAGE depth 95-3 ev +M5 n 17K n/ms 1909 tm 9 pv I13 F11
+MESSAGE depth 96-3 ev +M5 n 17K n/ms 1720 tm 10 pv I13 F11
+MESSAGE depth 97-3 ev +M5 n 17K n/ms 1723 tm 10 pv I13 F11
+MESSAGE depth 98-3 ev +M5 n 17K n/ms 1725 tm 10 pv I13 F11
+MESSAGE depth 99-3 ev +M5 n 17K n/ms 1731 tm 10 pv I13 F11
+4,8

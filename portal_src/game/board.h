@@ -350,7 +350,7 @@ public:
     [[nodiscard]] bool isPortalCell(Pos pos) const
     {
         if (int(pos) < 0 || int(pos) >= FULL_BOARD_CELL_COUNT) return false;
-        return portalPartner[pos] != Pos::NONE;
+        return portalPartner[pos] != Pos::PASS;
     }
 
     /// PORTAL: Check if a position is a WALL cell placed by addWall().
@@ -621,7 +621,7 @@ inline Pos Board::portalStep(Pos cur, int dir, int sign) const
 
         // PORTAL: O(1) lookup — partner is Pos::NONE for non-portal cells.
         const Pos partner = portalPartner[next];
-        if (partner != Pos::NONE) {
+        if (partner != Pos::PASS) {
             // Teleport to partner, then loop to step again from the partner's cell!
             cur = partner;
         } else {
@@ -716,8 +716,8 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
         else {
             switch (cells[p].piece) {
             case EMPTY: bits = 0b11; break;
-            case BLACK: bits = 0b01; break;
-            case WHITE: bits = 0b10; break;
+            case BLACK: bits = 0b10; break;
+            case WHITE: bits = 0b01; break;
             default:    bits = 0b00; break;  // WALL cell (addWall, boundary)
             }
         }
