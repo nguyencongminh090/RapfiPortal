@@ -27,7 +27,6 @@ MainWindow::MainWindow(controller::GameController& gameCtrl)
     , boardCanvas_(gameCtrl.board())
     , dbPanel_()
     , analysisPanel_(analysisCtrl_)
-    , protocolPanel_(true)
 {
     set_title("Portal Gomoku Engine UI");
     
@@ -117,14 +116,6 @@ void MainWindow::setupLayout() {
     mainVBox_.append(setupToolbarBox_);
 
     // 2. Center area: eval bar + board + side panel
-    mainPaned_.set_position(1050);
-    mainPaned_.set_shrink_start_child(false);
-    mainPaned_.set_shrink_end_child(false);
-    mainPaned_.set_resize_start_child(true);
-    mainPaned_.set_resize_end_child(true);
-    mainPaned_.set_hexpand(true);
-    mainPaned_.set_vexpand(true);
-
     centerPaned_.set_position(700);
     centerPaned_.set_shrink_start_child(false);
     centerPaned_.set_shrink_end_child(false);
@@ -155,11 +146,7 @@ void MainWindow::setupLayout() {
 
     centerPaned_.set_end_child(sideNotebook_);
     
-    mainPaned_.set_start_child(centerPaned_);
-    protocolPanel_.set_size_request(250, -1);
-    mainPaned_.set_end_child(protocolPanel_);
-
-    mainVBox_.append(mainPaned_);
+    mainVBox_.append(centerPaned_);
 
     // 3. Status bar
     mainVBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::HORIZONTAL));
@@ -631,9 +618,8 @@ void MainWindow::onEngineName(const std::string& name) {
     engineNameLabel_.set_text(name);
 }
 
-void MainWindow::onRawComm(bool isSend, const std::string& msg) {
-    std::string prefix = isSend ? ">>> SEND" : "<<< RECV";
-    protocolPanel_.appendLog(prefix, msg);
+void MainWindow::onRawComm(bool /*isSend*/, const std::string& /*msg*/) {
+    // Protocol display removed as per UI modification request.
 }
 
 }  // namespace ui

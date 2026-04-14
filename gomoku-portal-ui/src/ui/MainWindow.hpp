@@ -59,7 +59,6 @@ private:
     Gtk::Box       mainVBox_{Gtk::Orientation::VERTICAL};
     Gtk::Box       toolbarBox_{Gtk::Orientation::HORIZONTAL};
     Gtk::Box       setupToolbarBox_{Gtk::Orientation::HORIZONTAL};
-    Gtk::Paned     mainPaned_{Gtk::Orientation::HORIZONTAL};
     Gtk::Paned     centerPaned_{Gtk::Orientation::HORIZONTAL};
     Gtk::Box       boardArea_{Gtk::Orientation::HORIZONTAL};
     Gtk::Box       statusBar_{Gtk::Orientation::HORIZONTAL};
@@ -107,7 +106,6 @@ private:
     panels::DatabasePanel dbPanel_;
     panels::AnalysisPanel analysisPanel_;
     panels::EngineSettingsPanel engineSettingsPanel_;
-    panels::LogPanel protocolPanel_;
 
     // =========================================================================
     // Timer for engine polling
