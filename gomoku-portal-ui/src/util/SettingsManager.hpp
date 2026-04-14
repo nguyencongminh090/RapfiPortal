@@ -50,6 +50,30 @@ public:
     int engineNBest() const { return engineNBest_; }
     void setEngineNBest(int val) { engineNBest_ = val; }
 
+    bool showPVOverlay() const { return showPVOverlay_; }
+    void setShowPVOverlay(bool val) { showPVOverlay_ = val; }
+
+    bool showWinrateHeatmap() const { return showWinrateHeatmap_; }
+    void setShowWinrateHeatmap(bool val) { showWinrateHeatmap_ = val; }
+
+    bool showMoveNumbers() const { return showMoveNumbers_; }
+    void setShowMoveNumbers(bool val) { showMoveNumbers_ = val; }
+
+    int engineRule() const { return engineRule_; }
+    void setEngineRule(int val) { engineRule_ = val; }
+
+    int engineThreadNum() const { return engineThreadNum_; }
+    void setEngineThreadNum(int val) { engineThreadNum_ = val; }
+
+    bool enginePondering() const { return enginePondering_; }
+    void setEnginePondering(bool val) { enginePondering_ = val; }
+
+    int engineMaxDepth() const { return engineMaxDepth_; }
+    void setEngineMaxDepth(int val) { engineMaxDepth_ = val; }
+
+    unsigned long long engineMaxNodes() const { return engineMaxNodes_; }
+    void setEngineMaxNodes(unsigned long long val) { engineMaxNodes_ = val; }
+
 private:
     SettingsManager() {
         keyFile_ = Glib::KeyFile::create();
@@ -70,6 +94,16 @@ private:
     int engineMatchTime_ = 300000;
     int engineMaxMemory_ = 1024;
     int engineNBest_ = 1;
+
+    bool showPVOverlay_ = true;
+    bool showWinrateHeatmap_ = true;
+    bool showMoveNumbers_ = false;
+
+    int engineRule_ = 0; // Freestyle
+    int engineThreadNum_ = 1;
+    bool enginePondering_ = false;
+    int engineMaxDepth_ = 99;
+    unsigned long long engineMaxNodes_ = 0; // Unlimited
 };
 
 } // namespace util

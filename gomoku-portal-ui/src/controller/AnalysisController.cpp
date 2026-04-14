@@ -42,8 +42,10 @@ void AnalysisController::connectSignals() {
     // Board changed: clear stale analysis so display stays consistent.
     connections_.push_back(
         gameCtrl_.signalBoardChanged.connect([this]() {
-            // Let the next search overwrite info_ naturally.
-            // No forced clear here to avoid flicker when analysis panel is visible.
+            // Immediate cleanup after any move/undo
+            info_ = {};
+            lastDepthUpdated_ = 0;
+            signalAnalysisUpdated.emit();
         }));
 }
 

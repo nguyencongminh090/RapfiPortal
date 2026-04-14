@@ -37,6 +37,7 @@ app_sources = files(
     'src/ui/panels/DatabasePanel.cpp',
     'src/ui/panels/AnalysisPanel.cpp',
     'src/ui/panels/EngineSettingsPanel.cpp',
+    'src/ui/panels/UISettingsPanel.cpp',
     'src/util/SettingsManager.cpp',
 )
 

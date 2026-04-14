@@ -310,10 +310,78 @@ void GameController::syncBoardToEngine() {
 // Engine Configuration
 // =============================================================================
 
-void GameController::setTurnTime(int ms)        { turnTimeMs_ = ms; }
-void GameController::setMatchTime(int ms)       { matchTimeMs_ = ms; }
-void GameController::setMaxMemory(int64_t bytes) { maxMemory_ = bytes; }
-void GameController::setNBest(int n)            { nbest_ = n; }
+void GameController::setTurnTime(int ms) {
+    turnTimeMs_ = ms;
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.timeoutTurn = ms;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::setMatchTime(int ms) {
+    matchTimeMs_ = ms;
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.timeoutMatch = ms;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::setMaxMemory(int64_t bytes) {
+    maxMemory_ = bytes;
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.maxMemoryBytes = bytes;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::setNBest(int n) { nbest_ = n; }
+
+void GameController::setRule(int rule) {
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.rule = rule;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::setThreadNum(int n) {
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.threadNum = n;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::setPondering(bool enable) {
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.pondering = enable;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::setMaxDepth(int depth) {
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.maxDepth = depth;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::clearHash() {
+    if (engine_.state() != engine::EngineState::Disconnected) engine_.hashClear();
+}
+
+void GameController::reloadConfig() {
+    if (engine_.state() != engine::EngineState::Disconnected) engine_.reloadConfig("");
+}
+
+void GameController::showHashUsage() {
+    if (engine_.state() != engine::EngineState::Disconnected) engine_.showHashUsage();
+}
 
 // =============================================================================
 // Polling

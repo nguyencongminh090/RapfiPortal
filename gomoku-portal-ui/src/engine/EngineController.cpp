@@ -155,10 +155,12 @@ void EngineController::clearPortals() {
 // =============================================================================
 
 void EngineController::applyConfig(const EngineConfig& config) {
+    currentConfig_ = config;
+    send(EngineProtocol::infoRule(config.rule));
     send(EngineProtocol::infoTimeoutTurn(config.timeoutTurn));
     send(EngineProtocol::infoTimeoutMatch(config.timeoutMatch));
     send(EngineProtocol::infoMaxMemory(config.maxMemoryBytes));
-    if (config.threadNum > 0)
+    if (config.threadNum >= 0)
         send(EngineProtocol::infoThreadNum(config.threadNum));
     send(EngineProtocol::infoStrength(config.strength));
     send(EngineProtocol::infoMaxDepth(config.maxDepth));
@@ -213,6 +215,8 @@ void EngineController::traceSearch() {
 // Hash & Database
 // =============================================================================
 
+void EngineController::reloadConfig(const std::string& path) { send(EngineProtocol::reloadConfig(path)); }
+void EngineController::showHashUsage()                    { send(EngineProtocol::yxShowHashUsage()); }
 void EngineController::hashClear()                       { send(EngineProtocol::yxHashClear()); }
 void EngineController::hashDump(const std::string& path) { send(EngineProtocol::yxHashDump(path)); }
 void EngineController::hashLoad(const std::string& path) { send(EngineProtocol::yxHashLoad(path)); }

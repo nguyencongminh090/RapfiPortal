@@ -113,6 +113,27 @@ public:
 
     /// Set the number of candidate moves (NBEST).
     void setNBest(int n);
+    
+    /// Set the game rule.
+    void setRule(int rule);
+
+    /// Set thread count.
+    void setThreadNum(int n);
+
+    /// Enable/disable pondering.
+    void setPondering(bool enable);
+
+    /// Set maximum search depth.
+    void setMaxDepth(int depth);
+
+    /// Maintenance: clear hash.
+    void clearHash();
+
+    /// Maintenance: reload config.
+    void reloadConfig();
+
+    /// Maintenance: show hash usage.
+    void showHashUsage();
 
     /// Mark topology as dirty (needs re-sync to engine before next think).
     /// Called by SetupController after topology is modified.

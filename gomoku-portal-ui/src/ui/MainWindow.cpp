@@ -139,7 +139,8 @@ void MainWindow::setupLayout() {
     sideNotebook_.append_page(logPanel_, "Log");
     sideNotebook_.append_page(analysisPanel_, "Analysis");
     sideNotebook_.append_page(dbPanel_, "Database");
-    sideNotebook_.append_page(engineSettingsPanel_, "Settings");
+    sideNotebook_.append_page(engineSettingsPanel_, "Engine");
+    sideNotebook_.append_page(uiSettingsPanel_, "UI Settings");
     
     // Set Log as default page
     sideNotebook_.set_current_page(0);
@@ -217,7 +218,7 @@ void MainWindow::setupSignals() {
     connections_.push_back(
         analysisCtrl_.signalAnalysisUpdated.connect([this]() {
             // Can update UI based on general analysis stats
-            evalBar_.setScore(analysisCtrl_.info().score);
+            evalBar_.setScore(analysisCtrl_.info().score, gameCtrl_.board().sideToMove());
             
             // Pass the current nBest to the board for drawing scores
             boardCanvas_.setAnalysisInfo(analysisCtrl_.info());
@@ -232,6 +233,10 @@ void MainWindow::setupSignals() {
         }));
 
     // Connect EngineSettingsPanel
+    connections_.push_back(
+        engineSettingsPanel_.signalRuleChanged.connect([this](int rule) {
+            gameCtrl_.setRule(rule);
+        }));
     connections_.push_back(
         engineSettingsPanel_.signalTurnTimeChanged.connect([this](int ms) {
             gameCtrl_.setTurnTime(ms);
@@ -248,13 +253,61 @@ void MainWindow::setupSignals() {
         engineSettingsPanel_.signalNBestChanged.connect([this](int n) {
             gameCtrl_.setNBest(n);
         }));
+    connections_.push_back(
+        engineSettingsPanel_.signalThreadsChanged.connect([this](int n) {
+            gameCtrl_.setThreadNum(n);
+        }));
+    connections_.push_back(
+        engineSettingsPanel_.signalPonderingChanged.connect([this](bool enable) {
+            gameCtrl_.setPondering(enable);
+        }));
+    connections_.push_back(
+        engineSettingsPanel_.signalMaxDepthChanged.connect([this](int depth) {
+            gameCtrl_.setMaxDepth(depth);
+        }));
 
-    // Initialize GameController with current settings defaults
+    // Maintenance Actions
+    connections_.push_back(
+        engineSettingsPanel_.signalClearHashRequested.connect([this]() {
+            gameCtrl_.clearHash();
+        }));
+    connections_.push_back(
+        engineSettingsPanel_.signalReloadConfigRequested.connect([this]() {
+            gameCtrl_.reloadConfig();
+        }));
+    connections_.push_back(
+        engineSettingsPanel_.signalHashUsageRequested.connect([this]() {
+            gameCtrl_.showHashUsage();
+        }));
+
+    // Connect UISettingsPanel
+    connections_.push_back(
+        uiSettingsPanel_.signalShowPVToggled.connect([this](bool show) {
+            boardCanvas_.setShowPVOverlay(show);
+        }));
+    connections_.push_back(
+        uiSettingsPanel_.signalShowWinrateToggled.connect([this](bool show) {
+            boardCanvas_.setShowWinrateHeatmap(show);
+        }));
+    connections_.push_back(
+        uiSettingsPanel_.signalShowMoveNumbersToggled.connect([this](bool show) {
+            boardCanvas_.setShowMoveNumbers(show);
+        }));
+
+    // Initialize components with current settings defaults
     auto& settings = util::SettingsManager::instance();
     gameCtrl_.setTurnTime(settings.engineTurnTime());
     gameCtrl_.setMatchTime(settings.engineMatchTime());
     gameCtrl_.setMaxMemory(static_cast<int64_t>(settings.engineMaxMemory()) * 1024 * 1024);
     gameCtrl_.setNBest(settings.engineNBest());
+    gameCtrl_.setRule(settings.engineRule());
+    gameCtrl_.setThreadNum(settings.engineThreadNum());
+    gameCtrl_.setPondering(settings.enginePondering());
+    gameCtrl_.setMaxDepth(settings.engineMaxDepth());
+
+    boardCanvas_.setShowPVOverlay(settings.showPVOverlay());
+    boardCanvas_.setShowWinrateHeatmap(settings.showWinrateHeatmap());
+    boardCanvas_.setShowMoveNumbers(settings.showMoveNumbers());
 
     connections_.push_back(
         boardCanvas_.signalCellClicked.connect([this](int x, int y) {

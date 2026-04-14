@@ -52,6 +52,9 @@ public:
     /// Current engine state.
     [[nodiscard]] EngineState state() const { return state_; }
 
+    /// Current engine config.
+    [[nodiscard]] const EngineConfig& currentConfig() const { return currentConfig_; }
+
     // =========================================================================
     // Game Commands (valid in IDLE state only)
     // =========================================================================
@@ -131,6 +134,9 @@ public:
     void queryDatabaseText();
     void deleteDatabaseOne();
     void deleteDatabaseAll();
+
+    void reloadConfig(const std::string& path);
+    void showHashUsage();
 
     // =========================================================================
     // Signals (emitted on GTK main thread via drainOutput)

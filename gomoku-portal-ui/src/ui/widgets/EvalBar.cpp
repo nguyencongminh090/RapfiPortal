@@ -14,9 +14,10 @@ EvalBar::EvalBar() {
     set_draw_func(sigc::mem_fun(*this, &EvalBar::draw_content));
 }
 
-void EvalBar::setScore(int score) {
-    if (score_ != score) {
+void EvalBar::setScore(int score, model::Color sideToMove) {
+    if (score_ != score || sideToMove_ != sideToMove) {
         score_ = score;
+        sideToMove_ = sideToMove;
         queue_draw();
     }
 }
@@ -28,15 +29,13 @@ void EvalBar::draw_content(const Cairo::RefPtr<Cairo::Context>& cr, int width, i
     cr->fill();
 
     // Winrate via sigmoid: W = 1 / (1 + exp(-score / 200))
-    //   score    0 →  50%  (equal)
-    //   score  100 →  62%  (slight advantage)
-    //   score  200 →  73%  (clear advantage)
-    //   score  500 →  92%  (winning)
-    //   score 1000 →  99%+ (decisive)
-    double winrate = 1.0 / (1.0 + std::exp(-static_cast<double>(score_) / 200.0));
-    winrate = std::clamp(winrate, 0.02, 0.98); // Never fully empty/full
-
-    int fill_height = static_cast<int>(height * winrate);
+    // We calculate the winrate of the side to move first, then convert to Black's winrate.
+    double rawWinrate = 1.0 / (1.0 + std::exp(-static_cast<double>(score_) / 200.0));
+    
+    double blackWinrate = (sideToMove_ == model::Color::Black) ? rawWinrate : (1.0 - rawWinrate);
+    
+    blackWinrate = std::clamp(blackWinrate, 0.02, 0.98); // Never fully empty/full
+    int fill_height = static_cast<int>(height * blackWinrate);
 
     // Black's advantage area (drawn from bottom up)
     cr->set_source_rgb(0.15, 0.15, 0.15);

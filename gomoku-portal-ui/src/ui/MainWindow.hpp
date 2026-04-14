@@ -28,6 +28,7 @@
 #include "../ui/panels/DatabasePanel.hpp"
 #include "../ui/panels/AnalysisPanel.hpp"
 #include "../ui/panels/EngineSettingsPanel.hpp"
+#include "../ui/panels/UISettingsPanel.hpp"
 
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/box.h>
@@ -106,6 +107,7 @@ private:
     panels::DatabasePanel dbPanel_;
     panels::AnalysisPanel analysisPanel_;
     panels::EngineSettingsPanel engineSettingsPanel_;
+    panels::UISettingsPanel uiSettingsPanel_;
 
     // =========================================================================
     // Timer for engine polling

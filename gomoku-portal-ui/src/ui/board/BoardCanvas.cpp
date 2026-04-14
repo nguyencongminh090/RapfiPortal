@@ -55,6 +55,16 @@ void BoardCanvas::setShowMoveNumbers(bool show) {
     queue_draw();
 }
 
+void BoardCanvas::setShowPVOverlay(bool show) {
+    showPVOverlay_ = show;
+    queue_draw();
+}
+
+void BoardCanvas::setShowWinrateHeatmap(bool show) {
+    showWinrateHeatmap_ = show;
+    queue_draw();
+}
+
 void BoardCanvas::setSetupHover(std::optional<HoverSetupInfo> info) {
     setupHover_ = info;
     queue_draw();
@@ -103,7 +113,28 @@ void BoardCanvas::draw_content(const Cairo::RefPtr<Cairo::Context>& cr,
 
     // Analysis Overlays
     auto turnColor = (board_.ply() % 2 == 0) ? model::Color::Black : model::Color::White;
-    BoardRenderer::drawAnalysisOverlays(cr, geo_, turnColor, analysisInfo_, analysisHover_);
+    
+    // Default to Rank 1 PV for real-time feedback if not hovering
+    auto effectiveHover = analysisHover_;
+    if (!effectiveHover && !analysisInfo_.nBest.empty()) {
+        const auto& best = analysisInfo_.nBest[0];
+        if (best.rank == 1 && !best.pv.empty()) {
+            effectiveHover = best;
+        }
+    }
+    
+    // Handle toggles
+    model::AnalysisInfo filteredInfo = analysisInfo_;
+    if (!showWinrateHeatmap_) {
+        filteredInfo.nBest.clear();
+    }
+    
+    std::optional<model::AnalysisMove> filteredHover = effectiveHover;
+    if (!showPVOverlay_) {
+        filteredHover = std::nullopt;
+    }
+    
+    BoardRenderer::drawAnalysisOverlays(cr, geo_, turnColor, filteredInfo, filteredHover);
 }
 
 // =============================================================================

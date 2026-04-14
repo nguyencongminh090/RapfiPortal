@@ -36,6 +36,12 @@ public:
     /// Enable/disable move number display.
     void setShowMoveNumbers(bool show);
 
+    /// Enable/disable PV overlay display.
+    void setShowPVOverlay(bool show);
+
+    /// Enable/disable winrate heatmap display.
+    void setShowWinrateHeatmap(bool show);
+
     /// Set hover indication info for setup mode.
     void setSetupHover(std::optional<HoverSetupInfo> info);
 
@@ -74,6 +80,8 @@ private:
     std::optional<util::Coord> hoverCell_;
     std::optional<HoverSetupInfo> setupHover_;
     bool showMoveNumbers_ = false;
+    bool showPVOverlay_ = true;
+    bool showWinrateHeatmap_ = true;
 
     model::AnalysisInfo analysisInfo_;
     std::optional<model::AnalysisMove> analysisHover_;

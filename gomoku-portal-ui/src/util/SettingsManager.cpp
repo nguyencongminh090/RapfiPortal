@@ -52,6 +52,32 @@ void SettingsManager::load() {
         if (keyFile_->has_key("Engine", "nBest")) {
             engineNBest_ = keyFile_->get_integer("Engine", "nBest");
         }
+
+        if (keyFile_->has_key("UI", "showPVOverlay")) {
+            showPVOverlay_ = keyFile_->get_boolean("UI", "showPVOverlay");
+        }
+        if (keyFile_->has_key("UI", "showWinrateHeatmap")) {
+            showWinrateHeatmap_ = keyFile_->get_boolean("UI", "showWinrateHeatmap");
+        }
+        if (keyFile_->has_key("UI", "showMoveNumbers")) {
+            showMoveNumbers_ = keyFile_->get_boolean("UI", "showMoveNumbers");
+        }
+
+        if (keyFile_->has_key("Engine", "rule")) {
+            engineRule_ = keyFile_->get_integer("Engine", "rule");
+        }
+        if (keyFile_->has_key("Engine", "threadNum")) {
+            engineThreadNum_ = keyFile_->get_integer("Engine", "threadNum");
+        }
+        if (keyFile_->has_key("Engine", "pondering")) {
+            enginePondering_ = keyFile_->get_boolean("Engine", "pondering");
+        }
+        if (keyFile_->has_key("Engine", "maxDepth")) {
+            engineMaxDepth_ = keyFile_->get_integer("Engine", "maxDepth");
+        }
+        if (keyFile_->has_key("Engine", "maxNodes")) {
+            engineMaxNodes_ = std::stoull(keyFile_->get_string("Engine", "maxNodes"));
+        }
         
     } catch (const Glib::Error& e) {
         std::cerr << "Settings error: " << e.what() << "\n";
@@ -71,6 +97,16 @@ void SettingsManager::save() {
         keyFile_->set_integer("Engine", "matchTime", engineMatchTime_);
         keyFile_->set_integer("Engine", "maxMemory", engineMaxMemory_);
         keyFile_->set_integer("Engine", "nBest", engineNBest_);
+
+        keyFile_->set_boolean("UI", "showPVOverlay", showPVOverlay_);
+        keyFile_->set_boolean("UI", "showWinrateHeatmap", showWinrateHeatmap_);
+        keyFile_->set_boolean("UI", "showMoveNumbers", showMoveNumbers_);
+
+        keyFile_->set_integer("Engine", "rule", engineRule_);
+        keyFile_->set_integer("Engine", "threadNum", engineThreadNum_);
+        keyFile_->set_boolean("Engine", "pondering", enginePondering_);
+        keyFile_->set_integer("Engine", "maxDepth", engineMaxDepth_);
+        keyFile_->set_string("Engine", "maxNodes", std::to_string(engineMaxNodes_));
         
         keyFile_->save_to_file(path);
     } catch (const Glib::Error& e) {

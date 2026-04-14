@@ -461,35 +461,52 @@ void BoardRenderer::drawAnalysisOverlays(const Cairo::RefPtr<Cairo::Context>& cr
                                          const std::optional<model::AnalysisMove>& hoverPV) {
     cr->save();
 
-    // 1. Draw N-Best scores
-    cr->select_font_face("Sans",
-                         Cairo::ToyFontFace::Slant::NORMAL,
-                         Cairo::ToyFontFace::Weight::NORMAL);
-    cr->set_font_size(geo.cellSize * 0.28);
-    
+    // 1. Draw N-Best winrates as Heatmap
     for (const auto& mv : info.nBest) {
         if (!mv.coord.isValid(geo.boardSize) || mv.score == 0) continue;
         
         double px, py;
         geo.cellToPixel(mv.coord.x, mv.coord.y, px, py);
         
-        // Draw score box in bottom right corner of the cell
-        std::string scoreTxt = std::to_string(mv.score);
-        Cairo::TextExtents te;
-        cr->get_text_extents(scoreTxt, te);
+        // Calculate Winrate: W = 1 / (1 + exp(-score / 200))
+        double winrate = 1.0 / (1.0 + std::exp(-static_cast<double>(mv.score) / 200.0));
         
-        double boxH = te.height + 4;
-        double boxW = te.width + 6;
-        double boxX = px + geo.cellSize * 0.5 - boxW - 2;
-        double boxY = py + geo.cellSize * 0.5 - boxH - 2;
+        // Heat color calculation: Blue (0.0) -> White (0.5) -> Red (1.0)
+        double r, g, b;
+        if (winrate < 0.5) {
+            double t = winrate / 0.5; // 0 to 1
+            r = t; g = t; b = 1.0;
+        } else {
+            double t = (winrate - 0.5) / 0.5; // 0 to 1
+            r = 1.0; g = 1.0 - t; b = 1.0 - t;
+        }
         
-        cr->set_source_rgba(0.2, 0.2, 0.2, 0.7);
-        cr->rectangle(boxX, boxY, boxW, boxH);
+        // Fill entire cell with heat color (slightly smaller than full cell for grid visibility)
+        double fillSize = geo.cellSize * 0.95;
+        cr->set_source_rgba(r, g, b, 0.7); // 70% opacity
+        cr->rectangle(px - fillSize/2, py - fillSize/2, fillSize, fillSize);
         cr->fill();
         
-        cr->set_source_rgb(1.0, 1.0, 1.0);
-        cr->move_to(boxX + 3, boxY + boxH - 3);
-        cr->show_text(scoreTxt);
+        // Draw Winrate percentage text centered
+        int percent = static_cast<int>(std::round(winrate * 100.0));
+        std::string winTxt = std::to_string(percent) + "%";
+        
+        cr->select_font_face("Sans",
+                             Cairo::ToyFontFace::Slant::NORMAL,
+                             Cairo::ToyFontFace::Weight::BOLD);
+        cr->set_font_size(geo.cellSize * 0.35);
+        
+        Cairo::TextExtents te;
+        cr->get_text_extents(winTxt, te);
+        
+        // Contrast color for text
+        double intensity = (r * 0.299 + g * 0.587 + b * 0.114);
+        if (intensity < 0.5) cr->set_source_rgb(1.0, 1.0, 1.0);
+        else cr->set_source_rgb(0.0, 0.0, 0.0);
+        
+        cr->move_to(px - te.width / 2.0 - te.x_bearing,
+                    py - te.height / 2.0 - te.y_bearing);
+        cr->show_text(winTxt);
     }
     
     // 2. Draw phantom PV line if hovered
