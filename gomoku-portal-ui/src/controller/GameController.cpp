@@ -244,6 +244,11 @@ void GameController::connectEngine(const std::string& enginePath) {
     cfg.timeoutTurn    = turnTimeMs_;
     cfg.timeoutMatch   = matchTimeMs_;
     cfg.maxMemoryBytes = maxMemory_;
+    cfg.rule           = rule_;
+    cfg.threadNum      = threadNum_;
+    cfg.pondering      = pondering_;
+    cfg.maxDepth       = maxDepth_;
+    cfg.maxNodes       = maxNodes_;
 
     if (!engine_.connect(cfg)) return;
 
@@ -340,6 +345,7 @@ void GameController::setMaxMemory(int64_t bytes) {
 void GameController::setNBest(int n) { nbest_ = n; }
 
 void GameController::setRule(int rule) {
+    rule_ = rule;
     if (engine_.state() != engine::EngineState::Disconnected) {
         auto cfg = engine_.currentConfig();
         cfg.rule = rule;
@@ -348,6 +354,7 @@ void GameController::setRule(int rule) {
 }
 
 void GameController::setThreadNum(int n) {
+    threadNum_ = n;
     if (engine_.state() != engine::EngineState::Disconnected) {
         auto cfg = engine_.currentConfig();
         cfg.threadNum = n;
@@ -356,6 +363,7 @@ void GameController::setThreadNum(int n) {
 }
 
 void GameController::setPondering(bool enable) {
+    pondering_ = enable;
     if (engine_.state() != engine::EngineState::Disconnected) {
         auto cfg = engine_.currentConfig();
         cfg.pondering = enable;
@@ -364,9 +372,19 @@ void GameController::setPondering(bool enable) {
 }
 
 void GameController::setMaxDepth(int depth) {
+    maxDepth_ = depth;
     if (engine_.state() != engine::EngineState::Disconnected) {
         auto cfg = engine_.currentConfig();
         cfg.maxDepth = depth;
+        engine_.applyConfig(cfg);
+    }
+}
+
+void GameController::setMaxNodes(unsigned long long n) {
+    maxNodes_ = n;
+    if (engine_.state() != engine::EngineState::Disconnected) {
+        auto cfg = engine_.currentConfig();
+        cfg.maxNodes = n;
         engine_.applyConfig(cfg);
     }
 }

@@ -32,6 +32,7 @@ struct EngineConfig {
     // --- Search ---
     int  strength  = 100;                   ///< Skill level 0..100
     int  maxDepth  = 99;                    ///< Max search depth
+    unsigned long long maxNodes = 0;        ///< Max nodes (0 = unlimited)
     bool pondering = false;                 ///< Enable pondering (think on opponent's time)
 
 };

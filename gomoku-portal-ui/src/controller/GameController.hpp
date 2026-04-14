@@ -126,6 +126,9 @@ public:
     /// Set maximum search depth.
     void setMaxDepth(int depth);
 
+    /// Set maximum nodes.
+    void setMaxNodes(unsigned long long n);
+
     /// Maintenance: clear hash.
     void clearHash();
 
@@ -177,6 +180,11 @@ private:
     int     matchTimeMs_   = 0;
     int64_t maxMemory_     = 350 * 1024 * 1024;  // 350MB default
     int     nbest_         = 1;
+    int     rule_          = 0;
+    int     threadNum_     = 0;
+    bool    pondering_     = false;
+    int     maxDepth_      = 99;
+    unsigned long long maxNodes_ = 0;
     bool    topologyDirty_ = false;  // BUG-005: true when topology changed since last sync
     // NOTE: nbest_ is sent every startThinking() call via requestNBest() —
     // no dirty flag needed because YXNBEST starts the thinking session itself.

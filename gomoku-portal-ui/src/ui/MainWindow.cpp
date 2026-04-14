@@ -265,6 +265,10 @@ void MainWindow::setupSignals() {
         engineSettingsPanel_.signalMaxDepthChanged.connect([this](int depth) {
             gameCtrl_.setMaxDepth(depth);
         }));
+    connections_.push_back(
+        engineSettingsPanel_.signalMaxNodesChanged.connect([this](unsigned long long n) {
+            gameCtrl_.setMaxNodes(n);
+        }));
 
     // Maintenance Actions
     connections_.push_back(
@@ -304,6 +308,10 @@ void MainWindow::setupSignals() {
     gameCtrl_.setThreadNum(settings.engineThreadNum());
     gameCtrl_.setPondering(settings.enginePondering());
     gameCtrl_.setMaxDepth(settings.engineMaxDepth());
+    gameCtrl_.setMaxNodes(settings.engineMaxNodes());
+
+    // IMPORTANT: Actually start a new game with the loaded size to initialize the model and view
+    gameCtrl_.newGame(settings.lastBoardSize());
 
     boardCanvas_.setShowPVOverlay(settings.showPVOverlay());
     boardCanvas_.setShowWinrateHeatmap(settings.showWinrateHeatmap());

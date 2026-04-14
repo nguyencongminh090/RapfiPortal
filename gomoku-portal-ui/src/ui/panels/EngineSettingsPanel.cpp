@@ -75,10 +75,18 @@ EngineSettingsPanel::EngineSettingsPanel() : Gtk::Box(Gtk::Orientation::VERTICAL
     grid_.attach(lblNBest_, 0, 6);
     grid_.attach(spinNBest_, 1, 6);
 
-    // 8. Pondering
+    // 8. Max Nodes
+    spinMaxNodes_.set_adjustment(Gtk::Adjustment::create(static_cast<double>(settings.engineMaxNodes()), 0.0, 1e18, 1000.0));
+    spinMaxNodes_.set_numeric(true);
+    spinMaxNodes_.signal_value_changed().connect(sigc::mem_fun(*this, &EngineSettingsPanel::onMaxNodesChanged));
+
+    grid_.attach(lblMaxNodes_, 0, 7);
+    grid_.attach(spinMaxNodes_, 1, 7);
+
+    // 9. Pondering
     checkPondering_.set_active(settings.enginePondering());
     checkPondering_.signal_toggled().connect(sigc::mem_fun(*this, &EngineSettingsPanel::onPonderingChanged));
-    grid_.attach(checkPondering_, 1, 7);
+    grid_.attach(checkPondering_, 1, 8);
 
     append(grid_);
     
