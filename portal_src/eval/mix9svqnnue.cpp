@@ -222,6 +222,9 @@ Accumulator::Accumulator(int boardSize)
     mapConv =
         MemAlloc::alignedArrayAlloc<std::array<int16_t, FeatDWConvDim>, Alignment>(nOuterChanges);
 
+    for (int dir = 0; dir < 4; dir++)
+        impactMap[dir] = new std::vector<VirtualImpact>[boardSize * boardSize];
+
     // Compute group index based on board pos
     std::fill_n(groupIndex, arraySize(groupIndex), 0);
     int size1 = (boardSize / 3) + (boardSize % 3 == 2);
@@ -236,9 +239,6 @@ Accumulator::Accumulator(int boardSize)
         versionInnerIndexTable[i] = i;
     for (int i = 0; i < outerBoardSize * outerBoardSize; i++)
         versionOuterIndexTable[i] = i;
-
-    // Init index table at the first layer (version 0)
-    initIndexTable();
 }
 
 Accumulator::~Accumulator()
@@ -250,15 +250,22 @@ Accumulator::~Accumulator()
     delete[] indexTable;
     MemAlloc::alignedFree(mapSum);
     MemAlloc::alignedFree(mapConv);
+    for (int dir = 0; dir < 4; dir++)
+        delete[] impactMap[dir];
 }
 
-void Accumulator::initIndexTable()
+void Accumulator::initImpactMapAndIndexTable(const Board &board)
 {
     constexpr int length = 11;  // length of line shape
     constexpr int half   = length / 2;
 
-    // Clear shape table
+    // Clear shape table and impact map
     std::fill_n(&indexTable[0][0], 4 * boardSize * boardSize, 0);
+    for (int dir = 0; dir < 4; dir++) {
+        for (int i = 0; i < boardSize * boardSize; i++) {
+            impactMap[dir][i].clear();
+        }
+    }
 
     /// Get an empty line encoding with the given boarder distance.
     /// @param left The distance to the left boarder, in range [0, length/2].
@@ -301,25 +308,77 @@ void Accumulator::initIndexTable()
 
     for (int y = 0; y < boardSize; y++)
         for (int x = 0; x < boardSize; x++) {
-            auto &idxs   = indexTable[y * boardSize + x];
-            int   distx0 = std::min(x - 0, half);
-            int   distx1 = std::min(boardSize - 1 - x, half);
-            int   disty0 = std::min(y - 0, half);
-            int   disty1 = std::min(boardSize - 1 - y, half);
+            int centerIdx = y * boardSize + x;
+            Pos centerPos{(int8_t)x, (int8_t)y};
+            auto &idxs = indexTable[centerIdx];
 
-            // DX[0]=1, DY[0]=0
-            idxs[0] = get_boarder_encoding(distx0, distx1);
-            // DX[1]=0, DY[1]=1
-            idxs[1] = get_boarder_encoding(disty0, disty1);
-            // DX[2]=1, DY[2]=-1
-            idxs[2] = get_boarder_encoding(std::min(distx0, disty1), std::min(distx1, disty0));
-            // DX[3]=1, DY[3]=1
-            idxs[3] = get_boarder_encoding(std::min(distx0, disty0), std::min(distx1, disty1));
+            // Pre-check if center is an obstacle
+            bool centerIsObstacle = (board.get(centerPos) == WALL && !board.isPortalCell(centerPos));
 
-            assert(idxs[0] < ShapeNum);
-            assert(idxs[1] < ShapeNum);
-            assert(idxs[2] < ShapeNum);
-            assert(idxs[3] < ShapeNum);
+            for (int dir = 0; dir < 4; dir++) {
+                if (centerIsObstacle) {
+                    idxs[dir] = get_boarder_encoding(0, 0);
+                    continue;
+                }
+
+                int left_dist = 0;
+                Pos cur = centerPos;
+                Pos leftCells[6]; // Up to 5 steps + center
+                leftCells[0] = centerPos;
+                for (int i = 1; i <= half; i++) {
+                    cur = board.portalStep(cur, dir, -1);
+                    if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) break;
+                    if (board.get(cur) == WALL && !board.isPortalCell(cur)) break;
+
+                    bool dup = false;
+                    for (int j = 0; j < i; j++) {
+                        if (leftCells[j] == cur) { dup = true; break; }
+                    }
+                    if (dup) break;
+
+                    leftCells[i] = cur;
+                    left_dist++;
+                }
+
+                int right_dist = 0;
+                cur = centerPos;
+                Pos rightCells[6];
+                rightCells[0] = centerPos;
+                for (int i = 1; i <= half; i++) {
+                    cur = board.portalStep(cur, dir, 1);
+                    if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT) break;
+                    if (board.get(cur) == WALL && !board.isPortalCell(cur)) break;
+
+                    bool dup = false;
+                    for (int j = 0; j < i; j++) {
+                        if (rightCells[j] == cur) { dup = true; break; }
+                    }
+                    for (int j = 1; j <= left_dist; j++) {
+                        if (leftCells[j] == cur) { dup = true; break; }
+                    }
+                    if (dup) break;
+
+                    rightCells[i] = cur;
+                    right_dist++;
+                }
+
+                idxs[dir] = get_boarder_encoding(left_dist, right_dist);
+
+                for (int i = 0; i <= left_dist; i++) {
+                    Pos p = leftCells[i];
+                    if (p.isInBoard(boardSize, boardSize)) {
+                        int physicalIdx = p.y() * boardSize + p.x();
+                        impactMap[dir][physicalIdx].push_back({(uint16_t)centerIdx, (int8_t)(-i)});
+                    }
+                }
+                for (int i = 1; i <= right_dist; i++) {
+                    Pos p = rightCells[i];
+                    if (p.isInBoard(boardSize, boardSize)) {
+                        int physicalIdx = p.y() * boardSize + p.x();
+                        impactMap[dir][physicalIdx].push_back({(uint16_t)centerIdx, (int8_t)(i)});
+                    }
+                }
+            }
         }
 }
 
@@ -483,16 +542,15 @@ void Accumulator::move(const Weight &w, Color pieceColor, int x, int y)
     // Update shape table and record changes
     const int boardSizeSub1 = boardSize - 1;
     int       newMapIdx     = changeNum.inner;
+    int       physicalIdx   = y * boardSize + x;
+
+    // PORTAL ADAPTATION: Iterate over precomputed Virtual Impact map instead of physical grid
     for (int dir = 0; dir < 4; dir++) {
-        for (int dist = -5; dist <= 5; dist++) {
-            int xi = x + dist * DX[dir];
-            int yi = y + dist * DY[dir];
+        for (const auto& impact : impactMap[dir][physicalIdx]) {
+            int innerIdx = impact.centerIdx;
+            int xi = innerIdx % boardSize;
+            int yi = innerIdx / boardSize;
 
-            // branchless test: xi < 0 || xi >= boardSize || yi < 0 || yi >= boardSize
-            if ((xi | (boardSizeSub1 - xi) | yi | (boardSizeSub1 - yi)) < 0)
-                continue;
-
-            int             innerIdx = boardSize * yi + xi;
             OnePointChange &c        = changeTable[changeCount++];
             c.x                      = xi;
             c.y                      = yi;
@@ -502,7 +560,7 @@ void Accumulator::move(const Weight &w, Color pieceColor, int x, int y)
 
             uint32_t oldShape     = indexTable[c.oldMapIdx][dir];
             indexTable[newMapIdx] = indexTable[c.oldMapIdx];
-            uint32_t newShape = indexTable[newMapIdx][dir] = oldShape + dPower3 * Power3[dist + 5];
+            uint32_t newShape = indexTable[newMapIdx][dir] = oldShape + dPower3 * Power3[impact.windowPos + 5];
             assert(newShape < ShapeNum);
 
             c.oldCodebookIdx = w.mapping_index[c.mappingIdx][oldShape];
@@ -867,6 +925,9 @@ Evaluator::Evaluator(int                   boardSize,
     int numCells = boardSize * boardSize;
     moveCache[BLACK].reserve(numCells);
     moveCache[WHITE].reserve(numCells);
+
+    needsInitMap[BLACK] = true;
+    needsInitMap[WHITE] = true;
 }
 
 Evaluator::~Evaluator()
@@ -881,28 +942,44 @@ void Evaluator::initEmptyBoard()
 {
     moveCache[BLACK].clear();
     moveCache[WHITE].clear();
-    accumulator[BLACK]->clear(*weight[BLACK]);
-    accumulator[WHITE]->clear(*weight[WHITE]);
+    needsInitMap[BLACK] = true;
+    needsInitMap[WHITE] = true;
 }
 
 void Evaluator::beforeMove(const Board &board, Pos pos)
 {
-    addCache(board.sideToMove(), pos.x(), pos.y(), false);
 }
 
 void Evaluator::afterUndo(const Board &board, Pos pos)
 {
-    addCache(board.sideToMove(), pos.x(), pos.y(), true);
+}
+
+void Evaluator::ensureMapInitialized(const Board &board)
+{
+    if (needsInitMap[BLACK] || needsInitMap[WHITE]) {
+        for (Color side : {BLACK, WHITE}) {
+            accumulator[side]->initImpactMapAndIndexTable(board);
+            accumulator[side]->clear(*weight[side]);
+            moveCache[side].clear();
+            needsInitMap[side] = false;
+        }
+        for (int i = 0; i < board.ply(); i++) {
+            Pos m = board.getHistoryMove(i);
+            if (m != Pos::PASS) {
+                addCache(board.get(m), m.x(), m.y(), false);
+            }
+        }
+    }
 }
 
 ValueType Evaluator::evaluateValue(const Board &board, AccLevel level)
 {
     Color self = board.sideToMove(), oppo = ~self;
 
+    ensureMapInitialized(board);
     // Apply all incremental update for both sides and calculate value
     clearCache(self);
     auto [win, loss, draw] = accumulator[self]->evaluateValue(*weight[self]);
-
     return ValueType(win, loss, draw, true);
 }
 
@@ -910,6 +987,7 @@ void Evaluator::evaluatePolicy(const Board &board, PolicyBuffer &policyBuffer, A
 {
     Color self = board.sideToMove();
 
+    ensureMapInitialized(board);
     // Apply all incremental update and calculate policy
     clearCache(self);
     accumulator[self]->evaluatePolicy(*weight[self], policyBuffer);

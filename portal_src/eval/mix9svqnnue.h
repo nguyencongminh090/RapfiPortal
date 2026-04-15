@@ -28,6 +28,8 @@
 #include <string>
 #include <vector>
 
+class Board;
+
 namespace Evaluation::mix9svq {
 
 using namespace Evaluation;
@@ -111,6 +113,11 @@ public:
         std::array<int32_t, FeatureDim> group[NGroup][NGroup];
     };
 
+    struct VirtualImpact {
+        uint16_t centerIdx;
+        int8_t   windowPos;
+    };
+
     // Make sure we have proper alignment for SIMD operations
     static_assert(offsetof(ValueSumType, global) % 64 == 0);
     static_assert(offsetof(ValueSumType, group) % 64 == 0);
@@ -118,7 +125,8 @@ public:
     Accumulator(int boardSize);
     ~Accumulator();
 
-    /// Init accumulator state to empty board.
+    void initImpactMapAndIndexTable(const Board &board);
+    /// Clear accumulator state to empty board.
     void clear(const Weight &w);
     /// Incremental update mix6 network state.
     void move(const Weight &w, Color pieceColor, int x, int y);
@@ -144,6 +152,8 @@ private:
     uint16_t     *versionOuterIndexTable;  // [H*W+1, (H+2)*(W+2)] (unaligned)
     /// Index table to convert line shape to map feature
     std::array<uint32_t, 4> *indexTable;  // [N_inner, 4] (unaligned)
+    /// Virtual impact map: impactMap[dir][physical_idx] = list of affected centers
+    std::vector<VirtualImpact> *impactMap[4];
     /// Sumed map feature of four directions
     std::array<int16_t, FeatureDim> *mapSum;  // [N_inner, FeatureDim] (aligned)
     /// Map feature after depth wise conv
@@ -155,7 +165,6 @@ private:
     int    currentVersion;
     int8_t groupIndex[32];
 
-    void initIndexTable();
     int  getBucketIndex() { return 0; }
 };
 
@@ -194,10 +203,13 @@ private:
     void clearCache(Color side);
     /// Record new board action, but not update accumulator instantly.
     void addCache(Color side, int x, int y, bool isUndo);
+    /// Ensure map is initialized for a specific side before evaluating
+    void ensureMapInitialized(const Board &board);
 
     Weight /* non-owning ptr */ *weight[2];
     std::unique_ptr<Accumulator> accumulator[2];
     std::vector<MoveCache>       moveCache[2];
+    bool                         needsInitMap[2];
 };
 
 }  // namespace Evaluation::mix9svq
