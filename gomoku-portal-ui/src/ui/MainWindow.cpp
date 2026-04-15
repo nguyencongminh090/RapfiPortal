@@ -30,9 +30,8 @@ MainWindow::MainWindow(controller::GameController& gameCtrl)
 {
     set_title("Portal Gomoku Engine UI");
     
-    // Load settings
+    // Load settings from singleton (already loaded in Application::on_activate)
     auto& settings = util::SettingsManager::instance();
-    settings.load();
     if (settings.windowWidth() > 0 && settings.windowHeight() > 0) {
         set_default_size(settings.windowWidth(), settings.windowHeight());
     } else {
@@ -63,6 +62,8 @@ MainWindow::MainWindow(controller::GameController& gameCtrl)
                 settings.setPreferDarkTheme(gtkSettings->property_gtk_application_prefer_dark_theme().get_value());
             }
             settings.setLastBoardSize(spinBoardSize_.get_value_as_int());
+            settings.setPlayDistN(spinPlayDist_.get_value_as_int());
+            settings.setPlayDistSelfOnly(chkSelfDistOnly_.get_active());
             settings.save();
             return false; // let the window close
         }, false));
@@ -185,6 +186,21 @@ void MainWindow::setupToolbar() {
     toolbarBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::VERTICAL));
     toolbarBox_.append(btnConnect_);
     toolbarBox_.append(btnThink_);
+
+    auto distAdj = Gtk::Adjustment::create(util::SettingsManager::instance().playDistN(), 1.0, 22.0, 1.0, 1.0, 0.0);
+    spinPlayDist_.set_adjustment(distAdj);
+    spinPlayDist_.set_numeric(true);
+    spinPlayDist_.set_tooltip_text("Minimum Chebyshev distance for next engine move");
+    spinPlayDist_.set_size_request(50, -1);
+    toolbarBox_.append(spinPlayDist_);
+
+    chkSelfDistOnly_.set_active(util::SettingsManager::instance().playDistSelfOnly());
+    chkSelfDistOnly_.set_tooltip_text("If checked, only distance to your own stones is considered");
+    toolbarBox_.append(chkSelfDistOnly_);
+    
+    btnPlayDist_.set_tooltip_text("Ask engine to play a move with at least N distance");
+    toolbarBox_.append(btnPlayDist_);
+
     toolbarBox_.append(btnStop_);
     toolbarBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::VERTICAL));
     toolbarBox_.append(btnSaveGame_);
@@ -206,6 +222,7 @@ void MainWindow::setupSignals() {
     btnUndo_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onUndo));
     btnConnect_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onConnect));
     btnThink_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onThink));
+    btnPlayDist_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onPlayDist));
     btnStop_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onStop));
     btnSaveGame_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onSaveGame));
     btnLoadGame_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onLoadGame));
@@ -435,6 +452,12 @@ void MainWindow::onThink() {
     gameCtrl_.startThinking();
 }
 
+void MainWindow::onPlayDist() {
+    int n = spinPlayDist_.get_value_as_int();
+    bool selfOnly = chkSelfDistOnly_.get_active();
+    gameCtrl_.playMoveWithDistance(n, selfOnly);
+}
+
 void MainWindow::onStop() {
     gameCtrl_.stopThinking();
 }
@@ -483,61 +506,128 @@ void MainWindow::onLoadGame() {
     dialog->open(*this, [this, dialog](Glib::RefPtr<Gio::AsyncResult>& result) {
         try {
             auto file = dialog->open_finish(result);
-            if (file) {
-                std::string path = file->get_path();
-                std::ifstream ifs(path);
-                if (ifs) {
-                    int size = 15;
-                    ifs >> size;
-                    spinBoardSize_.set_value(size);
+            if (!file) return;
 
-                    model::PortalTopology topo;
-                    std::string section;
-                    std::vector<std::pair<int,int>> moves;
-                    
-                    auto loadMovesFromLine = [](const std::string& line, std::vector<std::pair<int,int>>& mvs) {
-                        if (line.empty()) return;
-                        auto comma = line.find(',');
-                        if (comma != std::string::npos) {
-                            int x = std::stoi(line.substr(0, comma));
-                            int y = std::stoi(line.substr(comma + 1));
-                            mvs.emplace_back(x, y);
-                        }
-                    };
+            std::string path = file->get_path();
+            std::ifstream ifs(path);
+            if (!ifs) {
+                logPanel_.appendLog("Error: could not open file: " + path);
+                return;
+            }
 
-                    while (ifs >> section) {
-                        if (section == "WALLS") {
-                            int n; ifs >> n;
-                            for (int i = 0; i < n; i++) {
-                                int wx, wy; char c;
-                                ifs >> wx >> c >> wy;
+            // ----------------------------------------------------------
+            // Parse save file line-by-line for robustness.
+            // Format:
+            //   <boardSize>
+            //   WALLS <n>
+            //   <x>,<y>         (repeated n times)
+            //   PORTALS <n>
+            //   <ax>,<ay> <bx>,<by>   (repeated n times)
+            //   <x>,<y>         (move lines — until EOF)
+            // ----------------------------------------------------------
+
+            std::string firstLine;
+            if (!std::getline(ifs, firstLine)) {
+                logPanel_.appendLog("Error: empty save file");
+                return;
+            }
+
+            int size = 15;
+            try { size = std::stoi(firstLine); }
+            catch (...) { logPanel_.appendLog("Error: bad board size"); return; }
+            if (size < 5 || size > 22) { logPanel_.appendLog("Error: board size out of range"); return; }
+
+            spinBoardSize_.set_value(size);
+
+            model::PortalTopology topo;
+            std::vector<std::pair<int,int>> moves;
+
+            // Helper: parse "x,y" from a string.
+            auto parseCoord = [](const std::string& s, int& outX, int& outY) -> bool {
+                auto comma = s.find(',');
+                if (comma == std::string::npos) return false;
+                try {
+                    outX = std::stoi(s.substr(0, comma));
+                    outY = std::stoi(s.substr(comma + 1));
+                    return true;
+                } catch (...) { return false; }
+            };
+
+            enum class ParseState { Sections, Moves };
+            ParseState state = ParseState::Sections;
+
+            std::string line;
+            while (std::getline(ifs, line)) {
+                // Trim whitespace
+                while (!line.empty() && (line.back() == '\r' || line.back() == ' '))
+                    line.pop_back();
+                if (line.empty()) continue;
+
+                if (state == ParseState::Sections) {
+                    if (line.rfind("WALLS ", 0) == 0) {
+                        // "WALLS <n>"
+                        int n = 0;
+                        try { n = std::stoi(line.substr(6)); } catch (...) { continue; }
+                        for (int i = 0; i < n && std::getline(ifs, line); i++) {
+                            while (!line.empty() && (line.back() == '\r' || line.back() == ' '))
+                                line.pop_back();
+                            int wx, wy;
+                            if (parseCoord(line, wx, wy))
                                 topo.addWall({wx, wy});
-                            }
-                        } else if (section == "PORTALS") {
-                            int n; ifs >> n;
-                            for (int i = 0; i < n; i++) {
-                                int ax, ay, bx, by; char c1, c2;
-                                ifs >> ax >> c1 >> ay >> bx >> c2 >> by;
-                                topo.addPortal({ax,ay}, {bx,by});
-                            }
-                        } else {
-                            loadMovesFromLine(section, moves);
-                            std::string line;
-                            while (std::getline(ifs, line)) {
-                                loadMovesFromLine(line, moves);
-                            }
-                            break;
                         }
+                    } else if (line.rfind("PORTALS ", 0) == 0) {
+                        // "PORTALS <n>"
+                        int n = 0;
+                        try { n = std::stoi(line.substr(8)); } catch (...) { continue; }
+                        for (int i = 0; i < n && std::getline(ifs, line); i++) {
+                            while (!line.empty() && (line.back() == '\r' || line.back() == ' '))
+                                line.pop_back();
+                            // Format: "ax,ay bx,by"
+                            auto sp = line.find(' ');
+                            if (sp != std::string::npos) {
+                                int ax, ay, bx, by;
+                                if (parseCoord(line.substr(0, sp), ax, ay) &&
+                                    parseCoord(line.substr(sp + 1), bx, by))
+                                    topo.addPortal({ax, ay}, {bx, by});
+                            }
+                        }
+                    } else {
+                        // First non-section line → this is a move
+                        state = ParseState::Moves;
+                        int mx, my;
+                        if (parseCoord(line, mx, my))
+                            moves.emplace_back(mx, my);
                     }
-
-                    gameCtrl_.board().reset(size);
-                    gameCtrl_.board().setTopology(topo);
-                    gameCtrl_.syncBoardToEngine();
-                    gameCtrl_.loadGameFromMoves(size, moves);
-                    logPanel_.appendLog("Game loaded from: " + path);
+                } else {
+                    // Moves state
+                    int mx, my;
+                    if (parseCoord(line, mx, my))
+                        moves.emplace_back(mx, my);
                 }
             }
-        } catch (const Glib::Error&) {}
+
+            std::cerr << "[LOAD] Parsed: size=" << size
+                      << " walls=" << topo.walls().size()
+                      << " portals=" << topo.portals().size()
+                      << " moves=" << moves.size() << std::endl;
+
+            gameCtrl_.board().reset(size);
+            gameCtrl_.board().setTopology(topo);
+            gameCtrl_.syncBoardToEngine();
+            gameCtrl_.loadGameFromMoves(size, moves);
+
+            std::cerr << "[LOAD] Result: ply=" << gameCtrl_.board().ply()
+                      << " walls=" << gameCtrl_.board().topology().walls().size()
+                      << " portals=" << gameCtrl_.board().topology().portals().size() << std::endl;
+
+            logPanel_.appendLog("Game loaded from: " + path);
+
+        } catch (const Glib::Error& err) {
+            if (std::string(err.what()).find("dismissed") == std::string::npos)
+                logPanel_.appendLog("Error loading: " + std::string(err.what()));
+        } catch (const std::exception& ex) {
+            logPanel_.appendLog("Error loading: " + std::string(ex.what()));
+        }
     });
 }
 
@@ -659,6 +749,9 @@ void MainWindow::onEngineStateChanged(engine::EngineState state) {
 
     if (!setupCtrl_.isActive()) {
         btnThink_.set_sensitive(idle);
+        btnPlayDist_.set_sensitive(idle);
+        spinPlayDist_.set_sensitive(idle);
+        chkSelfDistOnly_.set_sensitive(idle);
         btnStop_.set_sensitive(thinking);
         btnNewGame_.set_sensitive(!busy);
         btnUndo_.set_sensitive(!busy);

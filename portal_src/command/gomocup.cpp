@@ -680,6 +680,44 @@ void begin()
     think(*board);
 }
 
+void playDist()
+{
+    int dist;
+    if (!(std::cin >> dist)) {
+        ERRORL("Invalid distance N for YXPLAYDIST.");
+        return;
+    }
+
+    options.minRootDist = dist;
+    think(*board,
+          1,
+          Search::SearchOptions::BALANCE_NONE,
+          false,
+          false);
+    
+    // Reset minRootDist so subsequent searches (like TURN) are normal.
+    options.minRootDist = 0;
+}
+
+void playSelfDist()
+{
+    int dist;
+    if (!(std::cin >> dist)) {
+        ERRORL("Invalid distance N for YXPLAYSELF.");
+        return;
+    }
+
+    options.minRootSelfDist = dist;
+    think(*board,
+          1,
+          Search::SearchOptions::BALANCE_NONE,
+          false,
+          false);
+    
+    // Reset minRootSelfDist for subsequent searches.
+    options.minRootSelfDist = 0;
+}
+
 void turn()
 {
     auto pos = parseLegalCoord(std::cin, *board);
@@ -1445,6 +1483,8 @@ bool runProtocol()
     else if (cmd == "YXDELETEDATABASEONE") CheckBoardOK([] { deleteDatabaseOne(true); });
     else if (cmd == "YXDELETEDATABASEALL") CheckBoardOK([] { deleteDatabaseAll(true); });
     else if (cmd == "YXSEARCHDEFEND")      CheckBoardOK(searchDefend);
+    else if (cmd == "YXPLAYDIST")          CheckBoardOK(playDist);
+    else if (cmd == "YXPLAYSELF")          CheckBoardOK(playSelfDist);
     else if (cmd == "YXDBSPLIT")           CheckBoardOK(splitDatabase);
     else if (cmd == "YXDBMERGE")           CheckBoardOK(mergeDatabase);
     else if (cmd == "SWAP2BOARD")          CheckBoardOK(swap2board);

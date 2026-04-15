@@ -30,6 +30,13 @@ void SettingsManager::load() {
             lastBoardSize_ = keyFile_->get_integer("Game", "lastBoardSize");
             if (lastBoardSize_ < 5 || lastBoardSize_ > 22) lastBoardSize_ = 15;
         }
+        if (keyFile_->has_key("Game", "playDistN")) {
+            playDistN_ = keyFile_->get_integer("Game", "playDistN");
+            if (playDistN_ < 1) playDistN_ = 1;
+        }
+        if (keyFile_->has_key("Game", "playDistSelfOnly")) {
+            playDistSelfOnly_ = keyFile_->get_boolean("Game", "playDistSelfOnly");
+        }
         if (keyFile_->has_key("Window", "width")) {
             windowWidth_ = keyFile_->get_integer("Window", "width");
         }
@@ -89,6 +96,8 @@ void SettingsManager::save() {
     try {
         keyFile_->set_boolean("UI", "preferDarkTheme", preferDarkTheme_);
         keyFile_->set_integer("Game", "lastBoardSize", lastBoardSize_);
+        keyFile_->set_integer("Game", "playDistN", playDistN_);
+        keyFile_->set_boolean("Game", "playDistSelfOnly", playDistSelfOnly_);
         keyFile_->set_integer("Window", "width", windowWidth_);
         keyFile_->set_integer("Window", "height", windowHeight_);
         keyFile_->set_boolean("Window", "maximized", windowMaximized_);

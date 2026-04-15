@@ -187,6 +187,18 @@ void EngineController::requestNBest(int n) {
     setState(EngineState::Thinking);
 }
 
+void EngineController::yxPlayDist(int n) {
+    requireIdle("yxPlayDist");
+    send(EngineProtocol::yxPlayDist(n));
+    setState(EngineState::Thinking);
+}
+
+void EngineController::yxPlaySelfDist(int n) {
+    requireIdle("yxPlaySelfDist");
+    send(EngineProtocol::yxPlaySelfDist(n));
+    setState(EngineState::Thinking);
+}
+
 void EngineController::stopThinking() {
     if (state_ != EngineState::Thinking) return;  // Silently ignore if not thinking
     send(EngineProtocol::stop());

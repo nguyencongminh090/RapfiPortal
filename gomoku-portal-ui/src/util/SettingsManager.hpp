@@ -29,6 +29,12 @@ public:
     int lastBoardSize() const { return lastBoardSize_; }
     void setLastBoardSize(int val) { lastBoardSize_ = val; }
 
+    int playDistN() const { return playDistN_; }
+    void setPlayDistN(int val) { playDistN_ = val; }
+
+    bool playDistSelfOnly() const { return playDistSelfOnly_; }
+    void setPlayDistSelfOnly(bool val) { playDistSelfOnly_ = val; }
+
     int windowWidth() const { return windowWidth_; }
     void setWindowWidth(int val) { windowWidth_ = val; }
 
@@ -86,6 +92,8 @@ private:
 
     bool preferDarkTheme_ = false;
     int lastBoardSize_ = 15;
+    int playDistN_ = 5;
+    bool playDistSelfOnly_ = false;
     int windowWidth_ = -1;
     int windowHeight_ = -1;
     bool windowMaximized_ = false;

@@ -376,6 +376,12 @@ void ThreadPool::startThinking(const Board          &board,
     // Generate root moves for main search thread
     MovePicker movePicker(options.rule, *main()->board, MovePicker::ExtraArgs<MovePicker::ROOT> {});
     while (Pos m = movePicker()) {
+        if (options.minRootDist > 0 && main()->board->minDistToStone(m) < options.minRootDist)
+            continue;
+        if (options.minRootSelfDist > 0
+            && main()->board->minDistToSideStone(m, main()->board->sideToMove()) < options.minRootSelfDist)
+            continue;
+
         addMoveToRootMoves(m);
     }
 

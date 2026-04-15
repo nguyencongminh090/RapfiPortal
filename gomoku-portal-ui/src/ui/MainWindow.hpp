@@ -74,6 +74,9 @@ private:
     Gtk::Button btnUndo_{"Undo"};
     Gtk::Button btnConnect_{"Connect"};
     Gtk::Button btnThink_{"Think"};
+    Gtk::SpinButton spinPlayDist_;
+    Gtk::CheckButton chkSelfDistOnly_{"Self Only"};
+    Gtk::Button btnPlayDist_{"Play Dist"};
     Gtk::Button btnStop_{"Stop"};
     Gtk::Button btnSaveGame_{"Save"};
     Gtk::Button btnLoadGame_{"Load"};
@@ -136,6 +139,7 @@ private:
     void onUndo();
     void onConnect();
     void onThink();
+    void onPlayDist();
     void onStop();
     
     void onSaveGame();

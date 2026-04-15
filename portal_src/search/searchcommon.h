@@ -160,6 +160,11 @@ struct SearchOptions
     /// Blocked moves, which are filtered out before searching
     std::vector<Pos> blockMoves;
 
+    /// Minimum Chebyshev distance for root moves (applied only at startThinking)
+    int minRootDist = 0;
+    /// Minimum Chebyshev distance to self stones for root moves
+    int minRootSelfDist = 0;
+
     /// Checks if we are in analysis mode.
     bool isAnalysisMode() const { return !timeLimit && !maxNodes; }
     /// Set time control config according to the rule:

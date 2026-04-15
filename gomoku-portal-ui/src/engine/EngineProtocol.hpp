@@ -133,6 +133,12 @@ public:
     /// "YXNBEST {n}" — request N-best PV lines
     static std::string yxNBest(int n);
 
+    /// "YXPLAYDIST {n}" — engine plays a move with at least N Chebyshev distance
+    static std::string yxPlayDist(int n);
+
+    /// "YXPLAYSELF {n}" — engine plays a move with at least N Chebyshev distance from SELF stones
+    static std::string yxPlaySelfDist(int n);
+
     /// "TRACEBOARD" — dump board patterns/scores
     static std::string traceBoard();
 

@@ -92,6 +92,10 @@ public:
     /// Ask the engine to think about the current position.
     void startThinking();
 
+    /// Ask the engine to play a move with at least distance N.
+    /// @param selfOnly If true, only distance to engine's own stones is considered.
+    void playMoveWithDistance(int n, bool selfOnly = false);
+
     /// Stop the engine's current search.
     void stopThinking();
 

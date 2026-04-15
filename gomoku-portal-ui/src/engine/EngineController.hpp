@@ -111,6 +111,12 @@ public:
     /// loadPositionSilent() BEFORE calling this. Do NOT call loadPosition() after this.
     void requestNBest(int n);
 
+    /// Send YXPLAYDIST n — starts engine thinking with distance constraint.
+    void yxPlayDist(int n);
+
+    /// Send YXPLAYSELF n — starts engine thinking with distance constraint from self stones.
+    void yxPlaySelfDist(int n);
+
     /// Send STOP to interrupt thinking (valid in THINKING state).
     void stopThinking();
 

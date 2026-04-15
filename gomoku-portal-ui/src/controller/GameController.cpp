@@ -66,16 +66,20 @@ void GameController::newGame(int boardSize) {
     // If engine connected, start a new game in the engine too
     if (engine_.state() != engine::EngineState::Disconnected) {
         engine::EngineConfig cfg;
-        cfg.boardSize = boardSize;
-        cfg.timeoutTurn = turnTimeMs_;
-        cfg.timeoutMatch = matchTimeMs_;
+        cfg.boardSize      = boardSize;
+        cfg.timeoutTurn    = turnTimeMs_;
+        cfg.timeoutMatch   = matchTimeMs_;
         cfg.maxMemoryBytes = maxMemory_;
+        cfg.rule           = rule_;       // PORTAL: was missing — caused rule reset on New Game
+        cfg.threadNum      = threadNum_;  // PORTAL: was missing — caused thread count reset
+        cfg.pondering      = pondering_;  // PORTAL: was missing
+        cfg.maxDepth       = maxDepth_;   // PORTAL: was missing
+        cfg.maxNodes       = maxNodes_;   // PORTAL: was missing
 
-        engine_.startGame(cfg);
+        engine_.startGame(cfg);  // sends START + INFO RULE + full applyConfig internally
         syncBoardToEngine();
         topologyDirty_ = false;
-
-        engine_.applyConfig(cfg);
+        // NOTE: no redundant applyConfig() here — startGame() already calls it
 
         if (isEngineTurn()) {
             requestEngineMoveFromScratch();
@@ -210,8 +214,17 @@ void GameController::loadGameFromMoves(int boardSize,
         engine_.stopThinking();
     }
 
+    // PORTAL: Callers (e.g. onLoadGame) may have set topology on the board before
+    // calling us. board_.reset() would destroy it. Save and restore it so the
+    // UI model stays in sync with the engine (which received topology separately
+    // via syncBoardToEngine() before this call).
+    model::PortalTopology savedTopo = board_.topology();
+
     // Atomically reset board to the new size (clears history + redoStack + topology).
     board_.reset(boardSize);
+
+    // PORTAL: Restore topology that was active before the reset.
+    board_.setTopology(savedTopo);
 
     // Replay all moves directly on the board model.
     for (auto [x, y] : moves) {
@@ -223,6 +236,8 @@ void GameController::loadGameFromMoves(int boardSize,
     }
 
     // Sync the final position to the engine silently (no think).
+    // NOTE: Topology was already synced to the engine by the caller before this
+    // call. We only need to send the stone positions here.
     if (engine_.state() == engine::EngineState::Idle) {
         auto record  = model::GameRecord::fromBoard(board_);
         auto entries = record.toBoardEntries(board_.sideToMove());
@@ -290,6 +305,31 @@ void GameController::startThinking() {
     //   → this requires Idle state (OK — we are still Idle after step 1).
     //   → sets state to Thinking after sending the command.
     engine_.requestNBest(nbest_);                   // YXNBEST — state → Thinking ✓
+}
+
+void GameController::playMoveWithDistance(int n, bool selfOnly) {
+    if (engine_.state() == engine::EngineState::Disconnected) {
+        signalEngineMessage.emit("[Error] Cannot play move: Engine not connected.");
+        return;
+    }
+    if (engine_.state() != engine::EngineState::Idle) return;
+
+    if (topologyDirty_) {
+        syncBoardToEngine();
+        topologyDirty_ = false;
+    }
+
+    // Sync board silently first
+    auto record  = model::GameRecord::fromBoard(board_);
+    auto entries = record.toBoardEntries(board_.sideToMove());
+    engine_.loadPositionSilent(entries);
+
+    // Now send the command based on flag
+    if (selfOnly) {
+        engine_.yxPlaySelfDist(n);
+    } else {
+        engine_.yxPlayDist(n);
+    }
 }
 
 void GameController::stopThinking() {

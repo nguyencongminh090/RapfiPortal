@@ -1,8 +1,6 @@
-/*
- *  Portal Gomoku UI — Application Implementation
- */
-
 #include "Application.hpp"
+#include "../util/SettingsManager.hpp"
+#include <iostream>
 
 namespace ui {
 
@@ -16,7 +14,10 @@ Glib::RefPtr<Application> Application::create() {
 }
 
 void Application::on_activate() {
-    // Create the game controller (owns Board + Engine)
+    // 1. Load settings from disk
+    util::SettingsManager::instance().load();
+
+    // 2. Create the game controller (owns Board + Engine)
     if (!gameCtrl_) {
         gameCtrl_ = std::make_unique<controller::GameController>();
     }
