@@ -187,60 +187,7 @@ struct PortalPair
     Pos a;  ///< First portal cell
     Pos b;  ///< Second portal cell
 
-    /// Check if two positions are collinear in a given direction.
-    /// Used to detect gap cells that must NOT use portalAffected path.
-    /// @param dir Direction index (0=H, 1=V, 2=UP_RIGHT, 3=DOWN_RIGHT)
-    [[nodiscard]] bool collinear(int dir) const
-    {
-        int dx = b.x() - a.x(), dy = b.y() - a.y();
-        switch (dir) {
-        case 0: return dy == 0;           // Horizontal: same row
-        case 1: return dx == 0;           // Vertical: same column
-        case 2: return dx + dy == 0;      // UP_RIGHT anti-diagonal: x+y constant
-        case 3: return dx - dy == 0;      // DOWN_RIGHT diagonal: x-y constant
-        default: return false;
-        }
-    }
 
-    /// Check if pos is a gap cell (between a and b along direction dir).
-    /// Gap cells on the collinear direction must use normal bitKey (WALL bits)
-    /// to avoid infinite loops in the portal walk.
-    /// For non-collinear directions, gap cells do not exist → always returns false.
-    /// @param dir Direction index (0=H, 1=V, 2=/, 3=\)
-    [[nodiscard]] bool isGapCell(Pos pos, int dir) const
-    {
-        if (!collinear(dir))
-            return false;
-
-        // For each direction, check:
-        //   (1) pos lies ON THE SAME LINE as A and B in direction dir
-        //   (2) pos coordinate is strictly between A and B
-        //
-        //  dir=0 (H):  same row    → invariant=y, progress=x
-        //  dir=1 (V):  same col    → invariant=x, progress=y
-        //  dir=2 (/):  same x+y   → invariant=x+y, progress=x
-        //  dir=3 (\):  same y-x   → invariant=y-x, progress=x
-        switch (dir) {
-        case 0:  // Horizontal
-            if (pos.y() != a.y()) return false;
-            return pos.x() > std::min(a.x(), b.x())
-                && pos.x() < std::max(a.x(), b.x());
-        case 1:  // Vertical
-            if (pos.x() != a.x()) return false;
-            return pos.y() > std::min(a.y(), b.y())
-                && pos.y() < std::max(a.y(), b.y());
-        case 2:  // Anti-diagonal (x+y = const)
-            if (pos.x() + pos.y() != a.x() + a.y()) return false;
-            return pos.x() > std::min(a.x(), b.x())
-                && pos.x() < std::max(a.x(), b.x());
-        case 3:  // Diagonal (y-x = const)
-            if (pos.y() - pos.x() != a.y() - a.x()) return false;
-            return pos.x() > std::min(a.x(), b.x())
-                && pos.x() < std::max(a.x(), b.x());
-        default:
-            return false;
-        }
-    }
 };
 
 // ============================================================
@@ -440,6 +387,8 @@ public:
     // miscellaneous
 
     void        expandCandArea(Pos pos, int fillDist, int lineDist);
+    int         minDistToStone(Pos pos) const;
+    int         minDistToSideStone(Pos pos, Color side) const;
     std::string positionString() const;
     std::string trace() const;
 
@@ -691,10 +640,10 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
         if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT)
             break;
 
-        // Loop detection: if cur was already placed anywhere in windowCells[0..i-1]
-        // (left side or center), we have a ring — treat as closed (WALL).
+        // Loop detection: if cur was already placed anywhere in windowCells[L..i-1]
+        // (right side or center), we have a ring — treat as closed (WALL).
         bool dup = false;
-        for (int j = 0; j < i; j++) {
+        for (int j = L; j < i; j++) {
             if (windowCells[j] != UNSET && windowCells[j] == cur) {
                 dup = true; break;
             }

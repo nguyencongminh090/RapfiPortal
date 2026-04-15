@@ -66,37 +66,6 @@ int physicalDistAlongDir(Pos a, Pos b, int dir)
     }
 }
 
-/// PORTAL: Check if pos is strictly between a and b on a specific direction line.
-/// Both a and b must be on the same line in direction dir.
-bool isBetweenOnLine(Pos pos, Pos a, Pos b, int dir)
-{
-    // Project all positions onto the direction's primary coordinate
-    int posCoord, aCoord, bCoord;
-    switch (dir) {
-    case 0:  // Horizontal: use x
-        if (pos.y() != a.y()) return false;
-        posCoord = pos.x(); aCoord = a.x(); bCoord = b.x();
-        break;
-    case 1:  // Vertical: use y
-        if (pos.x() != a.x()) return false;
-        posCoord = pos.y(); aCoord = a.y(); bCoord = b.y();
-        break;
-    case 2:  // UP_RIGHT: x+y must match, use x to order
-        if (pos.x() + pos.y() != a.x() + a.y()) return false;
-        posCoord = pos.x(); aCoord = a.x(); bCoord = b.x();
-        break;
-    case 3:  // DOWN_RIGHT: x-y must match, use x to order
-        if (pos.x() - pos.y() != a.x() - a.y()) return false;
-        posCoord = pos.x(); aCoord = a.x(); bCoord = b.x();
-        break;
-    default: return false;
-    }
-
-    int lo = std::min(aCoord, bCoord);
-    int hi = std::max(aCoord, bCoord);
-    return posCoord > lo && posCoord < hi;
-}
-
 }  // namespace
 
 // =============================================================================
@@ -329,24 +298,6 @@ void Board::initPortals()
                         // Skip if it's a boundary/wall cell
                         if (cells[cur].piece == WALL)
                             break;
-
-                        // PORTAL BUG-005 FIX: Gap cell exclusion.
-                        // A "gap cell" is a cell strictly between two portals A and B
-                        // that are collinear in direction `dir`. These cells must NOT be
-                        // marked portalAffected — their window uses the fast bitKey path
-                        // where A and B appear as WALL bits, creating two isolated sub-lines.
-                        // Without this check, buildPortalKey is called for gap cells,
-                        // producing non-monotonic windows and false pattern counts.
-                        // See PortalPair::isGapCell() in board.h for the exact predicate.
-                        bool gap = false;
-                        for (int j = 0; j < numPortals; j++) {
-                            if (portals[j].isGapCell(cur, dir)) {
-                                gap = true;
-                                break;
-                            }
-                        }
-                        if (gap)
-                            continue;  // NOTE: continue, not break — cells further out may be valid
 
                         portalAffected[dir][int(cur)] = true;
                     }
@@ -979,6 +930,50 @@ void Board::expandCandArea(Pos pos, int fillDist, int lineDist)
                 cells[posi].cand++;
         }
     }
+}
+
+int Board::minDistToStone(Pos pos) const
+{
+    int minDist = 1000;  // Board-wide "infinity"
+    int x = pos.x(), y = pos.y();
+
+    for (int i = 0; i < moveCount; i++) {
+        Pos p = getHistoryMove(i);
+        if (p == Pos::PASS)
+            continue;
+
+        int dx   = std::abs(x - p.x());
+        int dy   = std::abs(y - p.y());
+        int dist = std::max(dx, dy);
+        if (dist < minDist)
+            minDist = dist;
+    }
+    return (moveCount == 0) ? 1000 : minDist;
+}
+
+int Board::minDistToSideStone(Pos pos, Color side) const
+{
+    int minDist = 1000;  // Board-wide "infinity"
+    int x = pos.x(), y = pos.y();
+
+    // The i-th move in history is played by side BLACK (0) if i is even,
+    // and WHITE (1) if i is odd, assuming a standard start.
+    // In Rapfi/Portal, this is consistent with move playback.
+    for (int i = 0; i < moveCount; i++) {
+        if ((i % 2) != (int)side)
+            continue;
+
+        Pos p = getHistoryMove(i);
+        if (p == Pos::PASS)
+            continue;
+
+        int dx   = std::abs(x - p.x());
+        int dy   = std::abs(y - p.y());
+        int dist = std::max(dx, dy);
+        if (dist < minDist)
+            minDist = dist;
+    }
+    return minDist;
 }
 
 std::string Board::positionString() const
