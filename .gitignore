@@ -54,3 +54,6 @@ _deps
 # IDE settings
 .idea/
 .vscode/
+
+# Build directory explicitly added
+build/
