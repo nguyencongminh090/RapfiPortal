@@ -21,6 +21,7 @@
 #include "../game/board.h"
 #include "../search/searchthread.h"
 #include "evaluator.h"
+#include "influence.h"
 
 #include <algorithm>
 #include <cmath>
@@ -103,7 +104,13 @@ Value evaluate(const Board &board, Value alpha, Value beta)
 
     Value basicEval  = (evaluateBasic(st0, self) + evaluateBasic(st1, self)) / 2;
     Value threatEval = evaluateThreat<R>(st0, self);
-    Value eval       = std::clamp(basicEval + threatEval, VALUE_EVAL_MIN, VALUE_EVAL_MAX);
+
+    // PORTAL: Add influence map positional term
+    Value infEval = VALUE_ZERO;
+    if (board.influenceMap())
+        infEval = board.influenceMap()->getScore(self);
+
+    Value eval       = std::clamp(basicEval + threatEval + infEval, VALUE_EVAL_MIN, VALUE_EVAL_MAX);
 
     if (board.evaluator()) {
         // Use evaluator eval if classical eval are in alpha-beta window margin

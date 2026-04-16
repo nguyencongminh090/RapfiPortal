@@ -28,6 +28,7 @@
 #include <array>
 #include <cassert>
 #include <cstring>
+#include <memory>
 
 
 namespace Search {
@@ -35,6 +36,7 @@ class SearchThread;
 }
 namespace Evaluation {
 class Evaluator;
+class InfluenceMap;
 }
 
 #define FOR_EVERY_POSITION(board, pos)                                   \
@@ -388,8 +390,9 @@ public:
     Pos                    centerPos() const { return {boardSize / 2, boardSize / 2}; }
     Pos                    startPos() const { return {0, 0}; }
     Pos                    endPos() const { return {boardSize - 1, boardSize - 1}; }
-    Search::SearchThread  *thisThread() const { return thisThread_; }
-    Evaluation::Evaluator *evaluator() const { return evaluator_; }
+    Search::SearchThread       *thisThread() const { return thisThread_; }
+    Evaluation::Evaluator      *evaluator() const { return evaluator_; }
+    Evaluation::InfluenceMap   *influenceMap() const { return influenceMap_.get(); }
 
     // ------------------------------------------------------------------------
     // current board state queries
@@ -443,6 +446,39 @@ public:
     std::string positionString() const;
     std::string trace() const;
 
+    /// Minimum Chebyshev distance from pos to any stone on the board.
+    int minDistToStone(Pos pos) const
+    {
+        int minD = boardSize;
+        for (int i = 1; i <= moveCount; i++) {
+            Pos m = stateInfos[i].lastMove;
+            if (m == Pos::PASS)
+                continue;
+            int d = Pos::distance(pos, m);
+            if (d >= 0 && d < minD)
+                minD = d;
+        }
+        return minD;
+    }
+
+    /// Minimum Chebyshev distance from pos to any stone of the given side.
+    int minDistToSideStone(Pos pos, Color side) const
+    {
+        int minD = boardSize;
+        for (int i = 1; i <= moveCount; i++) {
+            Pos m = stateInfos[i].lastMove;
+            if (m == Pos::PASS)
+                continue;
+            Color stoneColor = ((i % 2) == 1) ? BLACK : WHITE;
+            if (stoneColor != side)
+                continue;
+            int d = Pos::distance(pos, m);
+            if (d >= 0 && d < minD)
+                minD = d;
+        }
+        return minD;
+    }
+
 private:
     // -----------------------------------------------------------------------
     // Unchanged from Rapfi
@@ -485,8 +521,9 @@ private:
     const Direction       *candidateRange;
     uint32_t               candidateRangeSize;
     uint32_t               candAreaExpandDist;
-    Evaluation::Evaluator *evaluator_;
-    Search::SearchThread  *thisThread_;
+    Evaluation::Evaluator      *evaluator_;
+    Search::SearchThread       *thisThread_;
+    std::unique_ptr<Evaluation::InfluenceMap> influenceMap_;
 
     // -----------------------------------------------------------------------
     // PORTAL: New members

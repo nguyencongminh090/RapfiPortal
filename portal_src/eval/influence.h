@@ -163,7 +163,7 @@ private:
 
     /// Scale factor for converting raw influence sum to engine Value.
     /// Tunable. Start conservative so influence is a "tiebreaker."
-    static constexpr float INFLUENCE_SCALE = 0.3f;
+    static constexpr float INFLUENCE_SCALE = 0.07f;
 
     // -----------------------------------------------------------------
     // Data

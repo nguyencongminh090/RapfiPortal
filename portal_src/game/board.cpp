@@ -18,6 +18,7 @@
 #include "../core/pos.h"
 #include "../core/utils.h"
 #include "../eval/evaluator.h"
+#include "../eval/influence.h"
 #include "../search/searchthread.h"
 
 #include <algorithm>
@@ -192,6 +193,10 @@ Board::Board(const Board &other, Search::SearchThread *thread)
     // Sync evaluator state with board state
     if (evaluator_)
         evaluator_->syncWithBoard(*this);
+
+    // PORTAL: Clone influence map if the source has one
+    if (other.influenceMap_)
+        influenceMap_ = std::make_unique<Evaluation::InfluenceMap>(*other.influenceMap_);
 }
 
 Board::~Board()
@@ -501,6 +506,10 @@ void Board::newGame()
     // Reset evaluator state to empty board
     if (evaluator_)
         evaluator_->initEmptyBoard();
+
+    // PORTAL: Initialize influence map after portal setup and pattern computation
+    influenceMap_ = std::make_unique<Evaluation::InfluenceMap>(boardSize);
+    influenceMap_->init(*this);
 }
 
 template void Board::newGame<FREESTYLE>();
@@ -537,6 +546,10 @@ void Board::move(Pos pos)
     // Before move evaluator update
     if (MT == MoveType::NORMAL && evaluator_)
         evaluator_->beforeMove(*this, pos);
+
+    // PORTAL: Update influence map before cells[] changes
+    if (influenceMap_)
+        influenceMap_->onMove(pos, currentSide);
 
     UpdateCache &pc = updateCache[moveCount];
     StateInfo   &st = stateInfos[++moveCount];
@@ -841,6 +854,10 @@ void Board::undo()
     // After undo evaluator update
     if (MT == MoveType::NORMAL && evaluator_)
         evaluator_->afterUndo(*this, lastPos);
+
+    // PORTAL: Reverse influence map update
+    if (influenceMap_)
+        influenceMap_->onUndo(lastPos, ~currentSide);
 }
 
 template void Board::undo<FREESTYLE, Board::MoveType::NORMAL>();

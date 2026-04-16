@@ -94,6 +94,7 @@ set(CORE_SOURCES
     # Eval (unchanged copies — reuses binary_model tables as-is)
     eval/eval.cpp
     eval/evaluator.cpp
+    eval/influence.cpp
     eval/mix9svqnnue.cpp
     eval/mix10nnue.cpp
 
