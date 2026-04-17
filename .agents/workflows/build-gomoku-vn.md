@@ -9,13 +9,61 @@ Follow this **exact module order**. Do not skip ahead. Complete and manually tes
 
 ---
 
+## Phase 0 — Authentication & Login
+
+### [0.1] Auth Schema & Backend
+- Add `users` table to `server/db/schema.sql`:
+  ```sql
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,          -- UUID v4
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,  -- bcrypt hash (cost 12)
+    display_name TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  ```
+- Dependencies: add `bcrypt` (cost 12), `jsonwebtoken` to `package.json`.
+- Auth constants in `server/config.js`:
+  - `JWT_SECRET` (read from env or hardcoded dev fallback)
+  - `JWT_EXPIRY = '7d'`
+  - `BCRYPT_ROUNDS = 12`
+  - `GUEST_NAME_ADJECTIVES` and `GUEST_NAME_NOUNS` word lists (4-8 letter results).
+
+### [0.2] Auth REST Endpoints
+- Implement `server/routes/auth.js` with Express Router:
+  - `POST /api/auth/register` — validate username (3-20 chars, alphanumeric+underscore), hash password with bcrypt, insert user, return JWT.
+  - `POST /api/auth/login` — compare bcrypt hash, return JWT.
+  - `POST /api/auth/guest` — generate a random guest display name (4-8 letters, format: `<Adj><Noun>`, e.g. "LionWolf", "BlueFox"), return a short-lived JWT with `isGuest: true`.
+- JWT payload: `{ userId, username, displayName, isGuest }`.
+- Mount router in `server/index.js` at `/api/auth`.
+
+### [0.3] Auth Middleware
+- Implement `server/middleware/auth.js` — verify JWT, attach `req.user` to request.
+- Socket.io auth: in `SocketHandler`, read JWT from `socket.handshake.auth.token`, verify, attach to `socket.user`.
+- Reject socket connection with `auth:error` if token is missing or invalid.
+
+### [0.4] Login Page UI
+- **Style:** Flat Design — clean, no gradients, strong typography, muted color palette.
+- Build `client/login.html` (Vietnamese UI):
+  - Two-tab layout: **Đăng nhập** / **Đăng ký**
+  - Đăng nhập tab: username + password fields, "Đăng nhập" button.
+  - Đăng ký tab: username + display name + password + confirm password, "Tạo tài khoản" button.
+  - "Chơi như khách" button at bottom — calls `/api/auth/guest`, stores JWT, redirects to lobby.
+  - Show inline validation errors in Vietnamese.
+  - On success: store JWT in `localStorage`, redirect to `index.html` (lobby).
+- Build `client/css/login.css` (flat design, no board preview).
+- Build `client/js/login.js` — handles tab switching, form submit, JWT storage, redirect.
+
+---
+
 ## Phase 1 — Foundation
 
 ### [1.1] Project Scaffold
-- Initialize `package.json` with dependencies: `express`, `socket.io`, `better-sqlite3`, `uuid`.
+- Initialize `package.json` with dependencies: `express`, `socket.io`, `better-sqlite3`, `uuid`, `bcrypt`, `jsonwebtoken`.
 - Create the full folder structure:
   ```
   server/ client/ server/db/ server/managers/ server/generators/ server/socket/
+  server/routes/ server/middleware/
   client/css/ client/js/
   ```
 - Create `server/config.js` with all constants:
@@ -28,8 +76,8 @@ Follow this **exact module order**. Do not skip ahead. Complete and manually tes
   - Default `boardSize`, `timerMode`, `timerSeconds`
 
 ### [1.2] SQLite Setup
-- Create `server/db/schema.sql` with `games` and `player_games` tables (exact schema from spec).
-- Create `server/db/database.js` — initialize DB, run schema, export query helpers.
+- Create `server/db/schema.sql` with `users`, `games`, and `player_games` tables (see Phase 0 for `users` schema).
+- Create `server/db/database.js` — initialize DB, run schema, export query helpers (`getUser`, `createUser`, `saveGame`).
 
 ### [1.3] Express Server
 - Configure Express in `server/index.js` to serve static files from `client/`.

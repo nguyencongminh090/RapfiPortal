@@ -57,3 +57,25 @@ _deps
 
 # Build directory explicitly added
 build/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.test
+.env.production
+.env.local
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Build/Dist
+dist/
+.cache
