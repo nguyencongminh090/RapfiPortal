@@ -9,9 +9,132 @@
   <link rel="stylesheet" href="css/lobby.css" />
 </head>
 <body>
-  <!-- Phase 2 — Lobby UI (coming soon) -->
-  <p style="font-family:sans-serif;padding:40px;">Sảnh — đang xây dựng (Phase 2)</p>
-  <script src="js/socket-client.js"></script>
-  <script src="js/lobby.js"></script>
+
+<!-- ── Connection Status Banner ─────────────────────────────────────────── -->
+<div id="status-banner" class="status-banner" aria-live="polite"></div>
+
+<!-- ── Top Nav ──────────────────────────────────────────────────────────── -->
+<nav class="topnav" role="navigation" aria-label="Điều hướng chính">
+  <a href="index.html" class="topnav__brand">
+    <!-- Flat board icon -->
+    <svg width="24" height="24" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect width="36" height="36" rx="4" fill="rgba(255,255,255,0.12)"/>
+      <line x1="12" y1="6" x2="12" y2="30" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+      <line x1="24" y1="6" x2="24" y2="30" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+      <line x1="6" y1="12" x2="30" y2="12" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+      <line x1="6" y1="24" x2="30" y2="24" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+      <line x1="9" y1="9" x2="15" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="15" y1="9" x2="9" y2="15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="24" cy="24" r="4" fill="white"/>
+    </svg>
+    <span class="topnav__title">GomokuVN</span>
+  </a>
+  <div class="topnav__right">
+    <span id="nav-user" class="topnav__user"></span>
+    <span id="nav-badge" class="topnav__badge"></span>
+    <button id="btn-logout" class="topnav__btn" type="button">Đăng xuất</button>
+  </div>
+</nav>
+
+<!-- ── Lobby Content ───────────────────────────────────────────────────── -->
+<main class="lobby" role="main">
+
+  <div class="lobby__header">
+    <h1>
+      <span class="lobby__title">Danh sách phòng</span>
+      <span id="room-count" class="lobby__count"></span>
+    </h1>
+    <button id="btn-create" class="btn-create" type="button">
+      <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Tạo phòng
+    </button>
+  </div>
+
+  <!-- Room list container -->
+  <div id="room-list" class="room-list">
+    <div class="room-list__empty">
+      <div class="room-list__empty-icon">🎮</div>
+      Chưa có phòng nào. Hãy tạo phòng mới!
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Create Room Modal ───────────────────────────────────────────────── -->
+<div id="modal-create" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 id="modal-title" class="modal__title">Tạo phòng mới</h2>
+      <button id="modal-close" class="modal__close" type="button" aria-label="Đóng">✕</button>
+    </div>
+    <div class="modal__body">
+
+      <!-- Board size -->
+      <div class="setting-row">
+        <span class="setting-label">Kích thước bàn</span>
+        <div class="pill-group">
+          <input type="radio" name="boardSize" id="bs-17" value="17" checked />
+          <label for="bs-17">17×17</label>
+          <input type="radio" name="boardSize" id="bs-19" value="19" />
+          <label for="bs-19">19×19</label>
+          <input type="radio" name="boardSize" id="bs-20" value="20" />
+          <label for="bs-20">20×20</label>
+        </div>
+      </div>
+
+      <!-- Rules toggles -->
+      <div class="setting-row">
+        <span class="setting-label">Luật đặc biệt</span>
+        <div class="toggle-row">
+          <span class="toggle-name">Tường (Wall)</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="rule-wall" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-name">Cổng dịch chuyển (Portal)</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="rule-portal" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Timer mode -->
+      <div class="setting-row">
+        <span class="setting-label">Bộ đếm giờ</span>
+        <div class="pill-group">
+          <input type="radio" name="timerMode" id="tm-move" value="per_move" checked />
+          <label for="tm-move">Mỗi nước</label>
+          <input type="radio" name="timerMode" id="tm-game" value="per_game" />
+          <label for="tm-game">Mỗi ván</label>
+        </div>
+      </div>
+
+      <!-- Timer seconds -->
+      <div class="setting-row">
+        <span class="setting-label">Thời gian</span>
+        <div class="timer-input">
+          <input type="number" id="timer-seconds" value="60" min="10" max="3600" step="5" />
+          <span class="unit">giây</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="modal__actions">
+        <button id="modal-cancel" class="btn btn-cancel" type="button">Huỷ</button>
+        <button id="modal-confirm" class="btn btn-confirm" type="button">Tạo phòng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.io CDN -->
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/socket-client.js"></script>
+<script src="js/lobby.js"></script>
 </body>
 </html>
