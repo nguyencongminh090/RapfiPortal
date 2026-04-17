@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 <RULE[gomoku-vn-dev.md]>
 # Antigravity Rules — GomokuVN Web App
 
