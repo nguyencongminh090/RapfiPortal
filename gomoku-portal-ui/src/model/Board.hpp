@@ -125,6 +125,12 @@ public:
     /// Count empty cells.
     [[nodiscard]] int emptyCells() const;
 
+    /// Check if the board is completely full.
+    [[nodiscard]] bool isBoardFull() const { return emptyCells() == 0; }
+
+    /// Check if a move is legal (in bounds and empty).
+    [[nodiscard]] bool isLegalMove(util::Coord pos) const { return isEmpty(pos.x, pos.y); }
+
 private:
     int                    size_;
     std::vector<Cell>      cells_;     ///< size_*size_, row-major

@@ -27,6 +27,8 @@ MainWindow::MainWindow(controller::GameController& gameCtrl)
     , boardCanvas_(gameCtrl.board())
     , dbPanel_()
     , analysisPanel_(analysisCtrl_)
+    , openingEditorPanel_(gameCtrl_)
+    , tournamentPanel_(tournCtrl_)
 {
     set_title("Portal Gomoku Engine UI");
     
@@ -142,6 +144,8 @@ void MainWindow::setupLayout() {
     sideNotebook_.append_page(dbPanel_, "Database");
     sideNotebook_.append_page(engineSettingsPanel_, "Engine");
     sideNotebook_.append_page(uiSettingsPanel_, "UI Settings");
+    sideNotebook_.append_page(openingEditorPanel_, "Opening Editor");
+    sideNotebook_.append_page(tournamentPanel_, "Tournament");
     
     // Set Log as default page
     sideNotebook_.set_current_page(0);
@@ -376,6 +380,30 @@ void MainWindow::setupSignals() {
     connections_.push_back(
         gameCtrl_.signalRawComm.connect(
             sigc::mem_fun(*this, &MainWindow::onRawComm)));
+            
+    // Tournament controller signals -> UI board updates
+    connections_.push_back(
+        tournCtrl_.signalBoardUpdated.connect([this]() {
+            // Sync tournament board state to the main UI board
+            gameCtrl_.board().reset(tournCtrl_.currentBoard().size());
+            gameCtrl_.board().setTopology(tournCtrl_.currentBoard().topology());
+            // Sync history/state
+            for (const auto& m : tournCtrl_.currentBoard().history()) {
+                if (m.isPass()) gameCtrl_.board().pass(m.color);
+                else gameCtrl_.board().placeStone(m.coord, m.color);
+            }
+            onBoardChanged();
+        }));
+    
+    // Log messages
+    connections_.push_back(
+        tournCtrl_.signalLogMessage.connect([this](const std::string& msg) {
+            logPanel_.appendLog(msg);
+        }));
+
+    connections_.push_back(
+        tournCtrl_.signalRawComm.connect(
+            sigc::mem_fun(*this, &MainWindow::onRawComm)));
 }
 
 // =============================================================================
@@ -390,6 +418,7 @@ void MainWindow::startPollingTimer() {
 
 bool MainWindow::onPollTimer() {
     gameCtrl_.pollEngine();
+    tournCtrl_.pollEngines();
     return true;  // Keep the timer running
 }
 

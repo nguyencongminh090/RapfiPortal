@@ -16,6 +16,7 @@ engine_sources = files(
 model_sources = files(
     'src/model/Board.cpp',
     'src/model/GameRecord.cpp',
+    'src/model/OBFManager.cpp',
 )
 
 # Main application
@@ -34,10 +35,13 @@ app_sources = files(
     'src/controller/SetupController.cpp',
     'src/controller/AnalysisController.cpp',
     'src/controller/DatabaseController.cpp',
+    'src/controller/TournamentController.cpp',
     'src/ui/panels/DatabasePanel.cpp',
     'src/ui/panels/AnalysisPanel.cpp',
     'src/ui/panels/EngineSettingsPanel.cpp',
     'src/ui/panels/UISettingsPanel.cpp',
+    'src/ui/panels/OpeningEditorPanel.cpp',
+    'src/ui/panels/TournamentPanel.cpp',
     'src/util/SettingsManager.cpp',
 )
 

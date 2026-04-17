@@ -29,6 +29,8 @@
 #include "../ui/panels/AnalysisPanel.hpp"
 #include "../ui/panels/EngineSettingsPanel.hpp"
 #include "../ui/panels/UISettingsPanel.hpp"
+#include "../ui/panels/OpeningEditorPanel.hpp"
+#include "../ui/panels/TournamentPanel.hpp"
 
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/box.h>
@@ -92,6 +94,7 @@ private:
 
     controller::SetupController setupCtrl_;
     controller::AnalysisController analysisCtrl_;
+    controller::TournamentController tournCtrl_;
 
     // =========================================================================
     // Board & Widgets
@@ -111,6 +114,8 @@ private:
     panels::AnalysisPanel analysisPanel_;
     panels::EngineSettingsPanel engineSettingsPanel_;
     panels::UISettingsPanel uiSettingsPanel_;
+    panels::OpeningEditorPanel openingEditorPanel_;
+    panels::TournamentPanel tournamentPanel_;
 
     // =========================================================================
     // Timer for engine polling

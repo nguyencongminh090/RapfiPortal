@@ -7,6 +7,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <chrono>
+#include <thread>
+#include <algorithm>
 
 namespace engine {
 
@@ -160,8 +162,15 @@ void EngineController::applyConfig(const EngineConfig& config) {
     send(EngineProtocol::infoTimeoutTurn(config.timeoutTurn));
     send(EngineProtocol::infoTimeoutMatch(config.timeoutMatch));
     send(EngineProtocol::infoMaxMemory(config.maxMemoryBytes));
-    if (config.threadNum >= 0)
-        send(EngineProtocol::infoThreadNum(config.threadNum));
+    
+    // Auto-resolve threadNum == 0 to max hardware threads
+    int threadsToSend = config.threadNum;
+    if (threadsToSend == 0) {
+        threadsToSend = std::max<int>(1, std::thread::hardware_concurrency());
+    }
+    if (threadsToSend >= 0)
+        send(EngineProtocol::infoThreadNum(threadsToSend));
+        
     send(EngineProtocol::infoStrength(config.strength));
     send(EngineProtocol::infoMaxDepth(config.maxDepth));
     send(EngineProtocol::infoPondering(config.pondering));
