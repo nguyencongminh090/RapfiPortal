@@ -318,6 +318,11 @@ function updateUI() {
 
   // Render score table
   renderScoreTable();
+
+  // Make sure empty board is rendered if no game is active
+  if (!gameState) {
+    initBoard();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -630,71 +635,85 @@ function escapeAttr(str) {
 // Board / Game rendering
 // ---------------------------------------------------------------------------
 
-/** Create the canvas and BoardRenderer when a game starts. */
+/** Create the canvas and BoardRenderer when a game starts or room loads. */
 function initBoard() {
-  if (!gameState) return;
+  if (!roomData) return;
+  const boardSize = gameState ? gameState.boardSize : roomData.settings.boardSize;
 
-  // Replace placeholder with game UI
-  boardArea.innerHTML = `
-    <div style="width:100%;display:flex;flex-direction:column;align-items:center;padding:10px;">
-      <div class="turn-bar" id="turn-bar">
-        <div class="turn-bar__player" id="tb-black">
-          <span class="turn-bar__stone turn-bar__stone--black"></span>
-          <span class="turn-bar__name" id="tb-black-name"></span>
-          <span class="turn-bar__timer" id="tb-black-timer"></span>
+  if (!boardRenderer) {
+    boardArea.innerHTML = `
+      <div style="width:100%;display:flex;flex-direction:column;align-items:center;padding:10px;">
+        <div class="turn-bar" id="turn-bar" style="visibility: hidden">
+          <div class="turn-bar__player" id="tb-black">
+            <span class="turn-bar__stone turn-bar__stone--black"></span>
+            <span class="turn-bar__name" id="tb-black-name"></span>
+            <span class="turn-bar__timer" id="tb-black-timer"></span>
+          </div>
+          <div class="game-info__turn" id="turn-label"></div>
+          <div class="turn-bar__player" id="tb-white">
+            <span class="turn-bar__timer" id="tb-white-timer"></span>
+            <span class="turn-bar__name" id="tb-white-name"></span>
+            <span class="turn-bar__stone turn-bar__stone--white"></span>
+          </div>
         </div>
-        <div class="game-info__turn" id="turn-label"></div>
-        <div class="turn-bar__player" id="tb-white">
-          <span class="turn-bar__timer" id="tb-white-timer"></span>
-          <span class="turn-bar__name" id="tb-white-name"></span>
-          <span class="turn-bar__stone turn-bar__stone--white"></span>
+        <div class="board-canvas-wrap" id="board-wrap">
+          <canvas id="game-canvas"></canvas>
         </div>
+        <div class="game-controls" id="game-controls"></div>
+        <div id="draw-prompt-area"></div>
       </div>
-      <div class="board-canvas-wrap" id="board-wrap">
-        <canvas id="game-canvas"></canvas>
-      </div>
-      <div class="game-controls" id="game-controls"></div>
-      <div id="draw-prompt-area"></div>
-    </div>
-  `;
+    `;
 
-  const canvas = document.getElementById('game-canvas');
+    const canvas = document.getElementById('game-canvas');
+    boardRenderer = new BoardRenderer(canvas, {
+      boardSize: boardSize,
+      onCellClick: (x, y) => {
+        if (gameState && gameState.status === 'ongoing') {
+          client.emit('game:move', { x, y });
+        }
+      },
+    });
 
-  // Determine my color
-  const myPlayer = gameState.players.find(p => p.userId === myUser.userId);
-  const myColorStr = myPlayer ? myPlayer.color : null;
+    window._boardResizeHandler = () => { if (boardRenderer) boardRenderer.resize(); };
+    window.addEventListener('resize', window._boardResizeHandler);
+  }
 
-  boardRenderer = new BoardRenderer(canvas, {
-    boardSize: gameState.boardSize,
-    onCellClick: (x, y) => {
-      client.emit('game:move', { x, y });
-    },
-  });
+  if (!gameState) {
+    // Render empty board
+    boardRenderer.setState({
+      boardSize: boardSize,
+      board: Array(boardSize).fill().map(() => Array(boardSize).fill(0)),
+      walls: [], portals: [], firstMoveZones: [],
+      showZones: false, interactive: false, lastMove: null, myColor: null
+    });
+    document.getElementById('turn-bar').style.visibility = 'hidden';
+    document.getElementById('game-controls').innerHTML = '';
+  } else {
+    // Render active game
+    document.getElementById('turn-bar').style.visibility = 'visible';
+    const myPlayer = gameState.players.find(p => p.userId === myUser.userId);
+    const myColorStr = myPlayer ? myPlayer.color : null;
 
-  boardRenderer.setState({
-    boardSize: gameState.boardSize,
-    board: gameState.board,
-    walls: gameState.walls,
-    portals: gameState.portals,
-    firstMoveZones: gameState.firstMoveZones,
-    showZones: gameState.walls.length > 0 && gameState.moveCount === 0,
-    myColor: myColorStr,
-    interactive: !!myColorStr,
-  });
+    boardRenderer.setState({
+      boardSize: gameState.boardSize,
+      board: gameState.board,
+      walls: gameState.walls,
+      portals: gameState.portals,
+      firstMoveZones: gameState.firstMoveZones,
+      showZones: gameState.walls.length > 0 && gameState.moveCount === 0,
+      myColor: myColorStr,
+      interactive: !!myColorStr && gameState.status === 'ongoing',
+    });
 
-  // Populate player names in turn bar
-  const blackP = gameState.players.find(p => p.color === 'BLACK');
-  const whiteP = gameState.players.find(p => p.color === 'WHITE');
-  const bNameEl = document.getElementById('tb-black-name');
-  const wNameEl = document.getElementById('tb-white-name');
-  if (bNameEl) bNameEl.textContent = blackP ? blackP.displayName : '—';
-  if (wNameEl) wNameEl.textContent = whiteP ? whiteP.displayName : '—';
+    const blackP = gameState.players.find(p => p.color === 'BLACK');
+    const whiteP = gameState.players.find(p => p.color === 'WHITE');
+    const bNameEl = document.getElementById('tb-black-name');
+    const wNameEl = document.getElementById('tb-white-name');
+    if (bNameEl) bNameEl.textContent = blackP ? blackP.displayName : '—';
+    if (wNameEl) wNameEl.textContent = whiteP ? whiteP.displayName : '—';
+  }
 
   boardRenderer.resize();
-
-  // Handle window resize
-  window._boardResizeHandler = () => { if (boardRenderer) boardRenderer.resize(); };
-  window.addEventListener('resize', window._boardResizeHandler);
 }
 
 /** Update the board renderer state after a move. */
@@ -854,19 +873,10 @@ function showGameOverlay(result) {
   overlayReason.textContent = reasonText;
   gameOverlay.classList.add('visible');
 
-  // Reset board area to placeholder after a delay
+  // Ensure board shows empty state after game ends and state is reset
   setTimeout(() => {
-    if (!gameState) {
-      boardArea.innerHTML = `
-        <div class="board-placeholder">
-          <div class="board-placeholder__icon">♟</div>
-          <div class="board-placeholder__text">Chờ người chơi sẵn sàng...</div>
-        </div>
-      `;
-      boardRenderer = null;
-      if (window._boardResizeHandler) {
-        window.removeEventListener('resize', window._boardResizeHandler);
-      }
+    if (!gameState && roomData) {
+      initBoard();
     }
   }, 500);
 }
