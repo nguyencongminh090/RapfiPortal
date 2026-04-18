@@ -897,3 +897,17 @@ btnCloseOverlay.addEventListener('click', () => {
 window.doResign = function() {
   if (confirm('Bạn có chắc muốn đầu hàng?')) {
     client.emit('game:resign');
+  }
+};
+
+window.doDrawOffer = function() {
+  client.emit('game:draw_offer');
+};
+
+window.acceptDraw = function() {
+  client.emit('game:draw_accept');
+};
+
+window.declineDraw = function() {
+  client.emit('game:draw_decline');
+};
