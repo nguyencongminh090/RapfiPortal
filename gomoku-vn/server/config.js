@@ -29,6 +29,7 @@ const WALL_RETRY_LIMIT      = 100;
 // --- PORTAL mechanic ---
 const PORTAL_PAIR_COUNT     = 2;
 const PORTAL_MIN_CHEBYSHEV  = 5;   // Min Chebyshev dist between any 2 portal cells
+const PORTAL_EDGE_MIN_DIST  = 3;   // Min distance from any board edge
 const PORTAL_RETRY_LIMIT    = 100;
 
 // --- Chat rate limiting ---
@@ -78,6 +79,7 @@ module.exports = {
   WALL_RETRY_LIMIT,
   PORTAL_PAIR_COUNT,
   PORTAL_MIN_CHEBYSHEV,
+  PORTAL_EDGE_MIN_DIST,
   PORTAL_RETRY_LIMIT,
   CHAT_RATE_LIMIT,
   CHAT_RATE_WINDOW_MS,

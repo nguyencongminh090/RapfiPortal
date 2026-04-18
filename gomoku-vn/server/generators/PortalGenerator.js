@@ -33,15 +33,21 @@ const { chebyshev } = require('./WallGenerator');
 function generate(boardSize, walls = []) {
   const pairCount = config.PORTAL_PAIR_COUNT;
   const minDist   = config.PORTAL_MIN_CHEBYSHEV;
+  const edgeMin   = config.PORTAL_EDGE_MIN_DIST;
   const totalCells = pairCount * 2; // 4 cells total
+
+  // Valid placement range: [edgeMin, boardSize - 1 - edgeMin]
+  const lo = edgeMin;
+  const hi = boardSize - 1 - edgeMin;
+  if (lo > hi) return null; // Board too small
 
   for (let attempt = 0; attempt < config.PORTAL_RETRY_LIMIT; attempt++) {
     const cells = [];
     let valid = true;
 
     for (let i = 0; i < totalCells; i++) {
-      const x = Math.floor(Math.random() * boardSize);
-      const y = Math.floor(Math.random() * boardSize);
+      const x = lo + Math.floor(Math.random() * (hi - lo + 1));
+      const y = lo + Math.floor(Math.random() * (hi - lo + 1));
       const pos = { x, y };
 
       // Check not on a wall cell (Chebyshev dist 0)
