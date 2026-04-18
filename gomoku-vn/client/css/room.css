@@ -52,20 +52,7 @@
   margin-bottom: 6px;
 }
 
-.slot-card__stone {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--c-border);
-}
-.slot-card__stone--black {
-  background: #1A1714;
-  border-color: #1A1714;
-}
-.slot-card__stone--white {
-  background: #FFFFFF;
-  border-color: #B0ABA6;
-}
+
 
 .slot-card__name {
   font-size: 15px;
