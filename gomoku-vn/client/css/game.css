@@ -152,17 +152,33 @@
 /* ─── Draw Prompt ───────────────────────────────────────────────── */
 
 .draw-prompt {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
-  margin-top: 8px;
+  padding: 12px 24px;
   background: #fef3cd;
-  border: 1px solid #ffc107;
+  border: 2px solid #ffc107;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 600;
   color: #856404;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  animation: draw-prompt-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.room--focus .draw-prompt {
+  top: 20px;
+}
+
+@keyframes draw-prompt-in {
+  from { opacity: 0; transform: translate(-50%, -20px) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
 .draw-prompt__actions {

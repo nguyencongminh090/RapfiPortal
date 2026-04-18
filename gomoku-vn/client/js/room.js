@@ -212,6 +212,13 @@ client.on('game:init', (data) => {
 // Game moved
 client.on('game:moved', (data) => {
   if (!gameState) return;
+
+  // A move cancels any pending draw offer server-side, so clear it locally too
+  if (drawOfferPending) {
+    drawOfferPending = null;
+    renderDrawPrompt();
+  }
+
   // Update local board state
   const colorVal = data.color === 'BLACK' ? 1 : 2;
   gameState.board[data.y][data.x] = colorVal;
@@ -258,13 +265,13 @@ client.on('game:time_granted', (data) => {
 // Draw offer received
 client.on('game:draw_offered', (data) => {
   drawOfferPending = data;
-  updateUI();
+  renderDrawPrompt();
 });
 
 // Draw declined
 client.on('game:draw_declined', () => {
   drawOfferPending = null;
-  updateUI();
+  renderDrawPrompt();
 });
 
 // [5.2] Game interrupted (opponent disconnected)
