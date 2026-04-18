@@ -45,10 +45,16 @@ if (!myUser) {
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
-let roomData = null;   // Latest room:joined / room:updated payload
-let myRole   = null;   // 'host' | 'player' | 'guest'
-let mySlot   = null;   // 1 | 2 | null
-let isReady  = false;
+let roomData  = null;   // Latest room:joined / room:updated payload
+let myRole    = null;   // 'host' | 'player' | 'guest'
+let mySlot    = null;   // 1 | 2 | null
+let isReady   = false;
+
+// Game state
+let gameState = null;   // From game:init
+let boardRenderer = null;
+let timerValues = { black: 0, white: 0 };
+let drawOfferPending = null; // { from, fromName } or null
 
 // ---------------------------------------------------------------------------
 // Element refs
@@ -72,6 +78,12 @@ const chatInput      = document.getElementById('chat-input');
 const btnSend        = document.getElementById('btn-send');
 const scorePanel     = document.getElementById('score-panel');
 const scoreBody      = document.getElementById('score-body');
+const boardArea      = document.getElementById('board-area');
+const gameOverlay    = document.getElementById('game-overlay');
+const overlayResult  = document.getElementById('overlay-result');
+const overlayReason  = document.getElementById('overlay-reason');
+const btnRematch     = document.getElementById('btn-rematch');
+const btnCloseOverlay = document.getElementById('btn-close-overlay');
 
 client.bindStatusBanner(statusBanner);
 
@@ -112,6 +124,13 @@ chatInput.addEventListener('keydown', (e) => {
 // Initial room data (on connect/reconnect)
 client.on('room:joined', (data) => {
   roomData = data;
+  // Restore game state if reconnecting mid-game
+  if (data.gameState) {
+    gameState = data.gameState;
+    timerValues = data.timer || timerValues;
+    initBoard();
+    updateBoardState();
+  }
   updateUI();
 });
 
@@ -150,6 +169,80 @@ client.on('chat:message', (msg) => {
 
 client.on('chat:error', (data) => {
   appendSystemMessage(`⚠ ${data.message}`);
+});
+
+// Game error
+client.on('game:error', (data) => {
+  appendSystemMessage(`⚠ ${data.message}`);
+});
+
+// Game init — game starts
+client.on('game:init', (data) => {
+  gameState = data;
+  timerValues = data.timer || { black: data.timerSeconds || 60, white: data.timerSeconds || 60 };
+  drawOfferPending = null;
+  gameOverlay.classList.remove('visible');
+  initBoard();
+  updateBoardState();
+  updateUI();
+});
+
+// Game moved
+client.on('game:moved', (data) => {
+  if (!gameState) return;
+  // Update local board state
+  const colorVal = data.color === 'BLACK' ? 1 : 2;
+  gameState.board[data.y][data.x] = colorVal;
+  gameState.currentTurn = data.nextTurn;
+  gameState.moveCount = data.moveCount;
+  if (!gameState.moveHistory) gameState.moveHistory = [];
+  gameState.moveHistory.push({ x: data.x, y: data.y, color: data.color, timestamp: Date.now() });
+  if (data.timer) timerValues = data.timer;
+  if (data.gameOver) gameState.status = 'finished';
+
+  updateBoardState();
+  updateUI();
+});
+
+// Timer tick
+client.on('timer:tick', (data) => {
+  timerValues = data;
+  renderTimers();
+});
+
+// Game ended
+client.on('game:ended', (data) => {
+  if (data.scoreTable && roomData) roomData.scoreTable = data.scoreTable;
+  gameState = null;
+  drawOfferPending = null;
+  showGameOverlay(data.result);
+  updateUI();
+});
+
+// Draw offer received
+client.on('game:draw_offered', (data) => {
+  drawOfferPending = data;
+  updateUI();
+});
+
+// Draw declined
+client.on('game:draw_declined', () => {
+  drawOfferPending = null;
+  updateUI();
+});
+
+// [5.2] Game interrupted (opponent disconnected)
+client.on('game:interrupted', (data) => {
+  appendSystemMessage(`${data.playerName} mất kết nối. Chờ kết nối lại (${data.secondsLeft}s)...`);
+  if (gameState) gameState.status = 'interrupted';
+  updateBoardState();
+});
+
+// [5.2] Game resumed (opponent reconnected)
+client.on('game:resumed', (data) => {
+  appendSystemMessage('Đối thủ đã kết nối lại! Ván đấu tiếp tục.');
+  if (gameState) gameState.status = 'ongoing';
+  updateBoardState();
 });
 
 // ---------------------------------------------------------------------------
@@ -275,6 +368,12 @@ function renderActionButtons() {
     return;
   }
 
+  // During a game, no lobby-style action buttons
+  if (roomData.state === 'playing') {
+    actionButtons.innerHTML = '';
+    return;
+  }
+
   let html = '';
 
   if (mySlot === null) {
@@ -295,9 +394,7 @@ function renderActionButtons() {
     } else {
       html += `<button class="btn-slot btn-slot--ready" onclick="toggleReady()">Sẵn sàng</button>`;
     }
-    if (roomData.state !== 'playing') {
-      html += `<button class="btn-slot btn-slot--stand" onclick="standUp()">Đứng dậy</button>`;
-    }
+    html += `<button class="btn-slot btn-slot--stand" onclick="standUp()">Đứng dậy</button>`;
   }
 
   actionButtons.innerHTML = html;
@@ -532,3 +629,275 @@ function escapeHtml(str) {
 function escapeAttr(str) {
   return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
+
+// ---------------------------------------------------------------------------
+// Board / Game rendering
+// ---------------------------------------------------------------------------
+
+/** Create the canvas and BoardRenderer when a game starts. */
+function initBoard() {
+  if (!gameState) return;
+
+  // Replace placeholder with game UI
+  boardArea.innerHTML = `
+    <div style="width:100%;display:flex;flex-direction:column;align-items:center;padding:10px;">
+      <div class="turn-bar" id="turn-bar">
+        <div class="turn-bar__player" id="tb-black">
+          <span class="turn-bar__stone turn-bar__stone--black"></span>
+          <span class="turn-bar__name" id="tb-black-name"></span>
+          <span class="turn-bar__timer" id="tb-black-timer"></span>
+        </div>
+        <div class="game-info__turn" id="turn-label"></div>
+        <div class="turn-bar__player" id="tb-white">
+          <span class="turn-bar__timer" id="tb-white-timer"></span>
+          <span class="turn-bar__name" id="tb-white-name"></span>
+          <span class="turn-bar__stone turn-bar__stone--white"></span>
+        </div>
+      </div>
+      <div class="board-canvas-wrap" id="board-wrap">
+        <canvas id="game-canvas"></canvas>
+      </div>
+      <div class="game-controls" id="game-controls"></div>
+      <div id="draw-prompt-area"></div>
+    </div>
+  `;
+
+  const canvas = document.getElementById('game-canvas');
+
+  // Determine my color
+  const myPlayer = gameState.players.find(p => p.userId === myUser.userId);
+  const myColorStr = myPlayer ? myPlayer.color : null;
+
+  boardRenderer = new BoardRenderer(canvas, {
+    boardSize: gameState.boardSize,
+    onCellClick: (x, y) => {
+      client.emit('game:move', { x, y });
+    },
+  });
+
+  boardRenderer.setState({
+    boardSize: gameState.boardSize,
+    board: gameState.board,
+    walls: gameState.walls,
+    portals: gameState.portals,
+    firstMoveZones: gameState.firstMoveZones,
+    showZones: gameState.walls.length > 0 && gameState.moveCount === 0,
+    myColor: myColorStr,
+    interactive: !!myColorStr,
+  });
+
+  // Populate player names in turn bar
+  const blackP = gameState.players.find(p => p.color === 'BLACK');
+  const whiteP = gameState.players.find(p => p.color === 'WHITE');
+  const bNameEl = document.getElementById('tb-black-name');
+  const wNameEl = document.getElementById('tb-white-name');
+  if (bNameEl) bNameEl.textContent = blackP ? blackP.displayName : '—';
+  if (wNameEl) wNameEl.textContent = whiteP ? whiteP.displayName : '—';
+
+  boardRenderer.resize();
+
+  // Handle window resize
+  window._boardResizeHandler = () => { if (boardRenderer) boardRenderer.resize(); };
+  window.addEventListener('resize', window._boardResizeHandler);
+}
+
+/** Update the board renderer state after a move. */
+function updateBoardState() {
+  if (!boardRenderer || !gameState) return;
+
+  const myPlayer = gameState.players.find(p => p.userId === myUser.userId);
+  const isMyTurn = gameState.currentTurn === myUser.userId;
+  const lastMove = gameState.moveCount > 0
+    ? gameState.board.reduce((acc, row, y) => {
+        // Find last placed stone from moveHistory if available
+        return acc;
+      }, null)
+    : null;
+
+  // Get last move from the board history
+  let lm = null;
+  if (gameState.moveHistory && gameState.moveHistory.length > 0) {
+    const last = gameState.moveHistory[gameState.moveHistory.length - 1];
+    lm = { x: last.x, y: last.y };
+  }
+
+  boardRenderer.setState({
+    board: gameState.board,
+    lastMove: lm,
+    isMyTurn: isMyTurn && gameState.status === 'ongoing',
+    showZones: gameState.walls.length > 0 && gameState.moveCount === 0,
+    interactive: !!myPlayer && gameState.status === 'ongoing',
+  });
+
+  renderTimers();
+  renderTurnLabel();
+  renderGameControls();
+}
+
+/** Render timer values in the turn bar. */
+function renderTimers() {
+  const bTimerEl = document.getElementById('tb-black-timer');
+  const wTimerEl = document.getElementById('tb-white-timer');
+  if (!bTimerEl || !wTimerEl) return;
+
+  bTimerEl.textContent = formatTime(timerValues.black);
+  wTimerEl.textContent = formatTime(timerValues.white);
+
+  bTimerEl.classList.toggle('turn-bar__timer--low', timerValues.black <= 10);
+  wTimerEl.classList.toggle('turn-bar__timer--low', timerValues.white <= 10);
+
+  // Highlight active player
+  const tbBlack = document.getElementById('tb-black');
+  const tbWhite = document.getElementById('tb-white');
+  if (tbBlack && tbWhite && gameState) {
+    const blackP = gameState.players.find(p => p.color === 'BLACK');
+    const isBlackTurn = gameState.currentTurn === (blackP ? blackP.userId : null);
+    tbBlack.classList.toggle('turn-bar__active', isBlackTurn && gameState.status === 'ongoing');
+    tbWhite.classList.toggle('turn-bar__active', !isBlackTurn && gameState.status === 'ongoing');
+  }
+}
+
+/** Render the turn indicator label. */
+function renderTurnLabel() {
+  const el = document.getElementById('turn-label');
+  if (!el || !gameState) return;
+
+  if (gameState.status !== 'ongoing') {
+    el.textContent = 'Kết thúc';
+    el.classList.remove('game-info__turn--mine');
+    return;
+  }
+
+  const isMyTurn = gameState.currentTurn === myUser.userId;
+  el.textContent = isMyTurn ? 'Lượt của bạn' : 'Đối thủ đang đi...';
+  el.classList.toggle('game-info__turn--mine', isMyTurn);
+}
+
+/** Render game control buttons (resign, draw). */
+function renderGameControls() {
+  const el = document.getElementById('game-controls');
+  if (!el) return;
+
+  const myPlayer = gameState ? gameState.players.find(p => p.userId === myUser.userId) : null;
+
+  if (!gameState || gameState.status !== 'ongoing' || !myPlayer) {
+    el.innerHTML = '';
+    renderDrawPrompt();
+    return;
+  }
+
+  el.innerHTML = `
+    <button class="btn-game btn-game--resign" onclick="doResign()">Đầu hàng</button>
+    <button class="btn-game btn-game--draw" onclick="doDrawOffer()">Đề nghị hoà</button>
+  `;
+
+  renderDrawPrompt();
+}
+
+/** Render draw offer prompt if applicable. */
+function renderDrawPrompt() {
+  const el = document.getElementById('draw-prompt-area');
+  if (!el) return;
+
+  if (!drawOfferPending || !gameState || gameState.status !== 'ongoing') {
+    el.innerHTML = '';
+    return;
+  }
+
+  // If I'm the one who offered, show waiting message
+  if (drawOfferPending.from === myUser.userId) {
+    el.innerHTML = `<div class="draw-prompt">Đang chờ đối thủ phản hồi đề nghị hoà...</div>`;
+    return;
+  }
+
+  // Opponent offered — show accept/decline
+  el.innerHTML = `
+    <div class="draw-prompt">
+      <span>${escapeHtml(drawOfferPending.fromName || 'Đối thủ')} đề nghị hoà</span>
+      <div class="draw-prompt__actions">
+        <button class="btn-draw-action btn-draw-accept" onclick="doDrawAccept()">Đồng ý</button>
+        <button class="btn-draw-action btn-draw-decline" onclick="doDrawDecline()">Từ chối</button>
+      </div>
+    </div>
+  `;
+}
+
+/** Format seconds to mm:ss. */
+function formatTime(seconds) {
+  if (seconds < 0) seconds = 0;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2, '0')}` : `${s}`;
+}
+
+// ---------------------------------------------------------------------------
+// Game End Overlay
+// ---------------------------------------------------------------------------
+
+function showGameOverlay(result) {
+  if (!result) return;
+
+  let resultText, resultClass, reasonText;
+
+  if (result.winner === 'draw') {
+    resultText = 'Hoà!';
+    resultClass = 'game-overlay__result--draw';
+    reasonText = result.reason === 'agreement' ? 'Hai bên đồng ý hoà' : 'Bàn cờ đã đầy';
+  } else if (result.winner === myUser.userId) {
+    resultText = 'Bạn thắng! 🎉';
+    resultClass = 'game-overlay__result--win';
+    reasonText = getReasonText(result.reason);
+  } else {
+    resultText = 'Bạn thua';
+    resultClass = 'game-overlay__result--lose';
+    reasonText = getReasonText(result.reason);
+  }
+
+  overlayResult.textContent = resultText;
+  overlayResult.className = 'game-overlay__result ' + resultClass;
+  overlayReason.textContent = reasonText;
+  gameOverlay.classList.add('visible');
+
+  // Reset board area to placeholder after a delay
+  setTimeout(() => {
+    if (!gameState) {
+      boardArea.innerHTML = `
+        <div class="board-placeholder">
+          <div class="board-placeholder__icon">♟</div>
+          <div class="board-placeholder__text">Chờ người chơi sẵn sàng...</div>
+        </div>
+      `;
+      boardRenderer = null;
+      if (window._boardResizeHandler) {
+        window.removeEventListener('resize', window._boardResizeHandler);
+      }
+    }
+  }, 500);
+}
+
+function getReasonText(reason) {
+  switch (reason) {
+    case 'win':     return 'Xếp được 5 quân liên tiếp';
+    case 'resign':  return 'Đối thủ đầu hàng';
+    case 'timeout': return 'Hết thời gian';
+    default:        return '';
+  }
+}
+
+// Overlay buttons
+btnRematch.addEventListener('click', () => {
+  gameOverlay.classList.remove('visible');
+  client.emit('game:rematch');
+});
+
+btnCloseOverlay.addEventListener('click', () => {
+  gameOverlay.classList.remove('visible');
+});
+
+// ---------------------------------------------------------------------------
+// Game action handlers
+// ---------------------------------------------------------------------------
+
+window.doResign = function() {
+  if (confirm('Bạn có chắc muốn đầu hàng?')) {
+    client.emit('game:resign');

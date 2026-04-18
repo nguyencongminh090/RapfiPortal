@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/lobby.css" />
   <link rel="stylesheet" href="css/room.css" />
+  <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
 
@@ -112,9 +113,22 @@
   </aside>
 </main>
 
+<!-- Game End Overlay -->
+<div class="game-overlay" id="game-overlay">
+  <div class="game-overlay__card">
+    <div class="game-overlay__result" id="overlay-result"></div>
+    <div class="game-overlay__reason" id="overlay-reason"></div>
+    <div class="game-overlay__actions">
+      <button class="btn-overlay btn-overlay--primary" id="btn-rematch" type="button">Đấu lại</button>
+      <button class="btn-overlay btn-overlay--secondary" id="btn-close-overlay" type="button">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <!-- Socket.io CDN -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/socket-client.js"></script>
+<script src="js/board.js"></script>
 <script src="js/room.js"></script>
 </body>
 </html>

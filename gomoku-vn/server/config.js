@@ -59,6 +59,9 @@ const GUEST_NAME_NOUNS = [
 // --- HTTP ---
 const HTTP_PORT = process.env.PORT || 3000;
 
+// --- Security ---
+const MAX_EVENTS_PER_SECOND = 50; // Socket flood protection
+
 module.exports = {
   MAX_ROOMS,
   MAX_USERS_PER_ROOM,
@@ -85,4 +88,5 @@ module.exports = {
   GUEST_NAME_ADJECTIVES,
   GUEST_NAME_NOUNS,
   HTTP_PORT,
+  MAX_EVENTS_PER_SECOND,
 };
