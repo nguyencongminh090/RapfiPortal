@@ -1,1 +1,443 @@
-/* room.css — Room page styles (Phase 3) */
+/* =============================================================================
+   room.css — GomokuVN Room Page
+   Flat Design — player slots, settings panel, chat, board placeholder
+   ============================================================================= */
+
+/* ── Room Layout ──────────────────────────────────────────────────────────── */
+.room {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 16px 32px;
+  display: grid;
+  grid-template-columns: 220px 1fr 280px;
+  gap: 14px;
+  min-height: calc(100vh - 52px);
+}
+
+/* ── Left Sidebar: Player Slots ───────────────────────────────────────────── */
+.sidebar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Player slot card */
+.slot-card {
+  background: var(--c-surface);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  transition: border-color 0.15s;
+}
+.slot-card--active {
+  border-color: var(--c-brand);
+}
+
+.slot-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.slot-card__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-ink-3);
+}
+
+.slot-card__stone {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c-border);
+}
+.slot-card__stone--black {
+  background: #1A1714;
+  border-color: #1A1714;
+}
+.slot-card__stone--white {
+  background: #FFFFFF;
+  border-color: #B0ABA6;
+}
+
+.slot-card__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--c-ink);
+  margin-bottom: 4px;
+}
+
+.slot-card__empty {
+  color: var(--c-ink-3);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.slot-card__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.ready-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-border);
+}
+.ready-dot--ready {
+  background: var(--c-success);
+}
+
+.ready-text {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--c-ink-3);
+}
+.ready-text--ready {
+  color: var(--c-success);
+}
+
+.slot-card__role {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.slot-card__role--host {
+  background: #FFF3E0;
+  color: #D4760A;
+}
+.slot-card__role--guest-badge {
+  background: #F2F0EE;
+  color: var(--c-ink-3);
+}
+
+/* Action buttons under slots */
+.slot-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn-slot {
+  width: 100%;
+  padding: 7px 0;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  border: 1.5px solid var(--c-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  background: var(--c-surface);
+  color: var(--c-ink-2);
+}
+.btn-slot:hover {
+  background: var(--c-brand-light);
+  border-color: var(--c-brand);
+  color: var(--c-brand);
+}
+.btn-slot--ready {
+  background: var(--c-brand);
+  color: #FFFFFF;
+  border-color: var(--c-brand);
+}
+.btn-slot--ready:hover {
+  background: var(--c-brand-dark);
+}
+.btn-slot--stand {
+  background: var(--c-surface);
+  color: var(--c-ink-3);
+  border-color: var(--c-border);
+}
+.btn-slot--stand:hover {
+  color: var(--c-error);
+  border-color: var(--c-error);
+  background: var(--c-error-bg);
+}
+.btn-slot--cancel-ready {
+  background: var(--c-surface-2);
+  color: var(--c-ink-2);
+  border-color: var(--c-border);
+}
+.btn-slot--cancel-ready:hover {
+  background: #EBE8E5;
+}
+
+/* Score table (per-room) */
+.score-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  margin-top: auto;
+}
+
+.score-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-ink-3);
+  margin-bottom: 8px;
+}
+
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.score-table th {
+  text-align: center;
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--c-ink-3);
+  padding: 2px 6px;
+  text-transform: uppercase;
+}
+.score-table th:first-child { text-align: left; }
+.score-table td {
+  padding: 3px 6px;
+  text-align: center;
+}
+.score-table td:first-child { text-align: left; font-weight: 500; }
+
+/* ── Center: Board Area ───────────────────────────────────────────────────── */
+.board-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  min-height: 400px;
+}
+
+.board-placeholder {
+  text-align: center;
+  color: var(--c-ink-3);
+}
+.board-placeholder__icon {
+  font-size: 48px;
+  opacity: 0.35;
+  margin-bottom: 8px;
+}
+.board-placeholder__text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Right Sidebar: Settings + Chat ───────────────────────────────────────── */
+.sidebar-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Settings panel (host only) */
+.settings-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.settings-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--c-surface-2);
+  border-bottom: 1px solid var(--c-border-light);
+  cursor: pointer;
+  user-select: none;
+}
+
+.settings-panel__title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-ink-2);
+}
+
+.settings-panel__toggle {
+  font-size: 12px;
+  color: var(--c-ink-3);
+  transition: transform 0.2s;
+}
+.settings-panel__toggle--open { transform: rotate(180deg); }
+
+.settings-panel__body {
+  padding: 14px;
+  display: none;
+}
+.settings-panel__body.open { display: block; }
+
+.settings-panel .setting-row { margin-bottom: 12px; }
+.settings-panel .setting-row:last-child { margin-bottom: 0; }
+.settings-panel .setting-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 5px;
+  display: block;
+}
+
+/* Settings info for non-host */
+.settings-info {
+  padding: 14px;
+}
+.settings-info__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.settings-info__label { color: var(--c-ink-3); font-size: 12px; }
+.settings-info__value { font-weight: 600; }
+
+/* ── Chat Panel ───────────────────────────────────────────────────────────── */
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 300px;
+}
+
+.chat-panel__header {
+  padding: 10px 14px;
+  background: var(--c-surface-2);
+  border-bottom: 1px solid var(--c-border-light);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-ink-2);
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.chat-msg {
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.chat-msg__name {
+  font-weight: 600;
+  margin-right: 4px;
+}
+.chat-msg--system {
+  color: var(--c-ink-3);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.chat-input {
+  display: flex;
+  border-top: 1px solid var(--c-border-light);
+}
+.chat-input input {
+  flex: 1;
+  padding: 9px 12px;
+  border: none;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--c-ink);
+  background: transparent;
+  outline: none;
+}
+.chat-input input::placeholder { color: var(--c-ink-3); }
+.chat-input button {
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--c-brand);
+  background: none;
+  border: none;
+  border-left: 1px solid var(--c-border-light);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.chat-input button:hover { background: var(--c-brand-light); }
+
+/* ── Users list (guests sidebar) ──────────────────────────────────────────── */
+.users-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+
+.users-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--c-ink-3);
+  margin-bottom: 8px;
+}
+
+.users-list {
+  list-style: none;
+  font-size: 13px;
+}
+.users-list li {
+  padding: 3px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.users-list li .user-name { font-weight: 500; }
+
+.btn-kick {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--c-error);
+  background: var(--c-error-bg);
+  border: 1px solid #F0C9C4;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-kick:hover { background: #FBE0DD; }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .room {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+  }
+  .sidebar-left {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .slot-card { flex: 1; min-width: 180px; }
+  .board-area { min-height: 280px; }
+}

@@ -81,16 +81,7 @@ client.on('lobby:update', (data) => {
 });
 
 client.on('room:error', (data) => {
-  alert(data.message);  // Simple alert for now; can upgrade to banner later
-});
-
-// ---------------------------------------------------------------------------
-// When successfully joined a room → redirect to room page
-// ---------------------------------------------------------------------------
-client.on('room:joined', (data) => {
-  // Store room data for room.html to pick up
-  sessionStorage.setItem('gvn_room', JSON.stringify(data));
-  window.location.href = 'room.html';
+  alert(data.message);
 });
 
 // ---------------------------------------------------------------------------
@@ -182,7 +173,9 @@ function buildRuleTags(room) {
 // ---------------------------------------------------------------------------
 // Exposed globally for onclick
 window.joinRoom = function(roomId) {
-  client.emit('room:join', { roomId });
+  // Store intent and navigate — room.js will handle the actual join
+  sessionStorage.setItem('gvn_room_intent', JSON.stringify({ action: 'join', roomId }));
+  window.location.href = 'room.html';
 };
 
 // ---------------------------------------------------------------------------
@@ -223,11 +216,14 @@ modalConfirm.addEventListener('click', () => {
   const ruleWall   = document.getElementById('rule-wall').checked;
   const rulePortal = document.getElementById('rule-portal').checked;
 
-  client.emit('room:create', {
+  // Store intent and navigate — room.js will handle the actual create
+  sessionStorage.setItem('gvn_room_intent', JSON.stringify({
+    action: 'create',
     settings: { boardSize, ruleWall, rulePortal, timerMode, timerSeconds },
-  });
+  }));
 
   closeModal();
+  window.location.href = 'room.html';
 });
 
 // ---------------------------------------------------------------------------

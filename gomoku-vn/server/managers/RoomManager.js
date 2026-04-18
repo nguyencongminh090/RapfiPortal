@@ -205,6 +205,225 @@ class RoomManager {
   }
 
   // ---------------------------------------------------------------------------
+  // Sit (occupy a player slot)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * User occupies a player slot (1 or 2). Only valid when room is NOT playing.
+   *
+   * @param {string} userId
+   * @param {number} slot — 1 or 2
+   * @returns {{ room: object } | { error: string }}
+   */
+  sitDown(userId, slot) {
+    const room = this._getUserRoom(userId);
+    if (!room) return { error: 'Bạn chưa vào phòng nào.' };
+
+    if (room.state === 'playing') {
+      return { error: 'Không thể ngồi vào khi đang chơi.' };
+    }
+
+    if (slot !== 1 && slot !== 2) {
+      return { error: 'Vị trí không hợp lệ.' };
+    }
+
+    const user = room.users.get(userId);
+
+    // Already in this slot?
+    if (user.slot === slot) return { room };
+
+    // Check if slot is occupied by another user
+    for (const [, u] of room.users) {
+      if (u.slot === slot && u.userId !== userId) {
+        return { error: 'Vị trí này đã có người.' };
+      }
+    }
+
+    user.slot = slot;
+    user.ready = false;
+    room.lastActivity = Date.now();
+
+    logger.info(`[RoomManager] ${user.displayName} sat in slot ${slot} in room ${room.roomId}`);
+    return { room };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Stand (vacate player slot, become guest)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * User vacates their player slot. Only valid when NOT playing.
+   *
+   * @param {string} userId
+   * @returns {{ room: object } | { error: string }}
+   */
+  standUp(userId) {
+    const room = this._getUserRoom(userId);
+    if (!room) return { error: 'Bạn chưa vào phòng nào.' };
+
+    if (room.state === 'playing') {
+      return { error: 'Không thể đứng dậy khi đang chơi.' };
+    }
+
+    const user = room.users.get(userId);
+    if (user.slot === null) {
+      return { error: 'Bạn chưa ngồi vào chỗ nào.' };
+    }
+
+    user.slot = null;
+    user.ready = false;
+    room.lastActivity = Date.now();
+
+    logger.info(`[RoomManager] ${user.displayName} stood up in room ${room.roomId}`);
+    return { room };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Update Settings (Host only)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Update room settings. Only the Host can do this, and only when NOT playing.
+   *
+   * @param {string} userId
+   * @param {object} newSettings — partial settings object
+   * @returns {{ room: object } | { error: string }}
+   */
+  updateSettings(userId, newSettings) {
+    const room = this._getUserRoom(userId);
+    if (!room) return { error: 'Bạn chưa vào phòng nào.' };
+
+    if (room.host !== userId) {
+      return { error: 'Chỉ chủ phòng mới có thể thay đổi cài đặt.' };
+    }
+
+    if (room.state === 'playing') {
+      return { error: 'Không thể thay đổi cài đặt khi đang chơi.' };
+    }
+
+    // Merge new settings with validation
+    const merged = this._validateSettings({ ...room.settings, ...newSettings });
+    room.settings = merged;
+    room.lastActivity = Date.now();
+
+    // Reset ready status for all seated players when settings change
+    for (const [, u] of room.users) {
+      if (u.slot !== null) u.ready = false;
+    }
+
+    logger.info(`[RoomManager] Settings updated in room ${room.roomId}`);
+    return { room };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Toggle Ready
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Toggle a player's ready status. Only seated players can ready up.
+   *
+   * @param {string} userId
+   * @returns {{ room: object, allReady: boolean } | { error: string }}
+   */
+  toggleReady(userId) {
+    const room = this._getUserRoom(userId);
+    if (!room) return { error: 'Bạn chưa vào phòng nào.' };
+
+    if (room.state === 'playing') {
+      return { error: 'Ván đang diễn ra.' };
+    }
+
+    const user = room.users.get(userId);
+    if (user.slot === null) {
+      return { error: 'Bạn cần ngồi vào chỗ trước khi sẵn sàng.' };
+    }
+
+    user.ready = !user.ready;
+    room.lastActivity = Date.now();
+
+    // Check if both slots are filled and both ready
+    const allReady = this._areAllPlayersReady(room);
+
+    return { room, allReady };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Kick User (Host only)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Host kicks a user from the room.
+   *
+   * @param {string} hostId — userId of the host performing the kick
+   * @param {string} targetId — userId of the user to kick
+   * @returns {{ room: object, kicked: boolean } | { error: string }}
+   */
+  kickUser(hostId, targetId) {
+    const room = this._getUserRoom(hostId);
+    if (!room) return { error: 'Bạn chưa vào phòng nào.' };
+
+    if (room.host !== hostId) {
+      return { error: 'Chỉ chủ phòng mới có thể mời người ra.' };
+    }
+
+    if (hostId === targetId) {
+      return { error: 'Bạn không thể mời chính mình ra.' };
+    }
+
+    if (!room.users.has(targetId)) {
+      return { error: 'Người dùng không có trong phòng.' };
+    }
+
+    if (room.state === 'playing') {
+      return { error: 'Không thể mời người ra khi đang chơi.' };
+    }
+
+    // Remove the user
+    room.users.delete(targetId);
+    room.joinOrder = room.joinOrder.filter(id => id !== targetId);
+    this.userRoomMap.delete(targetId);
+    room.lastActivity = Date.now();
+
+    return { room, kicked: true };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Role helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Determine a user's role in a room.
+   * Role is computed from state, not stored — avoids sync issues.
+   *
+   * @param {object} room
+   * @param {string} userId
+   * @returns {'host'|'player'|'guest'|null}
+   */
+  getUserRole(room, userId) {
+    if (!room.users.has(userId)) return null;
+    if (room.host === userId) return 'host';
+    const user = room.users.get(userId);
+    if (user.slot !== null) return 'player';
+    return 'guest';
+  }
+
+  /** Check if both player slots are filled and both players are ready. */
+  _areAllPlayersReady(room) {
+    let slot1 = null, slot2 = null;
+    for (const [, u] of room.users) {
+      if (u.slot === 1) slot1 = u;
+      if (u.slot === 2) slot2 = u;
+    }
+    return slot1 && slot2 && slot1.ready && slot2.ready;
+  }
+
+  /** Helper: get the room a user is in, or null. */
+  _getUserRoom(userId) {
+    const roomId = this.userRoomMap.get(userId);
+    return roomId ? this.rooms.get(roomId) : null;
+  }
+
+  // ---------------------------------------------------------------------------
   // List
   // ---------------------------------------------------------------------------
 
@@ -273,6 +492,7 @@ class RoomManager {
         isGuest: u.isGuest,
         slot: u.slot,
         ready: u.ready,
+        role: this.getUserRole(room, u.userId),
       });
     }
 

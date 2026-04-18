@@ -4,15 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GomokuVN — Phòng chơi</title>
-  <meta name="description" content="GomokuVN — Phòng chơi Caro trực tuyến." />
+  <meta name="description" content="GomokuVN — Phòng chơi Caro trực tuyến với luật Wall và Portal." />
   <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/lobby.css" />
   <link rel="stylesheet" href="css/room.css" />
 </head>
 <body>
 
+<!-- ── Connection Status ───────────────────────────────────────────────── -->
 <div id="status-banner" class="status-banner" aria-live="polite"></div>
 
-<nav class="topnav">
+<!-- ── Top Nav ──────────────────────────────────────────────────────────── -->
+<nav class="topnav" role="navigation">
   <a href="index.html" class="topnav__brand">
     <svg width="24" height="24" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <rect width="36" height="36" rx="4" fill="rgba(255,255,255,0.12)"/>
@@ -27,33 +30,91 @@
     <span class="topnav__title">GomokuVN</span>
   </a>
   <div class="topnav__right">
-    <span id="room-id-display" class="topnav__user" style="font-family:monospace;font-weight:700;"></span>
+    <span id="room-id-nav" class="topnav__user" style="font-family:'SF Mono','Consolas',monospace;font-weight:700;"></span>
     <button id="btn-leave" class="topnav__btn" type="button">Rời phòng</button>
   </div>
 </nav>
 
-<main style="max-width:880px;margin:0 auto;padding:32px 20px;">
-  <p style="color:var(--c-ink-2);font-size:14px;">Phòng chơi — đang xây dựng (Phase 3)</p>
-  <pre id="room-data" style="margin-top:16px;padding:16px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius-lg);font-size:12px;overflow:auto;max-height:400px;"></pre>
+<!-- ── Room Content ────────────────────────────────────────────────────── -->
+<main class="room" role="main">
+
+  <!-- ─ Left Sidebar: Player Slots ───────────────────────────────────── -->
+  <aside class="sidebar-left">
+
+    <!-- Slot 1 (Black) -->
+    <div id="slot-1" class="slot-card">
+      <div class="slot-card__header">
+        <span class="slot-card__label">Người chơi 1</span>
+        <span class="slot-card__stone slot-card__stone--black"></span>
+      </div>
+      <div id="slot-1-content"></div>
+    </div>
+
+    <!-- Slot 2 (White) -->
+    <div id="slot-2" class="slot-card">
+      <div class="slot-card__header">
+        <span class="slot-card__label">Người chơi 2</span>
+        <span class="slot-card__stone slot-card__stone--white"></span>
+      </div>
+      <div id="slot-2-content"></div>
+    </div>
+
+    <!-- Action buttons -->
+    <div id="action-buttons" class="slot-actions"></div>
+
+    <!-- Score table -->
+    <div class="score-panel" id="score-panel" style="display:none;">
+      <div class="score-panel__title">Bảng điểm</div>
+      <table class="score-table">
+        <thead>
+          <tr><th>Tên</th><th>T</th><th>B</th><th>H</th></tr>
+        </thead>
+        <tbody id="score-body"></tbody>
+      </table>
+    </div>
+  </aside>
+
+  <!-- ─ Center: Board Area ───────────────────────────────────────────── -->
+  <section class="board-area" id="board-area">
+    <div class="board-placeholder">
+      <div class="board-placeholder__icon">♟</div>
+      <div class="board-placeholder__text">Chờ người chơi ngồi vào và sẵn sàng...</div>
+    </div>
+  </section>
+
+  <!-- ─ Right Sidebar: Settings + Users + Chat ───────────────────────── -->
+  <aside class="sidebar-right">
+
+    <!-- Settings panel -->
+    <div id="settings-panel" class="settings-panel">
+      <div class="settings-panel__header" id="settings-toggle">
+        <span class="settings-panel__title">Cài đặt phòng</span>
+        <span class="settings-panel__toggle" id="settings-arrow">▾</span>
+      </div>
+      <div class="settings-panel__body" id="settings-body"></div>
+    </div>
+
+    <!-- Guest users list -->
+    <div id="users-panel" class="users-panel">
+      <div class="users-panel__title">Khán giả</div>
+      <ul id="users-list" class="users-list"></ul>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-panel">
+      <div class="chat-panel__header">Trò chuyện</div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
+        <button id="btn-send" type="button">Gửi</button>
+      </div>
+    </div>
+  </aside>
 </main>
 
+<!-- Socket.io CDN -->
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/socket-client.js"></script>
-<script>
-  // Display room data stored by lobby.js
-  const raw = sessionStorage.getItem('gvn_room');
-  if (raw) {
-    const data = JSON.parse(raw);
-    document.getElementById('room-id-display').textContent = data.roomId || '';
-    document.getElementById('room-data').textContent = JSON.stringify(data, null, 2);
-  } else {
-    document.getElementById('room-data').textContent = 'Không có dữ liệu phòng.';
-  }
-
-  document.getElementById('btn-leave').addEventListener('click', () => {
-    sessionStorage.removeItem('gvn_room');
-    window.location.href = 'index.html';
-  });
-</script>
+<script src="js/room.js"></script>
 </body>
 </html>

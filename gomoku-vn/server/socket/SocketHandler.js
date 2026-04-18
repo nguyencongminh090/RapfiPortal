@@ -5,17 +5,15 @@
  *
  * Wires all domain handlers to each incoming socket connection:
  *   - Lobby: subscribe/unsubscribe, room:create, room:join
- *   - Room:  (Phase 3)
+ *   - Room:  leave, sit, stand, settings, ready, kick
+ *   - Chat:  message
  *   - Game:  (Phase 4-5)
- *   - Chat:  (Phase 3)
- *
- * Also handles disconnect → leaveRoom cleanup.
  */
 
 const logger      = require('../utils/logger');
 const roomManager = require('../managers/RoomManager');
+const chatHandler = require('../managers/ChatHandler');
 
-// Socket.io room name for lobby subscribers
 const LOBBY_ROOM = 'lobby';
 
 /**
@@ -27,26 +25,31 @@ function init(io) {
     const user = socket.user;
     logger.info(`[Socket] Connected: ${user.displayName} (${user.userId}) sid=${socket.id}`);
 
+    // Check if user was in a room (reconnect scenario)
+    const existingRoom = roomManager.getRoomByUser(user.userId);
+    if (existingRoom) {
+      socket.join(existingRoom.roomId);
+      socket.emit('room:joined', roomManager.serializeRoom(existingRoom));
+      logger.info(`[Socket] ${user.displayName} reconnected to room ${existingRoom.roomId}`);
+    }
+
     // ─── Lobby Events ────────────────────────────────────────────────
     registerLobbyHandlers(io, socket);
 
-    // ─── Room Events (Phase 3) ───────────────────────────────────────
-    // registerRoomHandlers(io, socket);
+    // ─── Room Events ─────────────────────────────────────────────────
+    registerRoomHandlers(io, socket);
 
-    // ─── Game Events (Phase 4-5) ─────────────────────────────────────
-    // registerGameHandlers(io, socket);
-
-    // ─── Chat Events (Phase 3) ───────────────────────────────────────
-    // registerChatHandlers(io, socket);
+    // ─── Chat Events ─────────────────────────────────────────────────
+    registerChatHandlers(io, socket);
 
     // ─── Disconnect ──────────────────────────────────────────────────
     socket.on('disconnect', (reason) => {
       logger.info(`[Socket] Disconnected: ${user.displayName} (${user.userId}) reason=${reason}`);
       handleDisconnect(io, socket);
+      chatHandler.cleanupUser(user.userId);
     });
   });
 
-  // Relay Socket.io auth errors to client
   io.engine.on('connection_error', (err) => {
     logger.warn('[Socket] Connection error:', err.message);
   });
@@ -59,27 +62,15 @@ function init(io) {
 function registerLobbyHandlers(io, socket) {
   const user = socket.user;
 
-  /**
-   * lobby:subscribe — Client wants live lobby updates.
-   * Adds the socket to the "lobby" Socket.io room so it receives broadcasts.
-   */
   socket.on('lobby:subscribe', () => {
     socket.join(LOBBY_ROOM);
-    // Immediately send current room list
     socket.emit('lobby:update', { rooms: roomManager.listRooms() });
   });
 
-  /**
-   * lobby:unsubscribe — Client no longer wants lobby updates.
-   */
   socket.on('lobby:unsubscribe', () => {
     socket.leave(LOBBY_ROOM);
   });
 
-  /**
-   * room:create — Create a new room.
-   * Payload: { settings: { boardSize, ruleWall, rulePortal, timerMode, timerSeconds } }
-   */
   socket.on('room:create', (payload = {}) => {
     const result = roomManager.createRoom(
       { userId: user.userId, displayName: user.displayName, isGuest: user.isGuest },
@@ -92,24 +83,12 @@ function registerLobbyHandlers(io, socket) {
     }
 
     const room = result.room;
-
-    // Leave lobby subscription group and join the room's Socket.io room
     socket.leave(LOBBY_ROOM);
     socket.join(room.roomId);
-
-    // Emit to the creator
     socket.emit('room:joined', roomManager.serializeRoom(room));
-
-    // Broadcast updated room list to lobby subscribers
     broadcastLobbyUpdate(io);
-
-    logger.info(`[Socket] ${user.displayName} created room ${room.roomId}`);
   });
 
-  /**
-   * room:join — Join an existing room.
-   * Payload: { roomId: string }
-   */
   socket.on('room:join', (payload = {}) => {
     if (!payload.roomId) {
       socket.emit('room:error', { message: 'Thiếu mã phòng.' });
@@ -127,21 +106,195 @@ function registerLobbyHandlers(io, socket) {
     }
 
     const room = result.room;
-
-    // Leave lobby, join room
     socket.leave(LOBBY_ROOM);
     socket.join(room.roomId);
-
-    // Emit to the joiner
     socket.emit('room:joined', roomManager.serializeRoom(room));
-
-    // Notify other room members
     socket.to(room.roomId).emit('room:updated', roomManager.serializeRoom(room));
-
-    // Update lobby
     broadcastLobbyUpdate(io);
 
-    logger.info(`[Socket] ${user.displayName} joined room ${room.roomId}`);
+    // System message: user joined
+    io.to(room.roomId).emit('chat:message', {
+      from: null,
+      fromId: null,
+      text: `${user.displayName} đã vào phòng.`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+  });
+}
+
+// =============================================================================
+// Room Handlers
+// =============================================================================
+
+function registerRoomHandlers(io, socket) {
+  const user = socket.user;
+
+  /**
+   * room:leave — Leave the current room.
+   */
+  socket.on('room:leave', () => {
+    const roomId = roomManager.getRoomIdByUser(user.userId);
+    if (!roomId) return;
+
+    // System message before leaving
+    const room = roomManager.getRoom(roomId);
+    if (room) {
+      io.to(roomId).emit('chat:message', {
+        from: null, fromId: null,
+        text: `${user.displayName} đã rời phòng.`,
+        timestamp: Date.now(), isSystem: true,
+      });
+    }
+
+    const result = roomManager.leaveRoom(user.userId);
+    socket.leave(roomId);
+    socket.emit('room:left');
+
+    if (result.destroyed) {
+      broadcastLobbyUpdate(io);
+    } else if (result.room) {
+      io.to(roomId).emit('room:updated', roomManager.serializeRoom(result.room));
+      if (result.hostTransferred) {
+        const newHost = result.room.users.get(result.room.host);
+        io.to(roomId).emit('chat:message', {
+          from: null, fromId: null,
+          text: `${newHost ? newHost.displayName : '—'} là chủ phòng mới.`,
+          timestamp: Date.now(), isSystem: true,
+        });
+      }
+      broadcastLobbyUpdate(io);
+    }
+  });
+
+  /**
+   * room:sit — Sit in player slot 1 or 2.
+   * Payload: { slot: 1|2 }
+   */
+  socket.on('room:sit', (payload = {}) => {
+    const slot = parseInt(payload.slot, 10);
+    const result = roomManager.sitDown(user.userId, slot);
+
+    if (result.error) {
+      socket.emit('room:error', { message: result.error });
+      return;
+    }
+
+    const roomId = result.room.roomId;
+    io.to(roomId).emit('room:updated', roomManager.serializeRoom(result.room));
+    broadcastLobbyUpdate(io);
+  });
+
+  /**
+   * room:stand — Stand up from player slot.
+   */
+  socket.on('room:stand', () => {
+    const result = roomManager.standUp(user.userId);
+
+    if (result.error) {
+      socket.emit('room:error', { message: result.error });
+      return;
+    }
+
+    const roomId = result.room.roomId;
+    io.to(roomId).emit('room:updated', roomManager.serializeRoom(result.room));
+    broadcastLobbyUpdate(io);
+  });
+
+  /**
+   * room:settings — Update room settings (Host only).
+   * Payload: { settings: { ... } }
+   */
+  socket.on('room:settings', (payload = {}) => {
+    const result = roomManager.updateSettings(user.userId, payload.settings || {});
+
+    if (result.error) {
+      socket.emit('room:error', { message: result.error });
+      return;
+    }
+
+    const roomId = result.room.roomId;
+    io.to(roomId).emit('room:updated', roomManager.serializeRoom(result.room));
+    broadcastLobbyUpdate(io);
+
+    io.to(roomId).emit('chat:message', {
+      from: null, fromId: null,
+      text: 'Cài đặt phòng đã được thay đổi.',
+      timestamp: Date.now(), isSystem: true,
+    });
+  });
+
+  /**
+   * room:ready — Toggle ready status (seated players only).
+   */
+  socket.on('room:ready', () => {
+    const result = roomManager.toggleReady(user.userId);
+
+    if (result.error) {
+      socket.emit('room:error', { message: result.error });
+      return;
+    }
+
+    const roomId = result.room.roomId;
+    io.to(roomId).emit('room:updated', roomManager.serializeRoom(result.room));
+
+    // If both players are ready → Phase 4 will start the game here
+    if (result.allReady) {
+      io.to(roomId).emit('chat:message', {
+        from: null, fromId: null,
+        text: 'Cả hai người chơi đã sẵn sàng! Trò chơi sẽ bắt đầu...',
+        timestamp: Date.now(), isSystem: true,
+      });
+      // TODO: Phase 4 — start game
+    }
+  });
+
+  /**
+   * room:kick — Host kicks a user.
+   * Payload: { userId: string }
+   */
+  socket.on('room:kick', (payload = {}) => {
+    const targetId = payload.userId;
+    if (!targetId) {
+      socket.emit('room:error', { message: 'Thiếu thông tin người dùng.' });
+      return;
+    }
+
+    const roomId = roomManager.getRoomIdByUser(user.userId);
+    const result = roomManager.kickUser(user.userId, targetId);
+
+    if (result.error) {
+      socket.emit('room:error', { message: result.error });
+      return;
+    }
+
+    // Notify the kicked user
+    const kickedSockets = findSocketsByUserId(io, targetId);
+    for (const s of kickedSockets) {
+      s.leave(roomId);
+      s.emit('room:kicked', { message: 'Bạn đã bị mời ra khỏi phòng.' });
+    }
+
+    io.to(roomId).emit('room:updated', roomManager.serializeRoom(result.room));
+    broadcastLobbyUpdate(io);
+  });
+}
+
+// =============================================================================
+// Chat Handlers
+// =============================================================================
+
+function registerChatHandlers(io, socket) {
+  const user = socket.user;
+
+  socket.on('chat:message', (payload = {}) => {
+    const roomId = roomManager.getRoomIdByUser(user.userId);
+    if (!roomId) {
+      socket.emit('chat:error', { message: 'Bạn cần vào phòng để chat.' });
+      return;
+    }
+
+    chatHandler.handleMessage(io, socket, roomId, payload.text || '');
   });
 }
 
@@ -153,22 +306,26 @@ function handleDisconnect(io, socket) {
   const user = socket.user;
   const roomId = roomManager.getRoomIdByUser(user.userId);
 
-  if (!roomId) return; // Not in any room
+  if (!roomId) return;
 
   const result = roomManager.leaveRoom(user.userId);
 
   if (result.destroyed) {
-    // Room is gone — just update lobby
     broadcastLobbyUpdate(io);
   } else if (result.room) {
-    // Notify remaining room members
     io.to(roomId).emit('room:updated', roomManager.serializeRoom(result.room));
+    io.to(roomId).emit('chat:message', {
+      from: null, fromId: null,
+      text: `${user.displayName} đã mất kết nối.`,
+      timestamp: Date.now(), isSystem: true,
+    });
 
-    // If host transferred, send a system notification
     if (result.hostTransferred) {
-      const newHostUser = result.room.users.get(result.room.host);
-      io.to(roomId).emit('room:system_message', {
-        message: `${newHostUser ? newHostUser.displayName : '—'} là chủ phòng mới.`,
+      const newHost = result.room.users.get(result.room.host);
+      io.to(roomId).emit('chat:message', {
+        from: null, fromId: null,
+        text: `${newHost ? newHost.displayName : '—'} là chủ phòng mới.`,
+        timestamp: Date.now(), isSystem: true,
       });
     }
 
@@ -180,9 +337,19 @@ function handleDisconnect(io, socket) {
 // Helpers
 // =============================================================================
 
-/** Broadcast updated room list to all lobby subscribers. */
 function broadcastLobbyUpdate(io) {
   io.to(LOBBY_ROOM).emit('lobby:update', { rooms: roomManager.listRooms() });
+}
+
+/** Find all connected sockets for a given userId. */
+function findSocketsByUserId(io, userId) {
+  const results = [];
+  for (const [, s] of io.sockets.sockets) {
+    if (s.user && s.user.userId === userId) {
+      results.push(s);
+    }
+  }
+  return results;
 }
 
 module.exports = { init };
