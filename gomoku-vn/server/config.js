@@ -18,6 +18,8 @@ const DEFAULT_BOARD_SIZE    = 17;
 const VALID_BOARD_SIZES     = [17, 19, 20];
 const DEFAULT_TIMER_MODE    = 'per_move';
 const DEFAULT_TIMER_SECONDS = 60;
+const TIME_REQUEST_BONUS    = 10;  // Seconds added per "Xin Time" request
+const TIME_REQUEST_MAX      = 2;   // Max "Xin Time" uses per player per game
 
 // --- WALL mechanic ---
 const WALL_COUNT            = 3;
@@ -72,6 +74,8 @@ module.exports = {
   VALID_BOARD_SIZES,
   DEFAULT_TIMER_MODE,
   DEFAULT_TIMER_SECONDS,
+  TIME_REQUEST_BONUS,
+  TIME_REQUEST_MAX,
   WALL_COUNT,
   WALL_EDGE_MIN_DIST,
   WALL_CENTER_ZONE,

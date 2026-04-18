@@ -56,6 +56,13 @@ let boardRenderer = null;
 let timerValues = { black: 0, white: 0 };
 let drawOfferPending = null; // { from, fromName } or null
 
+// Focus mode state
+let focusMode = false;
+
+// Xin Time tracking (client-side, mirroring server)
+let myTimeRequestsUsed = 0;
+const TIME_REQUEST_MAX = 2;
+
 // ---------------------------------------------------------------------------
 // Element refs
 // ---------------------------------------------------------------------------
@@ -84,6 +91,8 @@ const overlayResult  = document.getElementById('overlay-result');
 const overlayReason  = document.getElementById('overlay-reason');
 const btnRematch     = document.getElementById('btn-rematch');
 const btnCloseOverlay = document.getElementById('btn-close-overlay');
+const floatContainer = document.getElementById('float-messages');
+const btnFocus       = document.getElementById('btn-focus');
 
 client.bindStatusBanner(statusBanner);
 
@@ -93,6 +102,17 @@ client.bindStatusBanner(statusBanner);
 settingsToggle.addEventListener('click', () => {
   settingsBody.classList.toggle('open');
   settingsArrow.classList.toggle('settings-panel__toggle--open');
+});
+
+// ---------------------------------------------------------------------------
+// Focus mode toggle
+// ---------------------------------------------------------------------------
+btnFocus.addEventListener('click', () => {
+  focusMode = !focusMode;
+  document.body.classList.toggle('room--focus', focusMode);
+  if (boardRenderer) {
+    setTimeout(() => boardRenderer.resize(), 50);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -181,7 +201,9 @@ client.on('game:init', (data) => {
   gameState = data;
   timerValues = data.timer || { black: data.timerSeconds || 60, white: data.timerSeconds || 60 };
   drawOfferPending = null;
+  myTimeRequestsUsed = 0; // Reset xin time counter for new game
   gameOverlay.classList.remove('visible');
+  btnFocus.style.display = 'flex'; // Show focus button during game
   initBoard();
   updateBoardState();
   updateUI();
@@ -215,8 +237,22 @@ client.on('game:ended', (data) => {
   if (data.scoreTable && roomData) roomData.scoreTable = data.scoreTable;
   gameState = null;
   drawOfferPending = null;
+  btnFocus.style.display = 'none'; // Hide focus button
+  // Exit focus mode on game end
+  if (focusMode) {
+    focusMode = false;
+    document.body.classList.remove('room--focus');
+  }
   showGameOverlay(data.result);
   updateUI();
+});
+
+// Time request granted
+client.on('game:time_granted', (data) => {
+  if (data.playerId === myUser.userId) {
+    myTimeRequestsUsed = TIME_REQUEST_MAX - data.remaining;
+  }
+  updateBoardState(); // Refresh controls to update button state
 });
 
 // Draw offer received
@@ -566,10 +602,56 @@ function appendChatMessage(msg) {
   chatMessages.appendChild(div);
   // Auto-scroll to bottom
   chatMessages.scrollTop = chatMessages.scrollHeight;
+
+  // Also show as float message during game
+  if (gameState) {
+    showFloatMessage(msg);
+  }
 }
 
 function appendSystemMessage(text) {
   appendChatMessage({ from: null, text, isSystem: true, timestamp: Date.now() });
+}
+
+// ---------------------------------------------------------------------------
+// Float Messages
+// ---------------------------------------------------------------------------
+
+function showFloatMessage(msg) {
+  if (!floatContainer) return;
+
+  const el = document.createElement('div');
+  el.className = msg.isSystem ? 'float-msg float-msg--system' : 'float-msg';
+
+  if (msg.isSystem) {
+    el.textContent = msg.text;
+  } else {
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'float-msg__name';
+    nameSpan.textContent = msg.from + ':';
+    el.appendChild(nameSpan);
+    el.appendChild(document.createTextNode(' ' + msg.text));
+  }
+
+  floatContainer.appendChild(el);
+
+  // Duration inversely proportional to number of visible messages
+  // Base: 10s for 1 message. More messages = shorter display.
+  const visibleCount = floatContainer.children.length;
+  const duration = Math.max(3000, 10000 / visibleCount);
+
+  // Set animation-duration for the fade-out
+  el.style.animationDuration = `0.3s, ${duration}ms`;
+  el.style.animationDelay = `0s, ${duration * 0.6}ms`;
+
+  setTimeout(() => {
+    if (el.parentNode) el.remove();
+  }, duration);
+
+  // Cap max floating messages
+  while (floatContainer.children.length > 6) {
+    floatContainer.removeChild(floatContainer.firstChild);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -804,6 +886,9 @@ function renderGameControls() {
   el.innerHTML = `
     <button class="btn-game btn-game--resign" onclick="doResign()">Đầu hàng</button>
     <button class="btn-game btn-game--draw" onclick="doDrawOffer()">Đề nghị hoà</button>
+    <button class="btn-game btn-game--time" onclick="doRequestTime()" ${myTimeRequestsUsed >= TIME_REQUEST_MAX ? 'disabled' : ''}>
+      Xin Time (${TIME_REQUEST_MAX - myTimeRequestsUsed})
+    </button>
   `;
 
   renderDrawPrompt();
@@ -914,10 +999,15 @@ window.doDrawOffer = function() {
   client.emit('game:draw_offer');
 };
 
-window.acceptDraw = function() {
+window.doDrawAccept = function() {
   client.emit('game:draw_accept');
 };
 
-window.declineDraw = function() {
+window.doDrawDecline = function() {
   client.emit('game:draw_decline');
+};
+
+window.doRequestTime = function() {
+  if (myTimeRequestsUsed >= TIME_REQUEST_MAX) return;
+  client.emit('game:request_time');
 };

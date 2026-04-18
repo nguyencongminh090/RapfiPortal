@@ -474,6 +474,64 @@ function registerGameHandlers(io, socket) {
   });
 
   /**
+   * game:request_time — "Xin Time": add bonus seconds to your clock.
+   * Limited to TIME_REQUEST_MAX per player per game.
+   * Only allowed during player's own turn.
+   */
+  socket.on('game:request_time', () => {
+    const room = roomManager.getRoomByUser(user.userId);
+    if (!room || !room.gameState || room.gameState.status !== 'ongoing') {
+      socket.emit('game:error', { message: 'Không có ván đấu đang diễn ra.' });
+      return;
+    }
+
+    const engine = room.gameState;
+    const player = engine.players.find(p => p.userId === user.userId);
+    if (!player) {
+      socket.emit('game:error', { message: 'Bạn không phải người chơi.' });
+      return;
+    }
+
+    // Must be player's own turn
+    if (engine.currentTurn !== user.userId) {
+      socket.emit('game:error', { message: 'Chỉ được xin thời gian trong lượt của bạn.' });
+      return;
+    }
+
+    // Track time requests per player per game
+    if (!room._timeRequests) room._timeRequests = {};
+    if (!room._timeRequests[user.userId]) room._timeRequests[user.userId] = 0;
+
+    if (room._timeRequests[user.userId] >= config.TIME_REQUEST_MAX) {
+      socket.emit('game:error', { message: `Bạn đã dùng hết ${config.TIME_REQUEST_MAX} lần xin thời gian.` });
+      return;
+    }
+
+    room._timeRequests[user.userId]++;
+
+    // Add bonus time to the requesting player's clock
+    const timer = timerMap.get(room.roomId);
+    if (timer) {
+      const color = player.color === 'BLACK' ? 'black' : 'white';
+      timer.addTime(color, config.TIME_REQUEST_BONUS);
+
+      // Notify all room members
+      io.to(room.roomId).emit('timer:tick', timer.getTimers());
+      io.to(room.roomId).emit('game:time_granted', {
+        playerId: user.userId,
+        playerName: user.displayName,
+        bonus: config.TIME_REQUEST_BONUS,
+        remaining: config.TIME_REQUEST_MAX - room._timeRequests[user.userId],
+      });
+      io.to(room.roomId).emit('chat:message', {
+        from: null, fromId: null,
+        text: `${user.displayName} xin thêm ${config.TIME_REQUEST_BONUS} giây.`,
+        timestamp: Date.now(), isSystem: true,
+      });
+    }
+  });
+
+  /**
    * game:rematch — Request a rematch. Both players must emit.
    */
   socket.on('game:rematch', () => {

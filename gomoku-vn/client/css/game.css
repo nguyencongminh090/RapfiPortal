@@ -301,3 +301,220 @@
 .board-placeholder__text {
   font-size: 14px;
 }
+
+/* ==========================================================================
+   Focus Mode — Fullscreen board + clock only
+   ========================================================================== */
+
+.room--focus .topnav,
+.room--focus .sidebar-left,
+.room--focus .sidebar-right {
+  display: none !important;
+}
+
+.room--focus .board-area {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--c-bg, #F0EBE3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.room--focus .board-canvas-wrap {
+  max-height: calc(100vh - 120px);
+  max-width: 100vw;
+}
+
+/* Focus toggle button */
+.btn-focus {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 600;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-brand, #48875f);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.btn-focus:hover {
+  transform: scale(1.1);
+  background: #3a7050;
+}
+
+.btn-focus:active {
+  transform: scale(0.95);
+}
+
+/* ==========================================================================
+   Float Messages — Stacking chat toasts over board
+   ========================================================================== */
+
+.float-messages {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 550;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+  pointer-events: none;
+  max-width: 360px;
+  width: 90%;
+}
+
+.float-msg {
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  backdrop-filter: blur(4px);
+  animation: float-msg-in 0.3s ease-out, float-msg-out 0.4s ease-in forwards;
+  pointer-events: auto;
+  word-break: break-word;
+}
+
+.float-msg--system {
+  background: rgba(72, 135, 95, 0.85);
+  font-style: italic;
+}
+
+.float-msg__name {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+@keyframes float-msg-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float-msg-out {
+  0%, 80% { opacity: 1; }
+  100%    { opacity: 0; transform: translateY(-10px); }
+}
+
+/* ==========================================================================
+   Xin Time Button
+   ========================================================================== */
+
+.btn-game--time {
+  border-color: #2980b9;
+  color: #2980b9;
+  background: transparent;
+}
+
+.btn-game--time:hover {
+  background: #2980b9;
+  color: #fff;
+}
+
+.btn-game--time:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Mobile Responsive Layout
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Stack layout vertically */
+  .room {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr auto;
+    gap: 0;
+    padding: 0;
+  }
+
+  .sidebar-left {
+    order: -1;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    padding: 8px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--c-border, #ddd);
+  }
+
+  .sidebar-left .slot-card {
+    min-width: 140px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-left .slot-actions {
+    display: flex;
+    align-items: center;
+    min-width: auto;
+  }
+
+  .board-area {
+    order: 0;
+    min-height: 50vh;
+    padding: 4px;
+  }
+
+  .sidebar-right {
+    order: 1;
+    max-height: 250px;
+    overflow-y: auto;
+    border-top: 1px solid var(--c-border, #ddd);
+  }
+
+  /* Collapse settings by default on mobile */
+  .settings-panel__body {
+    max-height: 0;
+    overflow: hidden;
+  }
+  .settings-panel__body.open {
+    max-height: none;
+  }
+
+  /* Smaller turn bar */
+  .turn-bar {
+    min-width: unset;
+    gap: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .turn-bar__name {
+    max-width: 60px;
+  }
+
+  /* Score panel hides by default */
+  .score-panel {
+    display: none !important;
+  }
+
+  /* Chat panel compact */
+  .chat-messages {
+    max-height: 120px;
+  }
+
+  /* Float messages smaller on mobile */
+  .float-messages {
+    max-width: 280px;
+    bottom: 60px;
+  }
+
+  .float-msg {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+}

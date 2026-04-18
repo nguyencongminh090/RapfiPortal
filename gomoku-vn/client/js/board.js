@@ -63,10 +63,15 @@ class BoardRenderer {
     // Hover
     this._hoverCell = null;
 
+    // Double-tap: pending cell awaiting confirmation
+    this._pendingCell = null;
+
     // Bind events
     this.canvas.addEventListener('mousemove', (e) => this._onMouseMove(e));
     this.canvas.addEventListener('mouseleave', () => this._onMouseLeave());
     this.canvas.addEventListener('click', (e) => this._onClick(e));
+    // Touch support for mobile
+    this.canvas.addEventListener('touchend', (e) => this._onTouchEnd(e));
   }
 
   /** Update board state and redraw. */
@@ -175,8 +180,40 @@ class BoardRenderer {
     if (!cell) return;
     // Check the cell is empty and not a wall/portal
     if (this.board && this.board[cell.y] && this.board[cell.y][cell.x] === 0) {
-      this.onCellClick(cell.x, cell.y);
+      this._handleCellSelect(cell.x, cell.y);
     }
+  }
+
+  _onTouchEnd(e) {
+    if (!this.interactive || !this.isMyTurn || !this.onCellClick) return;
+    e.preventDefault();
+    const touch = e.changedTouches[0];
+    const rect = this.canvas.getBoundingClientRect();
+    const px = (touch.clientX - rect.left) * (this.canvas.width / rect.width);
+    const py = (touch.clientY - rect.top) * (this.canvas.height / rect.height);
+    const cell = this._pixelToCell(px, py);
+    if (!cell) return;
+    if (this.board && this.board[cell.y] && this.board[cell.y][cell.x] === 0) {
+      this._handleCellSelect(cell.x, cell.y);
+    }
+  }
+
+  /** Double-tap logic: first tap highlights, second tap confirms. */
+  _handleCellSelect(x, y) {
+    if (this._pendingCell && this._pendingCell.x === x && this._pendingCell.y === y) {
+      // Second tap on same cell → confirm
+      this._pendingCell = null;
+      this.onCellClick(x, y);
+    } else {
+      // First tap or different cell → set pending
+      this._pendingCell = { x, y };
+      this._draw();
+    }
+  }
+
+  /** Clear pending cell (called externally after a move is placed). */
+  clearPending() {
+    this._pendingCell = null;
   }
 
   // ─── Main Draw ───────────────────────────────────────────────────
@@ -208,6 +245,14 @@ class BoardRenderer {
       const hx = this._hoverCell.x, hy = this._hoverCell.y;
       if (this.board[hy] && this.board[hy][hx] === 0) {
         this._drawHoverHighlight(hx, hy);
+      }
+    }
+
+    // 4b. Pending cell highlight (double-tap preview)
+    if (this._pendingCell && this.board) {
+      const px = this._pendingCell.x, py = this._pendingCell.y;
+      if (this.board[py] && this.board[py][px] === 0) {
+        this._drawPendingHighlight(px, py);
       }
     }
 
@@ -330,6 +375,49 @@ class BoardRenderer {
 
     ctx.fillStyle = 'rgba(204, 204, 204, 0.5)';
     ctx.fillRect(px - half, py - half, half * 2, half * 2);
+  }
+
+  /** Draw pending cell: semi-transparent preview stone + green pulsing ring. */
+  _drawPendingHighlight(x, y) {
+    const ctx = this.ctx;
+    const g = this.geo;
+    const { px, py } = this._cellToPixel(x, y);
+    const half = g.cellSize * 0.45;
+
+    // Green highlight background
+    ctx.fillStyle = 'rgba(72, 135, 95, 0.3)';
+    ctx.fillRect(px - half, py - half, half * 2, half * 2);
+
+    // Green border ring
+    ctx.strokeStyle = 'rgba(72, 135, 95, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px - half, py - half, half * 2, half * 2);
+
+    // Draw semi-transparent preview piece
+    const r = g.cellSize * 0.32;
+    if (this.myColor === 'BLACK') {
+      // X cross preview
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = '#1A1714';
+      ctx.lineWidth = Math.max(g.cellSize * 0.11, 1.5);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(px - r, py - r); ctx.lineTo(px + r, py + r);
+      ctx.moveTo(px + r, py - r); ctx.lineTo(px - r, py + r);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (this.myColor === 'WHITE') {
+      // O circle preview
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#1A1714';
+      ctx.lineWidth = Math.max(g.cellSize * 0.07, 1);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
   }
 
   _drawFirstMoveZones() {

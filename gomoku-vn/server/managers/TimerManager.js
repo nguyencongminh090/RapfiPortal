@@ -97,6 +97,21 @@ class TimerManager {
     return { black: this.black, white: this.white };
   }
 
+  /**
+   * Add bonus time to a player.
+   * Used for "Xin Time" feature.
+   *
+   * @param {'black'|'white'} color — which player to add time to
+   * @param {number} seconds — seconds to add
+   */
+  addTime(color, seconds) {
+    if (color === 'black') {
+      this.black += seconds;
+    } else {
+      this.white += seconds;
+    }
+  }
+
   /** Internal tick — called every second. */
   _tick() {
     if (this.activeColor === 'black') {
