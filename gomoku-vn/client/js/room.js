@@ -329,31 +329,39 @@ function renderSlot(slotNum, contentEl, cardEl) {
   cardEl.classList.toggle('slot-card--active', !!player);
 
   if (!player) {
+    // Empty slot — clickable to sit down (only if I'm not seated and not playing)
+    const canSit = mySlot === null && roomData.state !== 'playing';
     contentEl.innerHTML = `
-      <div class="slot-card__empty">Trống</div>
+      <div class="slot-card__empty ${canSit ? 'slot-card__clickable' : ''}"
+           ${canSit ? `onclick="sitDown(${slotNum})"` : ''}
+           title="${canSit ? 'Nhấn để ngồi vào' : ''}">
+        #${slotNum}
+      </div>
     `;
     return;
   }
 
+  const isMe = player.userId === myUser.userId;
   const roleBadge = player.role === 'host'
     ? '<span class="slot-card__role slot-card__role--host">Chủ phòng</span>'
     : '';
 
-  const guestBadge = player.isGuest
-    ? '<span class="slot-card__role slot-card__role--guest-badge">Khách</span>'
+  // X button to stand up (only for myself, and not during a game)
+  const standBtn = (isMe && roomData.state !== 'playing')
+    ? `<span class="slot-card__stand" onclick="event.stopPropagation(); standUp();" title="Rời vị trí">✕</span>`
     : '';
 
-  const readyClass = player.ready ? '--ready' : '';
-
   contentEl.innerHTML = `
-    <div class="slot-card__name">${escapeHtml(player.displayName)}</div>
+    <div class="slot-card__header">
+      <div class="slot-card__name">${escapeHtml(player.displayName)}</div>
+      ${standBtn}
+    </div>
     <div class="slot-card__status">
-      <span class="ready-dot ready-dot${readyClass}"></span>
-      <span class="ready-text ready-text${readyClass}">
+      <span class="ready-dot ready-dot${player.ready ? '--ready' : ''}"></span>
+      <span class="ready-text ready-text${player.ready ? '--ready' : ''}">
         ${player.ready ? 'Sẵn sàng' : 'Chưa sẵn sàng'}
       </span>
       ${roleBadge}
-      ${guestBadge}
     </div>
   `;
 }
@@ -376,25 +384,13 @@ function renderActionButtons() {
 
   let html = '';
 
-  if (mySlot === null) {
-    // User is a guest/spectator — show sit buttons
-    const slot1Taken = roomData.users.some(u => u.slot === 1);
-    const slot2Taken = roomData.users.some(u => u.slot === 2);
-
-    if (!slot1Taken) {
-      html += `<button class="btn-slot" onclick="sitDown(1)">Ngồi vào — Đen ●</button>`;
-    }
-    if (!slot2Taken) {
-      html += `<button class="btn-slot" onclick="sitDown(2)">Ngồi vào — Trắng ○</button>`;
-    }
-  } else {
-    // User is seated
+  // Only show ready/cancel-ready when seated
+  if (mySlot !== null) {
     if (isReady) {
       html += `<button class="btn-slot btn-slot--cancel-ready" onclick="toggleReady()">Huỷ sẵn sàng</button>`;
     } else {
       html += `<button class="btn-slot btn-slot--ready" onclick="toggleReady()">Sẵn sàng</button>`;
     }
-    html += `<button class="btn-slot btn-slot--stand" onclick="standUp()">Đứng dậy</button>`;
   }
 
   actionButtons.innerHTML = html;

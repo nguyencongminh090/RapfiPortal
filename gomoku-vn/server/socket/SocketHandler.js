@@ -571,13 +571,21 @@ function startGame(io, room) {
     portals = pResult.portals;
   }
 
+  // Auto color alternation: swap colors every other game for fairness
+  if (!room.gameCount) room.gameCount = 0;
+  room.gameCount++;
+  const swapColors = (room.gameCount % 2 === 0); // Swap on even games (2nd, 4th, ...)
+
+  const blackPlayer = swapColors ? slot2Player : slot1Player;
+  const whitePlayer = swapColors ? slot1Player : slot2Player;
+
   // Create game engine
   const engine = new GameEngine({
     roomId,
     boardSize: settings.boardSize,
     players: [
-      { userId: slot1Player.userId, displayName: slot1Player.displayName, color: 'BLACK' },
-      { userId: slot2Player.userId, displayName: slot2Player.displayName, color: 'WHITE' },
+      { userId: blackPlayer.userId, displayName: blackPlayer.displayName, color: 'BLACK' },
+      { userId: whitePlayer.userId, displayName: whitePlayer.displayName, color: 'WHITE' },
     ],
     walls,
     portals,
@@ -598,8 +606,8 @@ function startGame(io, room) {
     roomId,
     mode: settings.timerMode,
     seconds: settings.timerSeconds,
-    blackPlayerId: slot1Player.userId,
-    whitePlayerId: slot2Player.userId,
+    blackPlayerId: blackPlayer.userId,
+    whitePlayerId: whitePlayer.userId,
     onTick: (timers) => {
       io.to(roomId).emit('timer:tick', timers);
     },
