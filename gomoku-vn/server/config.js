@@ -7,7 +7,7 @@
 
 // --- Room limits ---
 const MAX_ROOMS             = 20;
-const MAX_USERS_PER_ROOM    = 10;     // 2 players + 8 guests
+const MAX_USERS_PER_ROOM    = 10;      // 2 players + 8 guests
 const IDLE_TIMEOUT_MS       = 600_000; // 10 minutes
 
 // --- Disconnect grace ---
@@ -23,15 +23,15 @@ const TIME_REQUEST_MAX      = 2;   // Max "Xin Time" uses per player per game
 
 // --- WALL mechanic ---
 const WALL_COUNT            = 3;
-const WALL_EDGE_MIN_DIST    = 3;   // Min distance from any board edge
+const WALL_EDGE_MIN_DIST    = 4;   // Min distance from any board edge
 const WALL_CENTER_ZONE      = 1;   // Center ±1 cells is forbidden (3x3 zone)
-const WALL_MIN_CHEBYSHEV    = 4;   // Chebyshev dist between any 2 walls must be > 3 (so >= 4)
+const WALL_MIN_CHEBYSHEV    = 5;   // Chebyshev dist between any 2 walls must be >= 5
 const WALL_RETRY_LIMIT      = 100;
 
 // --- PORTAL mechanic ---
 const PORTAL_PAIR_COUNT     = 2;
 const PORTAL_MIN_CHEBYSHEV  = 5;   // Min Chebyshev dist between any 2 portal cells
-const PORTAL_EDGE_MIN_DIST  = 3;   // Min distance from any board edge
+const PORTAL_EDGE_MIN_DIST  = 4;   // Min distance from any board edge
 const PORTAL_RETRY_LIMIT    = 100;
 
 // --- Chat rate limiting ---

@@ -168,10 +168,10 @@ class GameEngine {
     this.drawOffer = null;
 
     // Check win
-    const won = this._checkWin(x, y, color);
-    if (won) {
+    const winLine = this._checkWin(x, y, color);
+    if (winLine) {
       this.status = 'finished';
-      this.result = { winner: userId, reason: 'win' };
+      this.result = { winner: userId, reason: 'win', winLine };
       logger.info(`[GameEngine] Game ${this.gameId}: ${player.displayName} wins!`);
       return { won: true, color: colorStr, nextTurn: null };
     }
@@ -335,21 +335,23 @@ class GameEngine {
    * @param {number} x
    * @param {number} y
    * @param {number} color — BLACK (1) or WHITE (2)
-   * @returns {boolean}
+   * @returns {Array<{x,y}> | null} Array of winning stone coordinates, or null
    */
   _checkWin(x, y, color) {
     for (const dir of DIRECTIONS) {
-      const count = 1
-        + this._countInDirection(x, y, dir.dx, dir.dy, color)
-        + this._countInDirection(x, y, -dir.dx, -dir.dy, color);
+      const line1 = this._getLineInDirection(x, y, dir.dx, dir.dy, color);
+      const line2 = this._getLineInDirection(x, y, -dir.dx, -dir.dy, color);
 
-      if (count >= 5) return true;
+      const count = 1 + line1.length + line2.length;
+      if (count >= 5) {
+        return [{x, y}, ...line1, ...line2];
+      }
     }
-    return false;
+    return null;
   }
 
   /**
-   * Count consecutive stones of the given color in one direction,
+   * Get consecutive stones of the given color in one direction,
    * with portal traversal support.
    *
    * Portal traversal: when the next cell is a PORTAL, teleport to the partner
@@ -361,10 +363,10 @@ class GameEngine {
    * @param {number} dx — direction x
    * @param {number} dy — direction y
    * @param {number} color
-   * @returns {number} count of consecutive same-color stones
+   * @returns {Array<{x,y}>} array of consecutive same-color stones
    */
-  _countInDirection(startX, startY, dx, dy, color) {
-    let count = 0;
+  _getLineInDirection(startX, startY, dx, dy, color) {
+    const line = [];
     let cx = startX + dx;
     let cy = startY + dy;
 
@@ -385,8 +387,8 @@ class GameEngine {
       const cell = this.board[cy][cx];
 
       if (cell === color) {
-        // Same color stone — count it and continue
-        count++;
+        // Same color stone — add it and continue
+        line.push({x: cx, y: cy});
         cx += dx;
         cy += dy;
       } else if (cell === PORTAL) {
@@ -408,7 +410,7 @@ class GameEngine {
       }
     }
 
-    return count;
+    return line;
   }
 
   // ---------------------------------------------------------------------------

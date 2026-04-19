@@ -220,7 +220,7 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.25);
   justify-content: center;
   align-items: center;
 }
@@ -345,6 +345,39 @@
   max-width: 100vw;
 }
 
+/* Chat input in focus mode */
+.room--focus > #chat-input-wrapper {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  max-width: 90vw;
+  z-index: 600;
+  display: flex;
+  background: var(--c-surface, #fff);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  padding: 6px 12px;
+}
+
+.room--focus > #chat-input-wrapper input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+}
+
+.room--focus > #chat-input-wrapper button {
+  background: var(--c-brand, #48875f);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* Focus toggle button */
 .btn-focus {
   position: fixed;
@@ -413,6 +446,10 @@
 .float-msg__name {
   font-weight: 700;
   margin-right: 4px;
+}
+
+.room--focus .float-messages {
+  bottom: 80px;
 }
 
 @keyframes float-msg-in {
@@ -511,11 +548,6 @@
 
   .turn-bar__name {
     max-width: 60px;
-  }
-
-  /* Score panel hides by default */
-  .score-panel {
-    display: none !important;
   }
 
   /* Chat panel compact */

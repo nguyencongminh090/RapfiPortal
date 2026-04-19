@@ -264,52 +264,70 @@
   font-weight: 500;
 }
 
-/* ── Right Sidebar: Settings + Chat ───────────────────────────────────────── */
+/* ── Right Sidebar: Tabs ───────────────────────────────────────── */
 .sidebar-right {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-/* Settings panel (host only) */
-.settings-panel {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  height: 100%;
 }
 
-.settings-panel__header {
+/* Tabs Header */
+.sidebar-tabs {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
+  border-bottom: 1px solid var(--c-border);
   background: var(--c-surface-2);
-  border-bottom: 1px solid var(--c-border-light);
-  cursor: pointer;
-  user-select: none;
 }
 
-.settings-panel__title {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--c-ink-2);
-}
-
-.settings-panel__toggle {
-  font-size: 12px;
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
   color: var(--c-ink-3);
-  transition: transform 0.2s;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.settings-panel__toggle--open { transform: rotate(180deg); }
+
+.tab-btn:hover {
+  color: var(--c-ink-1);
+  background: rgba(0,0,0,0.02);
+}
+
+.tab-btn--active {
+  color: var(--c-brand);
+  border-bottom-color: var(--c-brand);
+  background: var(--c-surface);
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tab-content--active {
+  display: flex;
+}
+
+/* Settings panel */
+.settings-panel {
+  overflow-y: auto;
+  height: 100%;
+}
 
 .settings-panel__body {
   padding: 14px;
-  display: none;
 }
-.settings-panel__body.open { display: block; }
 
 .settings-panel .setting-row { margin-bottom: 12px; }
 .settings-panel .setting-row:last-child { margin-bottom: 0; }
@@ -342,22 +360,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
+  height: 100%;
   overflow: hidden;
-  min-height: 300px;
-}
-
-.chat-panel__header {
-  padding: 10px 14px;
-  background: var(--c-surface-2);
-  border-bottom: 1px solid var(--c-border-light);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--c-ink-2);
 }
 
 .chat-messages {

@@ -75,8 +75,6 @@ const slot1Card      = document.getElementById('slot-1');
 const slot2Card      = document.getElementById('slot-2');
 const actionButtons  = document.getElementById('action-buttons');
 const settingsPanel  = document.getElementById('settings-panel');
-const settingsToggle = document.getElementById('settings-toggle');
-const settingsArrow  = document.getElementById('settings-arrow');
 const settingsBody   = document.getElementById('settings-body');
 const usersPanel     = document.getElementById('users-panel');
 const usersList      = document.getElementById('users-list');
@@ -97,19 +95,49 @@ const btnFocus       = document.getElementById('btn-focus');
 client.bindStatusBanner(statusBanner);
 
 // ---------------------------------------------------------------------------
-// Settings toggle
+// Tabs logic
 // ---------------------------------------------------------------------------
-settingsToggle.addEventListener('click', () => {
-  settingsBody.classList.toggle('open');
-  settingsArrow.classList.toggle('settings-panel__toggle--open');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    // Remove active class from all
+    tabBtns.forEach(b => b.classList.remove('tab-btn--active'));
+    tabContents.forEach(c => c.classList.remove('tab-content--active'));
+
+    // Add active class to clicked tab
+    btn.classList.add('tab-btn--active');
+    const tabId = btn.getAttribute('data-tab');
+    document.getElementById(tabId).classList.add('tab-content--active');
+    
+    // Auto scroll chat to bottom when chat tab is opened
+    if (tabId === 'tab-chat') {
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
 // Focus mode toggle
 // ---------------------------------------------------------------------------
+const chatInputWrapper = document.getElementById('chat-input-wrapper');
+const tabChat = document.getElementById('tab-chat');
+
 btnFocus.addEventListener('click', () => {
   focusMode = !focusMode;
   document.body.classList.toggle('room--focus', focusMode);
+  
+  if (focusMode) {
+    // Move chat input to body so it stays visible
+    document.body.appendChild(chatInputWrapper);
+  } else {
+    // Put it back into the chat tab
+    if (tabChat) {
+      tabChat.querySelector('.chat-panel').appendChild(chatInputWrapper);
+    }
+  }
+
   if (boardRenderer) {
     setTimeout(() => boardRenderer.resize(), 50);
   }
@@ -228,6 +256,7 @@ client.on('game:moved', (data) => {
   gameState.moveHistory.push({ x: data.x, y: data.y, color: data.color, timestamp: Date.now() });
   if (data.timer) timerValues = data.timer;
   if (data.gameOver) gameState.status = 'finished';
+  if (data.result) gameState.result = data.result;
 
   updateBoardState();
   updateUI();
@@ -242,14 +271,23 @@ client.on('timer:tick', (data) => {
 // Game ended
 client.on('game:ended', (data) => {
   if (data.scoreTable && roomData) roomData.scoreTable = data.scoreTable;
-  gameState = null;
+  
+  if (gameState) {
+    gameState.status = 'finished';
+    if (data.result) gameState.result = data.result;
+  }
+  
   drawOfferPending = null;
+  renderDrawPrompt(); // Explicitly clear the draw prompt
   btnFocus.style.display = 'none'; // Hide focus button
+  
   // Exit focus mode on game end
   if (focusMode) {
     focusMode = false;
     document.body.classList.remove('room--focus');
+    if (tabChat) tabChat.querySelector('.chat-panel').appendChild(chatInputWrapper);
   }
+  
   showGameOverlay(data.result);
   updateUI();
 });
@@ -500,7 +538,6 @@ function renderSettings() {
       </div>
     `;
     settingsBody.classList.add('open');
-    settingsArrow.classList.add('settings-panel__toggle--open');
   } else {
     // Non-host or playing: read-only info
     const ruleNames = [];
@@ -526,7 +563,6 @@ function renderSettings() {
       </div>
     `;
     settingsBody.classList.add('open');
-    settingsArrow.classList.add('settings-panel__toggle--open');
   }
 }
 
@@ -566,15 +602,27 @@ function renderUsersList() {
 // ---------------------------------------------------------------------------
 
 function renderScoreTable() {
-  const st = roomData.scoreTable;
-  if (!st || Object.keys(st).length === 0) {
+  const st = roomData.scoreTable || {};
+  const seatedPlayers = roomData.users.filter(u => u.slot === 1 || u.slot === 2);
+  
+  if (seatedPlayers.length === 0 && Object.keys(st).length === 0) {
     scorePanel.style.display = 'none';
     return;
   }
+  
   scorePanel.style.display = '';
 
   let html = '';
-  for (const [, entry] of Object.entries(st)) {
+  const combined = { ...st };
+  
+  // Ensure seated players are in the score table with 0s
+  for (const p of seatedPlayers) {
+    if (!combined[p.userId]) {
+      combined[p.userId] = { name: p.displayName, win: 0, loss: 0, draw: 0 };
+    }
+  }
+
+  for (const [, entry] of Object.entries(combined)) {
     html += `
       <tr>
         <td>${escapeHtml(entry.name || '—')}</td>
@@ -831,6 +879,7 @@ function updateBoardState() {
     isMyTurn: isMyTurn && gameState.status === 'ongoing',
     showZones: gameState.walls.length > 0 && gameState.moveCount === 0,
     interactive: !!myPlayer && gameState.status === 'ongoing',
+    winLine: gameState.result ? gameState.result.winLine : null,
   });
 
   renderTimers();

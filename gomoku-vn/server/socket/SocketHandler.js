@@ -342,7 +342,6 @@ function registerGameHandlers(io, socket) {
       return;
     }
 
-    // Emit move to all room members
     const timer = timerMap.get(room.roomId);
     const movePayload = {
       x, y,
@@ -352,16 +351,9 @@ function registerGameHandlers(io, socket) {
       timer: timer ? timer.getTimers() : null,
     };
 
-    if (result.won) {
-      // Game won
+    if (result.won || result.draw) {
       movePayload.gameOver = true;
       movePayload.result = engine.result;
-      handleGameEnd(io, room);
-    } else if (result.draw) {
-      // Board full draw
-      movePayload.gameOver = true;
-      movePayload.result = engine.result;
-      handleGameEnd(io, room);
     } else {
       // Switch timer
       if (timer) {
@@ -371,8 +363,19 @@ function registerGameHandlers(io, socket) {
       }
     }
 
+    // Emit move first so client sees the winning stone
     io.to(room.roomId).emit('game:moved', movePayload);
     room.lastActivity = Date.now();
+
+    // If game ended, process end and emit game:ended
+    if (result.won || result.draw) {
+      const finalResult = engine.result;
+      handleGameEnd(io, room);
+      io.to(room.roomId).emit('game:ended', {
+        result: finalResult,
+        scoreTable: room.scoreTable,
+      });
+    }
   });
 
   /**
@@ -601,32 +604,53 @@ function startGame(io, room) {
     return;
   }
 
-  // Generate walls (if enabled)
+  // Generate walls and portals (retry loop if placement fails)
   let walls = [];
   let firstMoveZones = [];
-  if (settings.ruleWall) {
-    const wResult = WallGenerator.generate(settings.boardSize);
-    if (!wResult) {
-      io.to(roomId).emit('game:error', {
-        message: 'Không thể tạo tường. Vui lòng thử lại.',
-      });
-      return;
+  let portals = [];
+
+  let genSuccess = false;
+  let attempts = 0;
+  
+  while (!genSuccess && attempts < 1000) {
+    attempts++;
+    walls = [];
+    firstMoveZones = [];
+    portals = [];
+    
+    let wSuccess = true;
+    if (settings.ruleWall) {
+      const wResult = WallGenerator.generate(settings.boardSize);
+      if (!wResult) {
+        wSuccess = false;
+      } else {
+        walls = wResult.walls;
+        firstMoveZones = wResult.firstMoveZones;
+      }
     }
-    walls = wResult.walls;
-    firstMoveZones = wResult.firstMoveZones;
+    
+    if (!wSuccess) continue; // Try again
+    
+    let pSuccess = true;
+    if (settings.rulePortal) {
+      const pResult = PortalGenerator.generate(settings.boardSize, walls);
+      if (!pResult) {
+        pSuccess = false;
+      } else {
+        portals = pResult.portals;
+      }
+    }
+    
+    if (!pSuccess) continue; // Try again
+    
+    genSuccess = true;
   }
 
-  // Generate portals (if enabled)
-  let portals = [];
-  if (settings.rulePortal) {
-    const pResult = PortalGenerator.generate(settings.boardSize, walls);
-    if (!pResult) {
-      io.to(roomId).emit('game:error', {
-        message: 'Không thể tạo cổng dịch chuyển. Vui lòng thử lại.',
-      });
-      return;
-    }
-    portals = pResult.portals;
+  if (!genSuccess) {
+    io.to(roomId).emit('game:error', {
+      message: 'Không thể tạo bản đồ hợp lệ (quá nhiều ràng buộc). Vui lòng tắt bớt tuỳ chọn hoặc thử lại.',
+    });
+    return;
   }
 
   // Auto color alternation: swap colors every other game for fairness

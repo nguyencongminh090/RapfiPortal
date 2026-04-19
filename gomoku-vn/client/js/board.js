@@ -53,6 +53,7 @@ class BoardRenderer {
     this.firstMoveZones = [];
     this.showZones = false;
     this.lastMove = null;
+    this.winLine = null; // Array of {x, y}
     this.isMyTurn = false;
     this.interactive = false;
     this.myColor = null;
@@ -82,6 +83,7 @@ class BoardRenderer {
     if (s.portals !== undefined) this.portals = s.portals;
     if (s.firstMoveZones !== undefined) this.firstMoveZones = s.firstMoveZones;
     if (s.showZones !== undefined) this.showZones = s.showZones;
+    if (s.winLine !== undefined) this.winLine = s.winLine;
     if (s.lastMove !== undefined) this.lastMove = s.lastMove;
     if (s.isMyTurn !== undefined) this.isMyTurn = s.isMyTurn;
     if (s.interactive !== undefined) this.interactive = s.interactive;
@@ -240,6 +242,11 @@ class BoardRenderer {
       this._drawLastMoveHighlight(this.lastMove.x, this.lastMove.y);
     }
 
+    // 3b. Win line highlight
+    if (this.winLine) {
+      this._drawWinHighlight(this.winLine);
+    }
+
     // 4. Hover highlight
     if (this._hoverCell && this.board) {
       const hx = this._hoverCell.x, hy = this._hoverCell.y;
@@ -375,6 +382,20 @@ class BoardRenderer {
 
     ctx.fillStyle = 'rgba(204, 204, 204, 0.5)';
     ctx.fillRect(px - half, py - half, half * 2, half * 2);
+  }
+
+  _drawWinHighlight(stones) {
+    const ctx = this.ctx;
+    const half = this.geo.cellSize * 0.5;
+    ctx.save();
+    // A solid red/orange square highlight filling the cell
+    ctx.fillStyle = 'rgba(231, 76, 60, 0.65)';
+    
+    for (const st of stones) {
+      const { px, py } = this._cellToPixel(st.x, st.y);
+      ctx.fillRect(px - half, py - half, half * 2, half * 2);
+    }
+    ctx.restore();
   }
 
   /** Draw pending cell: semi-transparent preview stone + green pulsing ring. */

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GomokuVN — Phòng chơi</title>
   <meta name="description" content="GomokuVN — Phòng chơi Caro trực tuyến với luật Wall và Portal." />
-  <link rel="stylesheet" href="css/main.css" />
-  <link rel="stylesheet" href="css/lobby.css" />
-  <link rel="stylesheet" href="css/room.css" />
-  <link rel="stylesheet" href="css/game.css" />
+  <link rel="stylesheet" href="css/main.css?v=4" />
+  <link rel="stylesheet" href="css/lobby.css?v=4" />
+  <link rel="stylesheet" href="css/room.css?v=4" />
+  <link rel="stylesheet" href="css/game.css?v=4" />
 </head>
 <body>
 
@@ -81,31 +81,33 @@
     </div>
   </section>
 
-  <!-- ─ Right Sidebar: Settings + Users + Chat ───────────────────────── -->
+  <!-- ─ Right Sidebar: Tabs ───────────────────────── -->
   <aside class="sidebar-right">
+    <div class="sidebar-tabs">
+      <button class="tab-btn tab-btn--active" data-tab="tab-chat">Trò chuyện</button>
+      <button class="tab-btn" data-tab="tab-users">Khán giả</button>
+      <button class="tab-btn" data-tab="tab-settings">Cài đặt</button>
+    </div>
 
-    <!-- Settings panel -->
-    <div id="settings-panel" class="settings-panel">
-      <div class="settings-panel__header" id="settings-toggle">
-        <span class="settings-panel__title">Cài đặt phòng</span>
-        <span class="settings-panel__toggle" id="settings-arrow">▾</span>
+    <div class="tab-content tab-content--active" id="tab-chat">
+      <div class="chat-panel">
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input" id="chat-input-wrapper">
+          <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
+          <button id="btn-send" type="button">Gửi</button>
+        </div>
       </div>
-      <div class="settings-panel__body" id="settings-body"></div>
     </div>
 
-    <!-- Guest users list -->
-    <div id="users-panel" class="users-panel">
-      <div class="users-panel__title">Khán giả</div>
-      <ul id="users-list" class="users-list"></ul>
+    <div class="tab-content" id="tab-users">
+      <div id="users-panel" class="users-panel">
+        <ul id="users-list" class="users-list"></ul>
+      </div>
     </div>
 
-    <!-- Chat -->
-    <div class="chat-panel">
-      <div class="chat-panel__header">Trò chuyện</div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <div class="chat-input">
-        <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
-        <button id="btn-send" type="button">Gửi</button>
+    <div class="tab-content" id="tab-settings">
+      <div id="settings-panel" class="settings-panel">
+        <div class="settings-panel__body open" id="settings-body"></div>
       </div>
     </div>
   </aside>
@@ -135,8 +137,8 @@
 
 <!-- Socket.io CDN -->
 <script src="/socket.io/socket.io.js"></script>
-<script src="js/socket-client.js"></script>
-<script src="js/board.js"></script>
-<script src="js/room.js"></script>
+<script src="js/socket-client.js?v=4"></script>
+<script src="js/board.js?v=4"></script>
+<script src="js/room.js?v=4"></script>
 </body>
 </html>
