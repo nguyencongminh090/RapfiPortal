@@ -84,6 +84,11 @@ client.on('room:error', (data) => {
   alert(data.message);
 });
 
+// Auto-redirect if server detects we are already in a room
+client.on('room:joined', (data) => {
+  window.location.replace(`room.html?id=${data.roomId}`);
+});
+
 // ---------------------------------------------------------------------------
 // Room List Rendering
 // ---------------------------------------------------------------------------
@@ -175,7 +180,7 @@ function buildRuleTags(room) {
 window.joinRoom = function(roomId) {
   // Store intent and navigate — room.js will handle the actual join
   sessionStorage.setItem('gvn_room_intent', JSON.stringify({ action: 'join', roomId }));
-  window.location.href = 'room.html';
+  window.location.href = `room.html?id=${encodeURIComponent(roomId)}`;
 };
 
 // ---------------------------------------------------------------------------
@@ -223,7 +228,7 @@ modalConfirm.addEventListener('click', () => {
   }));
 
   closeModal();
-  window.location.href = 'room.html';
+  window.location.href = 'room.html'; // Create room ID is assigned by server later
 });
 
 // ---------------------------------------------------------------------------

@@ -172,6 +172,14 @@ chatInput.addEventListener('keydown', (e) => {
 // Initial room data (on connect/reconnect)
 client.on('room:joined', (data) => {
   roomData = data;
+  
+  // Update URL to include the room ID so it's shareable and reloadable
+  const url = new URL(window.location);
+  if (url.searchParams.get('id') !== data.roomId) {
+    url.searchParams.set('id', data.roomId);
+    window.history.replaceState({}, '', url);
+  }
+
   // Restore game state if reconnecting mid-game
   if (data.gameState) {
     gameState = data.gameState;
@@ -353,8 +361,15 @@ function processRoomIntent() {
         client.emit('room:join', { roomId: intent.roomId });
       }
     } catch { /* ignore parse error */ }
+  } else {
+    // No intent in sessionStorage. Check URL parameters for direct link.
+    const params = new URLSearchParams(window.location.search);
+    const roomId = params.get('id');
+    if (roomId) {
+      client.emit('room:join', { roomId });
+    }
   }
-  // If no intent, SocketHandler's reconnect logic will auto-emit room:joined
+  // If no intent and no URL param, SocketHandler's reconnect logic will auto-emit room:joined
   // if the user was already in a room.
 }
 
