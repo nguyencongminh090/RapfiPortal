@@ -342,9 +342,24 @@ class GameEngine {
       const line1 = this._getLineInDirection(x, y, dir.dx, dir.dy, color);
       const line2 = this._getLineInDirection(x, y, -dir.dx, -dir.dy, color);
 
-      const count = 1 + line1.length + line2.length;
-      if (count >= 5) {
-        return [{x, y}, ...line1, ...line2];
+      // PORTAL BUG FIX: Deduplicate the merged line to prevent double-counting.
+      // When a portal pair (A, B) is in the path, _getLineInDirection in the +dir
+      // direction may teleport A→B (collecting stones past B), and _getLineInDirection
+      // in the -dir direction may teleport B→A (collecting the same stones again).
+      // We use a coordinate Set to ensure each board position is counted only once.
+      const seen = new Set();
+      const deduped = [];
+
+      for (const stone of [{x, y}, ...line1, ...line2]) {
+        const key = `${stone.x},${stone.y}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          deduped.push(stone);
+        }
+      }
+
+      if (deduped.length >= 5) {
+        return deduped;
       }
     }
     return null;
