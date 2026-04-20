@@ -471,7 +471,9 @@
 }
 
 .room--focus .float-messages {
-  bottom: 80px;
+  /* chat-input-wrapper is bottom:85px, height ~50px => float msgs start above it */
+  bottom: 145px;
+  z-index: 650;
 }
 
 @keyframes float-msg-in {
