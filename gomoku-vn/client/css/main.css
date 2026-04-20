@@ -125,6 +125,10 @@ html, body {
   font-size: 13px;
   color: rgba(255,255,255,0.85);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
 }
 
 .topnav__badge {
@@ -153,4 +157,11 @@ html, body {
 .topnav__btn:hover {
   background: rgba(255,255,255,0.20);
   color: #FFFFFF;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .topnav { padding: 0 12px; }
+  .topnav__title { display: none; }
+  .topnav__user { max-width: 120px; }
 }

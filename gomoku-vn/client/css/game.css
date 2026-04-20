@@ -352,7 +352,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: 400px;
-  max-width: 90vw;
+  max-width: calc(100vw - 140px);
   z-index: 600;
   display: flex;
   background: var(--c-surface, #fff);

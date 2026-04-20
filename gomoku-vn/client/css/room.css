@@ -469,6 +469,8 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-  .slot-card { flex: 1; min-width: 180px; }
+  .slot-card { flex: 1 1 calc(50% - 5px); min-width: 140px; }
+  .slot-actions { width: 100%; flex-basis: 100%; }
+  .score-panel { width: 100%; flex-basis: 100%; }
   .board-area { min-height: 280px; }
 }
