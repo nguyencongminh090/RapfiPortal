@@ -97,8 +97,18 @@ class BoardRenderer {
     if (!parent) return;
     const size = Math.min(parent.clientWidth, window.innerHeight - 200);
     const s = Math.max(size, 300);
-    this.canvas.width = s;
-    this.canvas.height = s;
+    
+    // Support High-DPI screens
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.style.width = `${s}px`;
+    this.canvas.style.height = `${s}px`;
+    this.canvas.width = s * dpr;
+    this.canvas.height = s * dpr;
+    
+    // Scale context to match CSS size
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.cssSize = s;
+
     this._computeGeometry();
     this._draw();
   }
@@ -106,8 +116,8 @@ class BoardRenderer {
   // ─── Geometry ────────────────────────────────────────────────────
 
   _computeGeometry() {
-    const w = this.canvas.width;
-    const h = this.canvas.height;
+    const w = this.cssSize || this.canvas.width;
+    const h = this.cssSize || this.canvas.height;
     const n = this.boardSize;
 
     // Margin for coordinate labels
@@ -151,9 +161,11 @@ class BoardRenderer {
 
   _getCanvasPos(e) {
     const rect = this.canvas.getBoundingClientRect();
+    const w = this.cssSize || this.canvas.width;
+    const h = this.cssSize || this.canvas.height;
     return {
-      x: (e.clientX - rect.left) * (this.canvas.width / rect.width),
-      y: (e.clientY - rect.top) * (this.canvas.height / rect.height),
+      x: (e.clientX - rect.left) * (w / rect.width),
+      y: (e.clientY - rect.top) * (h / rect.height),
     };
   }
 
@@ -191,8 +203,10 @@ class BoardRenderer {
     e.preventDefault();
     const touch = e.changedTouches[0];
     const rect = this.canvas.getBoundingClientRect();
-    const px = (touch.clientX - rect.left) * (this.canvas.width / rect.width);
-    const py = (touch.clientY - rect.top) * (this.canvas.height / rect.height);
+    const w = this.cssSize || this.canvas.width;
+    const h = this.cssSize || this.canvas.height;
+    const px = (touch.clientX - rect.left) * (w / rect.width);
+    const py = (touch.clientY - rect.top) * (h / rect.height);
     const cell = this._pixelToCell(px, py);
     if (!cell) return;
     if (this.board && this.board[cell.y] && this.board[cell.y][cell.x] === 0) {
@@ -225,7 +239,9 @@ class BoardRenderer {
     const g = this.geo;
     if (!g.cellSize) return;
 
-    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    const w = this.cssSize || this.canvas.width;
+    const h = this.cssSize || this.canvas.height;
+    ctx.clearRect(0, 0, w, h);
 
     // 1. Background + grid
     this._drawBackground();
@@ -287,7 +303,9 @@ class BoardRenderer {
 
     // Paper-style background: warm beige (#F5EDDA)
     ctx.fillStyle = 'rgb(245, 237, 218)';
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    const w = this.cssSize || this.canvas.width;
+    const h = this.cssSize || this.canvas.height;
+    ctx.fillRect(0, 0, w, h);
 
     // Grid lines
     ctx.strokeStyle = 'rgba(179, 166, 140, 0.6)';
