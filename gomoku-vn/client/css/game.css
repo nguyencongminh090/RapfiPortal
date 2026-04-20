@@ -8,14 +8,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 8px 20px;
+  gap: 8px;
+  padding: 8px 12px;
   background: var(--c-surface, #fff);
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   margin-bottom: 8px;
   font-size: 14px;
-  min-width: 300px;
+  width: 100%;
+  max-width: 400px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .turn-bar__player {
@@ -25,6 +28,14 @@
   padding: 4px 8px;
   border-radius: 6px;
   transition: background 0.3s;
+  min-width: 0;
+}
+
+.turn-bar__info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .turn-bar__active {
@@ -32,6 +43,7 @@
 }
 
 .turn-bar__stone {
+  flex-shrink: 0;
   display: inline-block;
   width: 16px;
   height: 16px;
@@ -50,7 +62,7 @@
 .turn-bar__name {
   font-weight: 600;
   color: var(--c-text-primary, #2c3e2d);
-  max-width: 100px;
+  max-width: clamp(60px, 20vw, 100px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -112,11 +124,20 @@
   display: flex;
   gap: 10px;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
 }
 
 .btn-game {
-  padding: 6px 16px;
+  flex: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px 8px;
   border: 1.5px solid;
   border-radius: 6px;
   font-size: 13px;
@@ -348,11 +369,11 @@
 /* Chat input in focus mode */
 .room--focus > #chat-input-wrapper {
   position: fixed;
-  bottom: 20px;
+  bottom: 85px; /* Moved up to not overlap game controls and btn-focus */
   left: 50%;
   transform: translateX(-50%);
   width: 400px;
-  max-width: calc(100vw - 140px);
+  max-width: 90vw;
   z-index: 600;
   display: flex;
   background: var(--c-surface, #fff);
@@ -366,6 +387,7 @@
   background: transparent;
   outline: none;
   flex: 1;
+  min-width: 0; /* Prevents overflow of the Gửi button on narrow screens */
 }
 
 .room--focus > #chat-input-wrapper button {
@@ -381,8 +403,8 @@
 /* Focus toggle button */
 .btn-focus {
   position: fixed;
-  bottom: 16px;
-  right: 16px;
+  bottom: 20px;
+  right: 20px;
   z-index: 600;
   width: 44px;
   height: 44px;
@@ -413,7 +435,7 @@
 
 .float-messages {
   position: fixed;
-  bottom: 70px;
+  bottom: 150px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 550;

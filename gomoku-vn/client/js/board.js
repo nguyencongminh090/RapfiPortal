@@ -95,8 +95,12 @@ class BoardRenderer {
   resize() {
     const parent = this.canvas.parentElement;
     if (!parent) return;
-    const size = Math.min(parent.clientWidth, window.innerHeight - 200);
-    const s = Math.max(size, 300);
+    // Use viewport width as hard ceiling to prevent overflow
+    const maxAllowed = Math.min(window.innerWidth - 16, window.innerHeight - 180);
+
+    // Clamp: never exceed viewport, never below 200px (usable minimum)
+    const size = Math.min(parent.clientWidth, maxAllowed);
+    const s = Math.max(size, 200);
     
     // Support High-DPI screens
     const dpr = window.devicePixelRatio || 1;

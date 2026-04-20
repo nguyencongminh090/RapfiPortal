@@ -797,18 +797,22 @@ function initBoard() {
 
   if (!boardRenderer) {
     boardArea.innerHTML = `
-      <div style="width:100%;display:flex;flex-direction:column;align-items:center;padding:10px;">
+      <div class="board-area-inner">
         <div class="turn-bar" id="turn-bar" style="visibility: hidden">
           <div class="turn-bar__player" id="tb-black">
-            <span class="turn-bar__stone turn-bar__stone--black"></span>
-            <span class="turn-bar__name" id="tb-black-name"></span>
+            <div class="turn-bar__info">
+              <span class="turn-bar__stone turn-bar__stone--black"></span>
+              <span class="turn-bar__name" id="tb-black-name"></span>
+            </div>
             <span class="turn-bar__timer" id="tb-black-timer"></span>
           </div>
           <div class="game-info__turn" id="turn-label"></div>
           <div class="turn-bar__player" id="tb-white">
             <span class="turn-bar__timer" id="tb-white-timer"></span>
-            <span class="turn-bar__name" id="tb-white-name"></span>
-            <span class="turn-bar__stone turn-bar__stone--white"></span>
+            <div class="turn-bar__info turn-bar__info--right">
+              <span class="turn-bar__name" id="tb-white-name"></span>
+              <span class="turn-bar__stone turn-bar__stone--white"></span>
+            </div>
           </div>
         </div>
         <div class="board-canvas-wrap" id="board-wrap">
@@ -868,7 +872,9 @@ function initBoard() {
     if (wNameEl) wNameEl.textContent = whiteP ? whiteP.displayName : '—';
   }
 
-  boardRenderer.resize();
+  requestAnimationFrame(() => {
+    if (boardRenderer) boardRenderer.resize();
+  });
 }
 
 /** Update the board renderer state after a move. */

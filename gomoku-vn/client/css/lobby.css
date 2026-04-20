@@ -5,9 +5,12 @@
 
 /* ── Page layout ──────────────────────────────────────────────────────────── */
 .lobby {
+  width: 100%;
   max-width: 880px;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 24px 20px 40px;
+  padding-inline: clamp(12px, 4vw, 20px);
 }
 
 /* ── Section header + action bar ──────────────────────────────────────────── */
