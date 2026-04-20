@@ -1017,22 +1017,31 @@ function formatTime(seconds) {
 function showGameOverlay(result) {
   if (!result) return;
 
-  let resultText, resultClass, reasonText;
+  // Only show the personal Win/Loss overlay to seated players.
+  // Spectators (guests with no slot) only see the float messages.
+  if (mySlot === null) return;
+
+  const overlayIcon = document.getElementById('overlay-icon');
+  let resultText, resultClass, reasonText, icon;
 
   if (result.winner === 'draw') {
+    icon = '🤝';
     resultText = 'Hoà!';
     resultClass = 'game-overlay__result--draw';
     reasonText = result.reason === 'agreement' ? 'Hai bên đồng ý hoà' : 'Bàn cờ đã đầy';
   } else if (result.winner === myUser.userId) {
-    resultText = 'Bạn thắng! 🎉';
+    icon = '🎉';
+    resultText = 'Bạn thắng!';
     resultClass = 'game-overlay__result--win';
-    reasonText = getReasonText(result.reason);
+    reasonText = getReasonText(result.reason, true);
   } else {
+    icon = '👊';
     resultText = 'Bạn thua';
     resultClass = 'game-overlay__result--lose';
-    reasonText = getReasonText(result.reason);
+    reasonText = getReasonText(result.reason, false);
   }
 
+  if (overlayIcon) overlayIcon.textContent = icon;
   overlayResult.textContent = resultText;
   overlayResult.className = 'game-overlay__result ' + resultClass;
   overlayReason.textContent = reasonText;
@@ -1046,11 +1055,11 @@ function showGameOverlay(result) {
   }, 500);
 }
 
-function getReasonText(reason) {
+function getReasonText(reason, isWinner) {
   switch (reason) {
     case 'win':     return 'Xếp được 5 quân liên tiếp';
-    case 'resign':  return 'Đối thủ đầu hàng';
-    case 'timeout': return 'Hết thời gian';
+    case 'resign':  return isWinner ? 'Đối thủ đầu hàng' : 'Bạn đã đầu hàng';
+    case 'timeout': return isWinner ? 'Đối thủ hết thời gian' : 'Bạn đã hết thời gian';
     default:        return '';
   }
 }

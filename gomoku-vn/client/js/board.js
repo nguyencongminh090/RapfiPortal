@@ -95,12 +95,15 @@ class BoardRenderer {
   resize() {
     const parent = this.canvas.parentElement;
     if (!parent) return;
-    // Use viewport width as hard ceiling to prevent overflow
-    const maxAllowed = Math.min(window.innerWidth - 16, window.innerHeight - 180);
 
-    // Clamp: never exceed viewport, never below 200px (usable minimum)
-    const size = Math.min(parent.clientWidth, maxAllowed);
-    const s = Math.max(size, 200);
+    // CSS overflow:hidden on .board-area-inner and .board-canvas-wrap ensures
+    // parent.clientWidth is already clamped to the viewport. No manual subtraction needed.
+    // Still guard with window.innerWidth as an absolute hard ceiling.
+    const maxVw = window.innerWidth - 4; // 2px breathing room per side
+    const maxVh = window.innerHeight - 160; // reserve height for turn-bar + controls
+
+    const rawSize = Math.min(parent.clientWidth, maxVh, maxVw);
+    const s = Math.max(rawSize, 200); // usable minimum
     
     // Support High-DPI screens
     const dpr = window.devicePixelRatio || 1;
