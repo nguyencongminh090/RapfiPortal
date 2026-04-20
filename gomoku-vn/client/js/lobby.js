@@ -128,7 +128,10 @@ function renderRoomList(rooms) {
 
     html += `
       <tr data-room-id="${room.roomId}">
-        <td><span class="room-id">${escapeHtml(room.roomId)}</span></td>
+        <td>
+          <div style="font-weight:600; color:var(--c-ink); margin-bottom:2px;">${escapeHtml(room.roomName || room.roomId)}</div>
+          <span class="room-id" style="font-size:11px; font-weight:400; color:var(--c-ink-3);">ID: ${escapeHtml(room.roomId)}</span>
+        </td>
         <td>${escapeHtml(room.hostName)}</td>
         <td>
           <span class="player-count ${room.playerCount >= 2 ? 'player-count--full' : 'player-count--open'}">
@@ -220,11 +223,12 @@ modalConfirm.addEventListener('click', () => {
   const timerSeconds = parseInt(document.getElementById('timer-seconds').value, 10) || 60;
   const ruleWall   = document.getElementById('rule-wall').checked;
   const rulePortal = document.getElementById('rule-portal').checked;
+  const roomName   = document.getElementById('room-name').value.trim();
 
   // Store intent and navigate — room.js will handle the actual create
   sessionStorage.setItem('gvn_room_intent', JSON.stringify({
     action: 'create',
-    settings: { boardSize, ruleWall, rulePortal, timerMode, timerSeconds },
+    settings: { roomName, boardSize, ruleWall, rulePortal, timerMode, timerSeconds },
   }));
 
   closeModal();

@@ -202,6 +202,28 @@ function registerRoomHandlers(io, socket) {
 
     const room = roomManager.getRoom(roomId);
     if (room) {
+      // Check if user is currently playing
+      if (room.gameState && room.gameState.status === 'ongoing') {
+        const isPlayer = room.gameState.players.some(p => p.userId === user.userId);
+        if (isPlayer) {
+          // Force resign before leaving
+          const result = room.gameState.resign(user.userId);
+          if (!result.error) {
+            const gameResult = room.gameState.result;
+            handleGameEnd(io, room);
+            io.to(roomId).emit('game:ended', {
+              result: gameResult,
+              scoreTable: room.scoreTable,
+            });
+            io.to(roomId).emit('chat:message', {
+              from: null, fromId: null,
+              text: `${user.displayName} rời phòng (xử thua).`,
+              timestamp: Date.now(), isSystem: true,
+            });
+          }
+        }
+      }
+
       io.to(roomId).emit('chat:message', {
         from: null, fromId: null,
         text: `${user.displayName} đã rời phòng.`,

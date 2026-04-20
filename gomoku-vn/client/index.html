@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GomokuVN — Sảnh</title>
   <meta name="description" content="GomokuVN — Sảnh chờ và danh sách phòng chơi Caro trực tuyến." />
-  <link rel="stylesheet" href="css/main.css" />
-  <link rel="stylesheet" href="css/lobby.css" />
+  <link rel="stylesheet" href="css/main.css?v=5" />
+  <link rel="stylesheet" href="css/lobby.css?v=5" />
 </head>
 <body>
 
@@ -71,6 +71,14 @@
     </div>
     <div class="modal__body">
 
+      <!-- Room Name -->
+      <div class="setting-row">
+        <span class="setting-label">Tên phòng</span>
+        <div class="timer-input" style="width: 100%;">
+          <input type="text" id="room-name" placeholder="Tùy chọn (để trống tự tạo tên)" style="width: 100%; box-sizing: border-box;" maxlength="30" />
+        </div>
+      </div>
+
       <!-- Board size -->
       <div class="setting-row">
         <span class="setting-label">Kích thước bàn</span>
@@ -134,7 +142,7 @@
 
 <!-- Socket.io CDN -->
 <script src="/socket.io/socket.io.js"></script>
-<script src="js/socket-client.js"></script>
-<script src="js/lobby.js"></script>
+<script src="js/socket-client.js?v=5"></script>
+<script src="js/lobby.js?v=5"></script>
 </body>
 </html>

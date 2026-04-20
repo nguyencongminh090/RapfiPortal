@@ -147,6 +147,9 @@ btnFocus.addEventListener('click', () => {
 // Leave room
 // ---------------------------------------------------------------------------
 btnLeave.addEventListener('click', () => {
+  if (gameState && gameState.status === 'ongoing' && mySlot !== null) {
+    if (!confirm('Ván đấu đang diễn ra. Bạn có chắc chắn muốn rời phòng? (Bạn sẽ bị xử thua)')) return;
+  }
   client.emit('room:leave');
 });
 
@@ -390,8 +393,8 @@ function updateUI() {
   if (!roomData) return;
 
   // Update nav
-  roomIdNav.textContent = roomData.roomId;
-  document.title = `GomokuVN — ${roomData.roomId}`;
+  roomIdNav.textContent = roomData.roomName || roomData.roomId;
+  document.title = `GomokuVN — ${roomData.roomName || roomData.roomId}`;
 
   // Find my user in the room
   const me = roomData.users.find(u => u.userId === myUser.userId);

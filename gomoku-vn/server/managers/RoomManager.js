@@ -67,10 +67,12 @@ class RoomManager {
     }
 
     const roomId = this._generateRoomId();
+    const roomName = settings.roomName ? settings.roomName.slice(0, 30) : `Phòng của ${userInfo.displayName}`;
     const validatedSettings = this._validateSettings(settings);
 
     const room = {
       roomId,
+      roomName,
       host: userInfo.userId,
       users: new Map(),
       joinOrder: [],                    // For host transfer queue
@@ -499,6 +501,7 @@ class RoomManager {
     const hostUser = room.users.get(room.host);
     return {
       roomId: room.roomId,
+      roomName: room.roomName,
       hostId: room.host,
       hostName: hostUser ? hostUser.displayName : '—',
       users,
