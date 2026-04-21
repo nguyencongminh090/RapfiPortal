@@ -845,6 +845,13 @@ function handleDisconnect(io, socket) {
   if (room && room.gameState && room.gameState.status === 'ongoing') {
     const isPlayer = room.gameState.players.some(p => p.userId === user.userId);
     if (isPlayer) {
+      // RACE CONDITION FIX: Check if this user already has another active socket.
+      // If they do, this is just a stale socket closing — don't start grace.
+      const activeSockets = findSocketsByUserId(io, user.userId);
+      if (activeSockets.length > 0) {
+        logger.info(`[Socket] Stale socket closed for ${user.displayName}, active socket exists — skipping grace`);
+        return;
+      }
       startDisconnectGrace(io, room, user);
       return; // Don't remove from room yet
     }
@@ -884,7 +891,18 @@ function startDisconnectGrace(io, room, user) {
   const roomId = room.roomId;
   const graceSec = Math.floor(config.DISCONNECT_GRACE_MS / 1000);
 
-  // Pause the game timer
+  // CRITICAL: Clear any existing grace timer for this user first.
+  // Without this, rapid disconnect/reconnect cycles create orphan timers
+  // that fire after the player has already reconnected, causing false timeout.
+  const existing = disconnectTimers.get(user.userId);
+  if (existing) {
+    clearTimeout(existing.timeout);
+    clearInterval(existing.countdown);
+    disconnectTimers.delete(user.userId);
+    logger.info(`[Socket] Cleared stale grace timer for ${user.displayName}`);
+  }
+
+  // Pause the game timer (only if not already paused)
   const timer = timerMap.get(roomId);
   if (timer) timer.stop();
 
