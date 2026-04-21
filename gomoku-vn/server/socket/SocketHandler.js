@@ -930,8 +930,10 @@ function handleGameEnd(io, room, opts = {}) {
         moveHistory: engine.moveHistory,
         walls: engine.walls,
         portals: engine.portals,
-        startedAt: engine.moveHistory.length > 0 ? engine.moveHistory[0].timestamp : Date.now(),
-        endedAt: Date.now(),
+        startedAt: engine.moveHistory.length > 0
+          ? new Date(engine.moveHistory[0].timestamp).toISOString()
+          : new Date().toISOString(),
+        endedAt: new Date().toISOString(),
       });
     } catch (err) {
       logger.warn('[Socket] Failed to persist game:', err.message);

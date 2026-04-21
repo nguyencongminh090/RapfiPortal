@@ -1,0 +1,288 @@
+/* =============================================================================
+   history.css — GomokuVN Game History & Replay Viewer
+   ============================================================================= */
+
+/* ── Page layout ──────────────────────────────────────────────────────────── */
+.history {
+  width: 100%;
+  max-width: 880px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  padding-inline: clamp(12px, 4vw, 20px);
+}
+
+.history__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.history__header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-ink);
+  margin: 0;
+}
+
+.history__count {
+  font-size: 13px;
+  color: var(--c-ink-3);
+  font-weight: 400;
+}
+
+/* ── Game List ────────────────────────────────────────────────────────────── */
+.game-list__empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--c-ink-3);
+  font-size: 14px;
+}
+
+.game-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.game-table th {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  background: var(--c-surface-2);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.game-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--c-ink);
+  border-bottom: 1px solid var(--c-border-light);
+  vertical-align: middle;
+}
+
+.game-table tr:last-child td {
+  border-bottom: none;
+}
+
+.game-table tr:hover td {
+  background: rgba(0,0,0,0.02);
+}
+
+.game-table .result-win {
+  color: #16a34a;
+  font-weight: 600;
+}
+.game-table .result-draw {
+  color: var(--c-ink-3);
+  font-weight: 600;
+}
+
+.btn-replay {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--c-brand);
+  background: transparent;
+  border: 1px solid var(--c-brand);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-replay:hover {
+  background: var(--c-brand);
+  color: #fff;
+}
+
+/* ── Pagination ───────────────────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+.pagination button {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--c-ink-2);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pagination button:hover:not(:disabled) {
+  background: var(--c-surface-2);
+}
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pagination button.active {
+  background: var(--c-brand);
+  color: #fff;
+  border-color: var(--c-brand);
+}
+
+/* ── Replay View ──────────────────────────────────────────────────────────── */
+.replay__back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font);
+  color: var(--c-ink-2);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.15s;
+}
+.replay__back-btn:hover {
+  background: var(--c-surface-2);
+}
+
+.replay__info {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.replay__players {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.replay__player {
+  font-size: 15px;
+  font-weight: 700;
+}
+.replay__player--black {
+  color: #222;
+}
+.replay__player--white {
+  color: #888;
+}
+
+.replay__vs {
+  font-size: 12px;
+  color: var(--c-ink-3);
+  font-weight: 400;
+}
+
+.replay__result {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-brand);
+  margin-bottom: 4px;
+}
+
+.replay__meta {
+  font-size: 12px;
+  color: var(--c-ink-3);
+}
+
+.replay__board-area {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.replay__board-area canvas {
+  width: min(100%, 600px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.replay__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+}
+
+.replay__btn {
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+  font-family: var(--font);
+  color: var(--c-ink-2);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.replay__btn:hover {
+  background: var(--c-border);
+}
+
+.replay__btn--play {
+  width: auto;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 4px;
+}
+.replay__btn--play.playing {
+  background: var(--c-brand);
+  color: #fff;
+  border-color: var(--c-brand);
+}
+
+.replay__counter {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-ink);
+  min-width: 70px;
+  text-align: center;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .game-table th:nth-child(4),
+  .game-table td:nth-child(4) {
+    display: none;
+  }
+
+  .replay__controls {
+    gap: 4px;
+  }
+  .replay__btn {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+}

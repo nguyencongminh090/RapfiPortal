@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Play3CR — Lịch sử ván đấu</title>
+  <meta name="description" content="Xem lại và phát lại các ván Caro đã chơi trên Play3CR." />
+  <link rel="stylesheet" href="css/main.css?v=6" />
+  <link rel="stylesheet" href="css/history.css?v=2" />
+</head>
+<body>
+
+<!-- ── Top Nav ──────────────────────────────────────────────────────────── -->
+<nav class="topnav" aria-label="Main navigation">
+  <a href="index.html" class="topnav__brand">
+    <span class="topnav__title">Play3CR</span>
+  </a>
+  <div class="topnav__right">
+    <a href="index.html" class="topnav__btn" style="text-decoration:none;">Sảnh</a>
+  </div>
+</nav>
+
+<!-- ── Main Content ────────────────────────────────────────────────────── -->
+<main class="history" role="main">
+
+  <!-- Game List View -->
+  <div id="view-list">
+    <div class="history__header">
+      <h1>Lịch sử ván đấu</h1>
+      <span id="game-total" class="history__count"></span>
+    </div>
+    <div id="game-list" class="game-list">
+      <div class="game-list__empty">Đang tải...</div>
+    </div>
+    <div id="pagination" class="pagination"></div>
+  </div>
+
+  <!-- Replay View (hidden by default) -->
+  <div id="view-replay" class="replay" style="display:none;">
+    <button id="replay-back" class="replay__back-btn" type="button">← Quay lại</button>
+    <div class="replay__info">
+      <div class="replay__players">
+        <span id="replay-black" class="replay__player replay__player--black"></span>
+        <span class="replay__vs">vs</span>
+        <span id="replay-white" class="replay__player replay__player--white"></span>
+      </div>
+      <div id="replay-result" class="replay__result"></div>
+      <div id="replay-meta" class="replay__meta"></div>
+    </div>
+
+    <div class="replay__board-area">
+      <canvas id="replay-canvas"></canvas>
+    </div>
+
+    <div class="replay__controls">
+      <button id="btn-first" class="replay__btn" type="button" title="Đầu tiên">⏮</button>
+      <button id="btn-prev" class="replay__btn" type="button" title="Lùi 1 nước">◀</button>
+      <span id="move-counter" class="replay__counter">0 / 0</span>
+      <button id="btn-next" class="replay__btn" type="button" title="Tiến 1 nước">▶</button>
+      <button id="btn-last" class="replay__btn" type="button" title="Cuối cùng">⏭</button>
+      <button id="btn-play" class="replay__btn" type="button" title="Tự động phát">⏵</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- Scripts -->
+<script src="js/board.js?v=6"></script>
+<script src="js/history.js?v=3"></script>
+</body>
+</html>

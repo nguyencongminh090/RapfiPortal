@@ -45,12 +45,17 @@
       <span id="room-count" class="lobby__count"></span>
       <span id="online-count" class="lobby__count" style="margin-left:8px; cursor:help; color:var(--c-brand);" title="Đang tải..."></span>
     </h1>
-    <button id="btn-create" class="btn-create" type="button">
-      <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <span data-i18n="lobby.btn_create">Tạo phòng</span>
-    </button>
+    <div style="display:flex; gap:8px;">
+      <a href="history.html" class="btn-create" style="text-decoration:none; background:var(--c-surface-2); color:var(--c-ink-2); border:1px solid var(--c-border);">
+        <span>📋 Lịch sử</span>
+      </a>
+      <button id="btn-create" class="btn-create" type="button">
+        <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span data-i18n="lobby.btn_create">Tạo phòng</span>
+      </button>
+    </div>
   </div>
 
   <!-- Room list container -->

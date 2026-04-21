@@ -144,6 +144,41 @@ function getPlayerHistory(playerId) {
   `).all(playerId);
 }
 
+/**
+ * Fetch recent games (all players), paginated.
+ * @param {number} limit
+ * @param {number} offset
+ * @returns {Array}
+ */
+function getRecentGames(limit = 20, offset = 0) {
+  return db.prepare(`
+    SELECT id, room_id, black_player_id, white_player_id,
+           black_player_name, white_player_name,
+           winner, reason, board_size, rule_wall, rule_portal,
+           started_at, ended_at
+    FROM games
+    ORDER BY ended_at DESC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+}
+
+/**
+ * Fetch a single game by ID with full move data.
+ * @param {string} gameId
+ * @returns {object|undefined}
+ */
+function getGameById(gameId) {
+  return db.prepare('SELECT * FROM games WHERE id = ?').get(gameId);
+}
+
+/**
+ * Count total games.
+ * @returns {number}
+ */
+function getGameCount() {
+  return db.prepare('SELECT COUNT(*) as count FROM games').get().count;
+}
+
 module.exports = {
   db,
   createUser,
@@ -151,4 +186,7 @@ module.exports = {
   getUserById,
   saveGame,
   getPlayerHistory,
+  getRecentGames,
+  getGameById,
+  getGameCount,
 };
