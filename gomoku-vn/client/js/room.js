@@ -55,13 +55,10 @@ let gameState = null;   // From game:init
 let boardRenderer = null;
 let timerValues = { black: 0, white: 0 };
 let drawOfferPending = null; // { from, fromName } or null
+let timeRequestPending = null; // { from, fromName, bonus } or null
 
 // Focus mode state
 let focusMode = false;
-
-// Xin Time tracking (client-side, mirroring server)
-let myTimeRequestsUsed = 0;
-const TIME_REQUEST_MAX = 2;
 
 // ---------------------------------------------------------------------------
 // Element refs
@@ -240,7 +237,7 @@ client.on('game:init', (data) => {
   gameState = data;
   timerValues = data.timer || { black: data.timerSeconds || 60, white: data.timerSeconds || 60 };
   drawOfferPending = null;
-  myTimeRequestsUsed = 0; // Reset xin time counter for new game
+  timeRequestPending = null; // Reset time request state for new game
   gameOverlay.classList.remove('visible');
   btnFocus.style.display = 'flex'; // Show focus button during game
   initBoard();
@@ -303,12 +300,24 @@ client.on('game:ended', (data) => {
   updateUI();
 });
 
-// Time request granted
+// Time request offered (from either player)
+client.on('game:time_offered', (data) => {
+  timeRequestPending = data;
+  renderTimePrompt();
+});
+
+// Time request granted (opponent accepted)
 client.on('game:time_granted', (data) => {
-  if (data.playerId === myUser.userId) {
-    myTimeRequestsUsed = TIME_REQUEST_MAX - data.remaining;
-  }
-  updateBoardState(); // Refresh controls to update button state
+  timeRequestPending = null;
+  renderTimePrompt();
+  updateBoardState();
+});
+
+// Time request declined
+client.on('game:time_declined', (data) => {
+  timeRequestPending = null;
+  renderTimePrompt();
+  updateBoardState();
 });
 
 // Draw offer received
@@ -820,6 +829,7 @@ function initBoard() {
         </div>
         <div class="game-controls" id="game-controls"></div>
         <div id="draw-prompt-area"></div>
+        <div id="time-prompt-area"></div>
       </div>
     `;
 
@@ -963,15 +973,17 @@ function renderGameControls() {
     return;
   }
 
+  const timeDisabled = timeRequestPending ? 'disabled' : '';
   el.innerHTML = `
-    <button class="btn-game btn-game--resign" onclick="doResign()">Đầu hàng</button>
-    <button class="btn-game btn-game--draw" onclick="doDrawOffer()">Đề nghị hoà</button>
-    <button class="btn-game btn-game--time" onclick="doRequestTime()" ${myTimeRequestsUsed >= TIME_REQUEST_MAX ? 'disabled' : ''}>
-      Xin Time (${TIME_REQUEST_MAX - myTimeRequestsUsed})
+    <button class="btn-game btn-game--resign" onclick="doResign()">${t('game.btn_resign')}</button>
+    <button class="btn-game btn-game--draw" onclick="doDrawOffer()">${t('game.btn_draw')}</button>
+    <button class="btn-game btn-game--time" onclick="doRequestTime()" ${timeDisabled}>
+      ${t('game.btn_time')}
     </button>
   `;
 
   renderDrawPrompt();
+  renderTimePrompt();
 }
 
 /** Render draw offer prompt if applicable. */
@@ -1002,7 +1014,35 @@ function renderDrawPrompt() {
   `;
 }
 
-/** Format seconds to mm:ss. */
+/** Render time request prompt if applicable. */
+function renderTimePrompt() {
+  const el = document.getElementById('time-prompt-area');
+  if (!el) return;
+
+  if (!timeRequestPending || !gameState || gameState.status !== 'ongoing') {
+    el.innerHTML = '';
+    return;
+  }
+
+  // If I'm the one who requested, show waiting message
+  if (timeRequestPending.from === myUser.userId) {
+    el.innerHTML = `<div class="draw-prompt">${t('game.time_waiting')}</div>`;
+    return;
+  }
+
+  // Opponent requested — show accept/decline
+  el.innerHTML = `
+    <div class="draw-prompt">
+      <span>${t('game.time_offer', { name: escapeHtml(timeRequestPending.fromName || ''), bonus: timeRequestPending.bonus || 10 })}</span>
+      <div class="draw-prompt__actions">
+        <button class="btn-draw-action btn-draw-accept" onclick="doTimeAccept()">${t('game.btn_accept')}</button>
+        <button class="btn-draw-action btn-draw-decline" onclick="doTimeDecline()">${t('game.btn_decline')}</button>
+      </div>
+    </div>
+  `;
+}
+
+
 function formatTime(seconds) {
   if (seconds < 0) seconds = 0;
   const m = Math.floor(seconds / 60);
@@ -1097,6 +1137,14 @@ window.doDrawDecline = function() {
 };
 
 window.doRequestTime = function() {
-  if (myTimeRequestsUsed >= TIME_REQUEST_MAX) return;
+  if (timeRequestPending) return;
   client.emit('game:request_time');
+};
+
+window.doTimeAccept = function() {
+  client.emit('game:time_accept');
+};
+
+window.doTimeDecline = function() {
+  client.emit('game:time_decline');
 };

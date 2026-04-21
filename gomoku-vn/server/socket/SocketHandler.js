@@ -499,9 +499,8 @@ function registerGameHandlers(io, socket) {
   });
 
   /**
-   * game:request_time — "Xin Time": add bonus seconds to your clock.
-   * Limited to TIME_REQUEST_MAX per player per game.
-   * Only allowed during player's own turn.
+   * game:request_time — "Xin Time": request bonus seconds (opponent must accept).
+   * No limit on number of requests. Only allowed during player's own turn.
    */
   socket.on('game:request_time', () => {
     const room = roomManager.getRoomByUser(user.userId);
@@ -523,37 +522,97 @@ function registerGameHandlers(io, socket) {
       return;
     }
 
-    // Track time requests per player per game
-    if (!room._timeRequests) room._timeRequests = {};
-    if (!room._timeRequests[user.userId]) room._timeRequests[user.userId] = 0;
-
-    if (room._timeRequests[user.userId] >= config.TIME_REQUEST_MAX) {
-      socket.emit('game:error', { message: `Bạn đã dùng hết ${config.TIME_REQUEST_MAX} lần xin thời gian.` });
+    // Prevent duplicate pending requests
+    if (room._timeRequestPending) {
+      socket.emit('game:error', { message: 'Đang chờ đối thủ phản hồi yêu cầu xin thời gian.' });
       return;
     }
 
-    room._timeRequests[user.userId]++;
+    // Store pending time request
+    room._timeRequestPending = { from: user.userId, fromName: user.displayName };
 
-    // Add bonus time to the requesting player's clock
+    // Notify all room members
+    io.to(room.roomId).emit('game:time_offered', {
+      from: user.userId,
+      fromName: user.displayName,
+      bonus: config.TIME_REQUEST_BONUS,
+    });
+    io.to(room.roomId).emit('chat:message', {
+      from: null, fromId: null,
+      text: `${user.displayName} xin thêm ${config.TIME_REQUEST_BONUS} giây.`,
+      timestamp: Date.now(), isSystem: true,
+    });
+  });
+
+  /**
+   * game:time_accept — Opponent accepts the time request.
+   */
+  socket.on('game:time_accept', () => {
+    const room = roomManager.getRoomByUser(user.userId);
+    if (!room || !room.gameState || room.gameState.status !== 'ongoing') return;
+
+    if (!room._timeRequestPending) {
+      socket.emit('game:error', { message: 'Không có yêu cầu xin thời gian.' });
+      return;
+    }
+
+    // Only the opponent (not the requester) can accept
+    if (room._timeRequestPending.from === user.userId) {
+      socket.emit('game:error', { message: 'Bạn không thể tự chấp nhận.' });
+      return;
+    }
+
+    const requesterId = room._timeRequestPending.from;
+    const requester = room.gameState.players.find(p => p.userId === requesterId);
+    room._timeRequestPending = null;
+
+    if (!requester) return;
+
+    // Add bonus time
     const timer = timerMap.get(room.roomId);
     if (timer) {
-      const color = player.color === 'BLACK' ? 'black' : 'white';
+      const color = requester.color === 'BLACK' ? 'black' : 'white';
       timer.addTime(color, config.TIME_REQUEST_BONUS);
 
-      // Notify all room members
       io.to(room.roomId).emit('timer:tick', timer.getTimers());
       io.to(room.roomId).emit('game:time_granted', {
-        playerId: user.userId,
-        playerName: user.displayName,
+        playerId: requesterId,
         bonus: config.TIME_REQUEST_BONUS,
-        remaining: config.TIME_REQUEST_MAX - room._timeRequests[user.userId],
       });
       io.to(room.roomId).emit('chat:message', {
         from: null, fromId: null,
-        text: `${user.displayName} xin thêm ${config.TIME_REQUEST_BONUS} giây.`,
+        text: `${user.displayName} đồng ý cho thêm ${config.TIME_REQUEST_BONUS} giây.`,
         timestamp: Date.now(), isSystem: true,
       });
     }
+  });
+
+  /**
+   * game:time_decline — Opponent declines the time request.
+   */
+  socket.on('game:time_decline', () => {
+    const room = roomManager.getRoomByUser(user.userId);
+    if (!room || !room.gameState || room.gameState.status !== 'ongoing') return;
+
+    if (!room._timeRequestPending) {
+      socket.emit('game:error', { message: 'Không có yêu cầu xin thời gian.' });
+      return;
+    }
+
+    // Only the opponent can decline
+    if (room._timeRequestPending.from === user.userId) {
+      socket.emit('game:error', { message: 'Bạn không thể tự từ chối.' });
+      return;
+    }
+
+    room._timeRequestPending = null;
+
+    io.to(room.roomId).emit('game:time_declined', { by: user.userId });
+    io.to(room.roomId).emit('chat:message', {
+      from: null, fromId: null,
+      text: `${user.displayName} từ chối yêu cầu xin thời gian.`,
+      timestamp: Date.now(), isSystem: true,
+    });
   });
 
   /**
@@ -820,6 +879,7 @@ function handleGameEnd(io, room, opts = {}) {
   // Reset room state
   room.state = 'idle';
   room.gameState = null;
+  room._timeRequestPending = null;
 
   // Reset ready states for all seated players
   for (const [, u] of room.users) {
