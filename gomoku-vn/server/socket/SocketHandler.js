@@ -28,6 +28,13 @@ const timerMap = new Map();
 // Per-player disconnect grace timers: playerId → { timeout, roomId, countdown }
 const disconnectTimers = new Map();
 
+// Track online users: userId → { displayName, count }
+const onlineUsers = new Map();
+
+function getOnlineUsersList() {
+  return Array.from(onlineUsers.values()).map(u => u.displayName).sort();
+}
+
 /**
  * Initialize the Socket.io event handler.
  * @param {import('socket.io').Server} io
@@ -60,6 +67,14 @@ function init(io) {
   io.on('connection', (socket) => {
     const user = socket.user;
     logger.info(`[Socket] Connected: ${user.displayName} (${user.userId}) sid=${socket.id}`);
+
+    // Track online user
+    if (!onlineUsers.has(user.userId)) {
+      onlineUsers.set(user.userId, { displayName: user.displayName, count: 1 });
+      io.to(LOBBY_ROOM).emit('lobby:online_users', getOnlineUsersList());
+    } else {
+      onlineUsers.get(user.userId).count++;
+    }
 
     // [5.2] Check if this is a reconnect during disconnect grace period
     if (cancelDisconnectGrace(io, socket)) {
@@ -97,6 +112,16 @@ function init(io) {
     // ─── Disconnect ──────────────────────────────────────────────────
     socket.on('disconnect', (reason) => {
       logger.info(`[Socket] Disconnected: ${user.displayName} (${user.userId}) reason=${reason}`);
+      
+      const oUser = onlineUsers.get(user.userId);
+      if (oUser) {
+        oUser.count--;
+        if (oUser.count <= 0) {
+          onlineUsers.delete(user.userId);
+          io.to(LOBBY_ROOM).emit('lobby:online_users', getOnlineUsersList());
+        }
+      }
+
       handleDisconnect(io, socket);
       chatHandler.cleanupUser(user.userId);
     });
@@ -133,6 +158,7 @@ function registerLobbyHandlers(io, socket) {
   socket.on('lobby:subscribe', () => {
     socket.join(LOBBY_ROOM);
     socket.emit('lobby:update', { rooms: roomManager.listRooms() });
+    socket.emit('lobby:online_users', getOnlineUsersList());
   });
 
   socket.on('lobby:unsubscribe', () => {
@@ -686,6 +712,9 @@ function registerChatHandlers(io, socket) {
       socket.emit('chat:error', { message: 'Bạn cần vào phòng để chat.' });
       return;
     }
+    // Chat counts as activity to prevent idle room destruction
+    const room = roomManager.getRoom(roomId);
+    if (room) room.lastActivity = Date.now();
     chatHandler.handleMessage(io, socket, roomId, payload.text || '');
   });
 }

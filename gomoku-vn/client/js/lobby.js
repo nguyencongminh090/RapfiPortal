@@ -80,6 +80,44 @@ client.on('lobby:update', (data) => {
   renderRoomList(data.rooms || []);
 });
 
+// ── Online Users Panel ──────────────────────────────────────────────────────
+const onlineCountEl     = document.getElementById('online-count');
+const onlinePanelCount  = document.getElementById('online-panel-count');
+const onlinePanelToggle = document.getElementById('online-panel-toggle');
+const onlinePanelBody   = document.getElementById('online-panel-body');
+const onlineUserList    = document.getElementById('online-user-list');
+
+// Toggle panel open/close
+if (onlinePanelToggle) {
+  onlinePanelToggle.addEventListener('click', () => {
+    onlinePanelToggle.classList.toggle('open');
+    onlinePanelBody.classList.toggle('open');
+  });
+}
+
+client.on('lobby:online_users', (users) => {
+  const count = users.length;
+
+  // Update header badge
+  if (onlineCountEl) {
+    onlineCountEl.textContent = `— ${count} online`;
+  }
+  if (onlinePanelCount) {
+    onlinePanelCount.textContent = count;
+  }
+
+  // Render user list
+  if (onlineUserList) {
+    if (count === 0) {
+      onlineUserList.innerHTML = '<li style="color:var(--c-ink-3);font-style:italic;">Không có ai online</li>';
+    } else {
+      onlineUserList.innerHTML = users.map(name =>
+        `<li>${escapeHtml(name)}</li>`
+      ).join('');
+    }
+  }
+});
+
 client.on('room:error', (data) => {
   alert(data.message);
 });

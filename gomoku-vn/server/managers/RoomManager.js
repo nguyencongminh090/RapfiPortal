@@ -590,8 +590,10 @@ class RoomManager extends EventEmitter {
   _idleCleanup() {
     const now = Date.now();
     for (const [roomId, room] of this.rooms) {
+      // Never destroy rooms with an active or interrupted game
+      if (room.state === 'playing' || room.state === 'interrupted') continue;
       if (now - room.lastActivity >= config.IDLE_TIMEOUT_MS) {
-        logger.info(`[RoomManager] Idle cleanup: destroying room ${roomId}`);
+        logger.info(`[RoomManager] Idle cleanup: destroying room ${roomId} (idle ${Math.round((now - room.lastActivity) / 1000)}s)`);
         this._destroyRoom(roomId);
       }
     }

@@ -6,7 +6,7 @@
   <title>Play3CR — Sảnh</title>
   <meta name="description" content="Play3CR — Sảnh chờ và danh sách phòng chơi Caro trực tuyến." />
   <link rel="stylesheet" href="css/main.css?v=6" />
-  <link rel="stylesheet" href="css/lobby.css?v=6" />
+  <link rel="stylesheet" href="css/lobby.css?v=7" />
 </head>
 <body>
 
@@ -43,6 +43,7 @@
     <h1>
       <span class="lobby__title" data-i18n="lobby.room_list">Danh sách phòng</span>
       <span id="room-count" class="lobby__count"></span>
+      <span id="online-count" class="lobby__count" style="margin-left:8px; cursor:help; color:var(--c-brand);" title="Đang tải..."></span>
     </h1>
     <button id="btn-create" class="btn-create" type="button">
       <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -57,6 +58,19 @@
     <div class="room-list__empty">
       <div class="room-list__empty-icon">🎮</div>
       <span data-i18n="lobby.no_rooms">Chưa có phòng nào. Hãy tạo phòng mới!</span>
+    </div>
+  </div>
+
+  <!-- Online users panel -->
+  <div id="online-panel" class="online-panel">
+    <div class="online-panel__header" id="online-panel-toggle">
+      <span class="online-panel__dot"></span>
+      <span class="online-panel__title">Đang online</span>
+      <span id="online-panel-count" class="online-panel__count">0</span>
+      <span class="online-panel__arrow">▾</span>
+    </div>
+    <div id="online-panel-body" class="online-panel__body">
+      <ul id="online-user-list" class="online-panel__list"></ul>
     </div>
   </div>
 
@@ -144,6 +158,6 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/socket-client.js?v=7"></script>
-<script src="js/lobby.js?v=6"></script>
+<script src="js/lobby.js?v=8"></script>
 </body>
 </html>
