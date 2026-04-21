@@ -57,7 +57,7 @@ const modalConfirm  = document.getElementById('modal-confirm');
 const userInfo = client.getUserInfo();
 if (userInfo) {
   navUser.textContent = userInfo.displayName;
-  navBadge.textContent = userInfo.isGuest ? 'Khách' : '';
+  navBadge.textContent = userInfo.isGuest ? t('nav.guest_badge') : '';
   navBadge.style.display = userInfo.isGuest ? '' : 'none';
 }
 
@@ -100,7 +100,7 @@ function renderRoomList(rooms) {
     roomListEl.innerHTML = `
       <div class="room-list__empty">
         <div class="room-list__empty-icon">🎮</div>
-        Chưa có phòng nào. Hãy tạo phòng mới!
+        ${t('lobby.no_rooms')}
       </div>
     `;
     return;
@@ -110,11 +110,11 @@ function renderRoomList(rooms) {
     <table class="room-table">
       <thead>
         <tr>
-          <th>Phòng</th>
-          <th>Chủ phòng</th>
-          <th>Người chơi</th>
-          <th>Trạng thái</th>
-          <th>Luật</th>
+          <th>${t('lobby.th_room')}</th>
+          <th>${t('lobby.th_host')}</th>
+          <th>${t('lobby.th_players')}</th>
+          <th>${t('lobby.th_status')}</th>
+          <th>${t('lobby.th_rules')}</th>
           <th></th>
         </tr>
       </thead>
@@ -143,7 +143,7 @@ function renderRoomList(rooms) {
         <td>${ruleTags}</td>
         <td>
           <button class="btn-join" onclick="joinRoom('${escapeAttr(room.roomId)}')" type="button">
-            Tham gia
+            ${t('lobby.btn_join')}
           </button>
         </td>
       </tr>
@@ -155,10 +155,10 @@ function renderRoomList(rooms) {
 }
 
 function getStateLabel(state, playerCount) {
-  if (state === 'playing') return 'Đang chơi';
-  if (state === 'interrupted') return 'Gián đoạn';
-  if (playerCount >= 2) return 'Chờ sẵn sàng';
-  return 'Đang chờ';
+  if (state === 'playing') return t('lobby.state_playing');
+  if (state === 'interrupted') return t('lobby.state_interrupted');
+  if (playerCount >= 2) return t('lobby.state_ready');
+  return t('lobby.state_waiting');
 }
 
 function getStateClass(state, playerCount) {
@@ -172,7 +172,7 @@ function buildRuleTags(room) {
   tags += `<span style="color:var(--c-ink-3);font-size:12px">${room.boardSize}×${room.boardSize}</span> `;
   if (room.ruleWall) tags += '<span class="rule-tag rule-tag--wall">Wall</span>';
   if (room.rulePortal) tags += '<span class="rule-tag rule-tag--portal">Portal</span>';
-  if (!room.ruleWall && !room.rulePortal) tags += '<span style="color:var(--c-ink-3);font-size:11px">Cơ bản</span>';
+  if (!room.ruleWall && !room.rulePortal) tags += `<span style="color:var(--c-ink-3);font-size:11px">${t('lobby.rule_basic')}</span>`;
   return `<div class="rule-tags">${tags}</div>`;
 }
 

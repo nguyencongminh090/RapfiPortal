@@ -148,7 +148,7 @@ btnFocus.addEventListener('click', () => {
 // ---------------------------------------------------------------------------
 btnLeave.addEventListener('click', () => {
   if (gameState && gameState.status === 'ongoing' && mySlot !== null) {
-    if (!confirm('Ván đấu đang diễn ra. Bạn có chắc chắn muốn rời phòng? (Bạn sẽ bị xử thua)')) return;
+    if (!confirm(t('room.confirm_leave'))) return;
   }
   client.emit('room:leave');
 });
@@ -206,7 +206,7 @@ client.on('room:left', () => {
 
 // Kicked from room
 client.on('room:kicked', (data) => {
-  alert(data.message || 'Bạn đã bị mời ra khỏi phòng.');
+  alert(data.message || t('room.kicked'));
   window.location.href = 'index.html';
 });
 
@@ -325,14 +325,14 @@ client.on('game:draw_declined', () => {
 
 // [5.2] Game interrupted (opponent disconnected)
 client.on('game:interrupted', (data) => {
-  appendSystemMessage(`${data.playerName} mất kết nối. Chờ kết nối lại (${data.secondsLeft}s)...`);
+  appendSystemMessage(t('room.disconnected', { name: data.playerName, seconds: data.secondsLeft }));
   if (gameState) gameState.status = 'interrupted';
   updateBoardState();
 });
 
 // [5.2] Game resumed (opponent reconnected)
 client.on('game:resumed', (data) => {
-  appendSystemMessage('Đối thủ đã kết nối lại! Ván đấu tiếp tục.');
+  appendSystemMessage(t('room.reconnected'));
   if (gameState) gameState.status = 'ongoing';
   updateBoardState();
 });
@@ -463,7 +463,7 @@ function renderSlot(slotNum, contentEl, cardEl) {
     <div class="slot-card__status">
       <span class="ready-dot ready-dot${player.ready ? '--ready' : ''}"></span>
       <span class="ready-text ready-text${player.ready ? '--ready' : ''}">
-        ${player.ready ? 'Sẵn sàng' : 'Chưa sẵn sàng'}
+        ${player.ready ? t('room.ready') : t('room.not_ready')}
       </span>
       ${roleBadge}
     </div>
@@ -559,10 +559,10 @@ function renderSettings() {
   } else {
     // Non-host or playing: read-only info
     const ruleNames = [];
-    if (s.ruleWall) ruleNames.push('Tường');
-    if (s.rulePortal) ruleNames.push('Cổng');
-    const ruleText = ruleNames.length > 0 ? ruleNames.join(', ') : 'Cơ bản';
-    const timerText = s.timerMode === 'per_move' ? 'Mỗi nước' : 'Mỗi ván';
+    if (s.ruleWall) ruleNames.push(t('room.rule_wall'));
+    if (s.rulePortal) ruleNames.push(t('room.rule_portal'));
+    const ruleText = ruleNames.length > 0 ? ruleNames.join(', ') : t('room.rule_basic');
+    const timerText = s.timerMode === 'per_move' ? t('room.timer_per_move') : t('room.timer_per_game');
 
     settingsBody.innerHTML = `
       <div class="settings-info">
@@ -940,13 +940,13 @@ function renderTurnLabel() {
   if (!el || !gameState) return;
 
   if (gameState.status !== 'ongoing') {
-    el.textContent = 'Kết thúc';
+    el.textContent = t('game.finished');
     el.classList.remove('game-info__turn--mine');
     return;
   }
 
   const isMyTurn = gameState.currentTurn === myUser.userId;
-  el.textContent = isMyTurn ? 'Lượt của bạn' : 'Đối thủ đang đi...';
+  el.textContent = isMyTurn ? t('game.your_turn') : t('game.opponent_turn');
   el.classList.toggle('game-info__turn--mine', isMyTurn);
 }
 
@@ -1026,17 +1026,17 @@ function showGameOverlay(result) {
 
   if (result.winner === 'draw') {
     icon = '🤝';
-    resultText = 'Hoà!';
+    resultText = t('overlay.draw');
     resultClass = 'game-overlay__result--draw';
-    reasonText = result.reason === 'agreement' ? 'Hai bên đồng ý hoà' : 'Bàn cờ đã đầy';
+    reasonText = result.reason === 'agreement' ? t('overlay.reason_draw_agree') : t('overlay.reason_draw_full');
   } else if (result.winner === myUser.userId) {
     icon = '🎉';
-    resultText = 'Bạn thắng!';
+    resultText = t('overlay.win');
     resultClass = 'game-overlay__result--win';
     reasonText = getReasonText(result.reason, true);
   } else {
     icon = '👊';
-    resultText = 'Bạn thua';
+    resultText = t('overlay.lose');
     resultClass = 'game-overlay__result--lose';
     reasonText = getReasonText(result.reason, false);
   }
@@ -1057,9 +1057,9 @@ function showGameOverlay(result) {
 
 function getReasonText(reason, isWinner) {
   switch (reason) {
-    case 'win':     return 'Xếp được 5 quân liên tiếp';
-    case 'resign':  return isWinner ? 'Đối thủ đầu hàng' : 'Bạn đã đầu hàng';
-    case 'timeout': return isWinner ? 'Đối thủ hết thời gian' : 'Bạn đã hết thời gian';
+    case 'win':     return t('overlay.reason_win');
+    case 'resign':  return isWinner ? t('overlay.reason_resign_w') : t('overlay.reason_resign_l');
+    case 'timeout': return isWinner ? t('overlay.reason_timeout_w') : t('overlay.reason_timeout_l');
     default:        return '';
   }
 }
@@ -1079,7 +1079,7 @@ btnCloseOverlay.addEventListener('click', () => {
 // ---------------------------------------------------------------------------
 
 window.doResign = function() {
-  if (confirm('Bạn có chắc muốn đầu hàng?')) {
+  if (confirm(t('game.confirm_resign'))) {
     client.emit('game:resign');
   }
 };

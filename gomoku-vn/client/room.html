@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Play3CR — Phòng chơi</title>
   <meta name="description" content="Play3CR — Phòng chơi Caro trực tuyến với luật Wall và Portal." />
-  <link rel="stylesheet" href="css/main.css?v=5" />
-  <link rel="stylesheet" href="css/lobby.css?v=5" />
-  <link rel="stylesheet" href="css/room.css?v=5" />
-  <link rel="stylesheet" href="css/game.css?v=5" />
+  <link rel="stylesheet" href="css/main.css?v=6" />
+  <link rel="stylesheet" href="css/lobby.css?v=6" />
+  <link rel="stylesheet" href="css/room.css?v=6" />
+  <link rel="stylesheet" href="css/game.css?v=6" />
 </head>
 <body>
 
@@ -32,7 +32,7 @@
   </a>
   <div class="topnav__right">
     <span id="room-id-nav" class="topnav__user" style="font-family:'SF Mono','Consolas',monospace;font-weight:700;"></span>
-    <button id="btn-leave" class="topnav__btn" type="button">Rời phòng</button>
+    <button id="btn-leave" class="topnav__btn" type="button" data-i18n="nav.leave">Rời phòng</button>
   </div>
 </nav>
 
@@ -63,10 +63,15 @@
 
     <!-- Score table -->
     <div class="score-panel" id="score-panel" style="display:none;">
-      <div class="score-panel__title">Bảng điểm</div>
+      <div class="score-panel__title" data-i18n="room.score_title">Bảng điểm</div>
       <table class="score-table">
         <thead>
-          <tr><th>Tên</th><th>T</th><th>B</th><th>H</th></tr>
+          <tr>
+            <th data-i18n="room.th_name">Tên</th>
+            <th data-i18n="room.th_win">T</th>
+            <th data-i18n="room.th_loss">B</th>
+            <th data-i18n="room.th_draw">H</th>
+          </tr>
         </thead>
         <tbody id="score-body"></tbody>
       </table>
@@ -77,24 +82,24 @@
   <section class="board-area" id="board-area">
     <div class="board-placeholder">
       <div class="board-placeholder__icon">♟</div>
-      <div class="board-placeholder__text">Chờ người chơi ngồi vào và sẵn sàng...</div>
+      <div class="board-placeholder__text" data-i18n="room.placeholder">Chờ người chơi ngồi vào và sẵn sàng...</div>
     </div>
   </section>
 
   <!-- ─ Right Sidebar: Tabs ───────────────────────── -->
   <aside class="sidebar-right">
     <div class="sidebar-tabs">
-      <button class="tab-btn tab-btn--active" data-tab="tab-chat">Trò chuyện</button>
-      <button class="tab-btn" data-tab="tab-users">Khán giả</button>
-      <button class="tab-btn" data-tab="tab-settings">Cài đặt</button>
+      <button class="tab-btn tab-btn--active" data-tab="tab-chat" data-i18n="room.tab_chat">Trò chuyện</button>
+      <button class="tab-btn" data-tab="tab-users" data-i18n="room.tab_spectators">Khán giả</button>
+      <button class="tab-btn" data-tab="tab-settings" data-i18n="room.tab_settings">Cài đặt</button>
     </div>
 
     <div class="tab-content tab-content--active" id="tab-chat">
       <div class="chat-panel">
         <div class="chat-messages" id="chat-messages"></div>
         <div class="chat-input" id="chat-input-wrapper">
-          <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
-          <button id="btn-send" type="button">Gửi</button>
+          <input type="text" id="chat-input" data-i18n-placeholder="room.ph_chat" placeholder="Nhập tin nhắn..." maxlength="500" autocomplete="off" />
+          <button id="btn-send" type="button" data-i18n="room.btn_send">Gửi</button>
         </div>
       </div>
     </div>
@@ -121,8 +126,8 @@
     <div class="game-overlay__reason" id="overlay-reason"></div>
     <div class="game-overlay__divider"></div>
     <div class="game-overlay__buttons">
-      <button class="btn-primary" id="btn-rematch" type="button">Đấu lại</button>
-      <button class="btn-secondary" id="btn-close-overlay" type="button">Đóng</button>
+      <button class="btn-primary" id="btn-rematch" type="button" data-i18n="overlay.btn_rematch">Đấu lại</button>
+      <button class="btn-secondary" id="btn-close-overlay" type="button" data-i18n="overlay.btn_close">Đóng</button>
     </div>
   </div>
 </div>
@@ -131,7 +136,7 @@
 <div id="float-messages" class="float-messages"></div>
 
 <!-- Focus Mode Toggle (only visible during game) -->
-<button id="btn-focus" class="btn-focus" type="button" title="Chế độ tập trung" style="display:none;">
+<button id="btn-focus" class="btn-focus" type="button" data-i18n-title="game.focus_title" title="Chế độ tập trung" style="display:none;">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
   </svg>
@@ -139,8 +144,9 @@
 
 <!-- Socket.io CDN -->
 <script src="/socket.io/socket.io.js"></script>
-<script src="js/socket-client.js?v=5"></script>
-<script src="js/board.js?v=5"></script>
-<script src="js/room.js?v=5"></script>
+<script src="js/i18n.js"></script>
+<script src="js/socket-client.js?v=6"></script>
+<script src="js/board.js?v=6"></script>
+<script src="js/room.js?v=6"></script>
 </body>
 </html>

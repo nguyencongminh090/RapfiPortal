@@ -146,11 +146,11 @@ function validateLoginForm() {
     [loginPassword, 'err-login-password']
   );
   if (!loginUsername.value.trim()) {
-    setFieldError(loginUsername, 'err-login-username', 'Vui lòng nhập tên đăng nhập.');
+    setFieldError(loginUsername, 'err-login-username', t('login.err_username'));
     valid = false;
   }
   if (!loginPassword.value) {
-    setFieldError(loginPassword, 'err-login-password', 'Vui lòng nhập mật khẩu.');
+    setFieldError(loginPassword, 'err-login-password', t('login.err_password'));
     valid = false;
   }
   return valid;
@@ -167,19 +167,19 @@ function validateRegisterForm() {
 
   if (!RE_USERNAME.test(regUsername.value)) {
     setFieldError(regUsername, 'err-reg-username',
-      'Tên đăng nhập 3-20 ký tự, chỉ gồm chữ cái, số và dấu gạch dưới.');
+      t('login.err_reg_username'));
     valid = false;
   }
   if (regDisplay.value.trim().length < 2 || regDisplay.value.trim().length > 24) {
-    setFieldError(regDisplay, 'err-reg-display', 'Tên hiển thị từ 2-24 ký tự.');
+    setFieldError(regDisplay, 'err-reg-display', t('login.err_display'));
     valid = false;
   }
   if (regPassword.value.length < 6) {
-    setFieldError(regPassword, 'err-reg-password', 'Mật khẩu phải có ít nhất 6 ký tự.');
+    setFieldError(regPassword, 'err-reg-password', t('login.err_pass_short'));
     valid = false;
   }
   if (regPassword.value !== regConfirm.value) {
-    setFieldError(regConfirm, 'err-reg-confirm', 'Mật khẩu xác nhận không khớp.');
+    setFieldError(regConfirm, 'err-reg-confirm', t('login.err_confirm'));
     valid = false;
   }
   return valid;
@@ -194,7 +194,7 @@ formLogin.addEventListener('submit', async (e) => {
 
   if (!validateLoginForm()) return;
 
-  setLoading(btnLogin, true, 'Đăng nhập');
+  setLoading(btnLogin, true, t('login.btn_login'));
   try {
     const { ok, data } = await apiPost('login', {
       username: loginUsername.value.trim(),
@@ -204,12 +204,12 @@ formLogin.addEventListener('submit', async (e) => {
     if (ok) {
       onAuthSuccess(data.token, data.displayName);
     } else {
-      showAlert(data.error || 'Đăng nhập thất bại. Vui lòng thử lại.');
+      showAlert(data.error || t('login.err_login_fail'));
     }
   } catch {
-    showAlert('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng.');
+    showAlert(t('login.err_network'));
   } finally {
-    setLoading(btnLogin, false, 'Đăng nhập');
+    setLoading(btnLogin, false, t('login.btn_login'));
   }
 });
 
@@ -219,7 +219,7 @@ formRegister.addEventListener('submit', async (e) => {
 
   if (!validateRegisterForm()) return;
 
-  setLoading(btnRegister, true, 'Tạo tài khoản');
+  setLoading(btnRegister, true, t('login.btn_register'));
   try {
     const { ok, data } = await apiPost('register', {
       username:    regUsername.value.trim(),
@@ -230,29 +230,29 @@ formRegister.addEventListener('submit', async (e) => {
     if (ok) {
       onAuthSuccess(data.token, data.displayName);
     } else {
-      showAlert(data.error || 'Đăng ký thất bại. Vui lòng thử lại.');
+      showAlert(data.error || t('login.err_register_fail'));
     }
   } catch {
-    showAlert('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng.');
+    showAlert(t('login.err_network'));
   } finally {
-    setLoading(btnRegister, false, 'Tạo tài khoản');
+    setLoading(btnRegister, false, t('login.btn_register'));
   }
 });
 
 btnGuest.addEventListener('click', async () => {
   hideAlert();
-  setLoading(btnGuest, true, 'Chơi như khách');
+  setLoading(btnGuest, true, t('login.btn_guest'));
   try {
     const { ok, data } = await apiPost('guest', {});
     if (ok) {
       onAuthSuccess(data.token, data.displayName);
     } else {
-      showAlert(data.error || 'Không thể tạo phiên khách. Vui lòng thử lại.');
+      showAlert(data.error || t('login.err_guest_fail'));
     }
   } catch {
-    showAlert('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng.');
+    showAlert(t('login.err_network'));
   } finally {
-    setLoading(btnGuest, false, 'Chơi như khách');
+    setLoading(btnGuest, false, t('login.btn_guest'));
   }
 });
 
@@ -261,7 +261,7 @@ btnGuest.addEventListener('click', async () => {
 // ---------------------------------------------------------------------------
 loginUsername.addEventListener('blur', () => {
   if (!loginUsername.value.trim()) {
-    setFieldError(loginUsername, 'err-login-username', 'Vui lòng nhập tên đăng nhập.');
+    setFieldError(loginUsername, 'err-login-username', t('login.err_username'));
   } else {
     setFieldError(loginUsername, 'err-login-username', '');
   }
@@ -270,7 +270,7 @@ loginUsername.addEventListener('blur', () => {
 regUsername.addEventListener('blur', () => {
   if (!RE_USERNAME.test(regUsername.value)) {
     setFieldError(regUsername, 'err-reg-username',
-      'Tên đăng nhập 3-20 ký tự, chỉ gồm chữ cái, số và dấu gạch dưới.');
+      t('login.err_reg_username'));
   } else {
     setFieldError(regUsername, 'err-reg-username', '');
   }
@@ -278,7 +278,7 @@ regUsername.addEventListener('blur', () => {
 
 regConfirm.addEventListener('input', () => {
   if (regPassword.value && regConfirm.value && regPassword.value !== regConfirm.value) {
-    setFieldError(regConfirm, 'err-reg-confirm', 'Mật khẩu xác nhận không khớp.');
+    setFieldError(regConfirm, 'err-reg-confirm', t('login.err_confirm'));
   } else {
     setFieldError(regConfirm, 'err-reg-confirm', '');
   }

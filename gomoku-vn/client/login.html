@@ -6,6 +6,7 @@
   <title>Play3CR — Đăng nhập</title>
   <meta name="description" content="Đăng nhập vào Play3CR — nền tảng chơi Caro trực tuyến với luật Wall và Portal." />
   <link rel="stylesheet" href="css/login.css" />
+  <link rel="stylesheet" href="css/main.css?v=6" />
 </head>
 <body>
 
@@ -34,7 +35,7 @@
         </svg>
         <h1 class="card__title">Play3CR</h1>
       </div>
-      <p class="card__subtitle">Cờ Caro trực tuyến — Luật Wall &amp; Portal</p>
+      <p class="card__subtitle" data-i18n="login.subtitle">Cờ Caro trực tuyến — Luật Wall &amp; Portal</p>
     </header>
 
     <!-- ── Tabs ───────────────────────────────────────────────────────── -->
@@ -46,6 +47,7 @@
         aria-selected="true"
         aria-controls="panel-login"
         onclick="switchTab('login')"
+        data-i18n="login.tab_login"
       >Đăng nhập</button>
       <button
         id="tab-register"
@@ -54,6 +56,7 @@
         aria-selected="false"
         aria-controls="panel-register"
         onclick="switchTab('register')"
+        data-i18n="login.tab_register"
       >Đăng ký</button>
     </nav>
 
@@ -65,11 +68,12 @@
       <form id="form-login" novalidate>
 
         <div class="field">
-          <label for="login-username">Tên đăng nhập</label>
+          <label for="login-username" data-i18n="login.username">Tên đăng nhập</label>
           <input
             id="login-username"
             type="text"
             name="username"
+            data-i18n-placeholder="login.ph_username"
             placeholder="Nhập tên đăng nhập"
             autocomplete="username"
             autocapitalize="none"
@@ -80,11 +84,12 @@
         </div>
 
         <div class="field">
-          <label for="login-password">Mật khẩu</label>
+          <label for="login-password" data-i18n="login.password">Mật khẩu</label>
           <input
             id="login-password"
             type="password"
             name="password"
+            data-i18n-placeholder="login.ph_password"
             placeholder="Nhập mật khẩu"
             autocomplete="current-password"
             required
@@ -92,7 +97,7 @@
           <span class="field-error" id="err-login-password"></span>
         </div>
 
-        <button id="btn-login" type="submit" class="btn btn-primary">
+        <button id="btn-login" type="submit" class="btn btn-primary" data-i18n="login.btn_login">
           Đăng nhập
         </button>
       </form>
@@ -103,11 +108,12 @@
       <form id="form-register" novalidate>
 
         <div class="field">
-          <label for="reg-username">Tên đăng nhập</label>
+          <label for="reg-username" data-i18n="login.username">Tên đăng nhập</label>
           <input
             id="reg-username"
             type="text"
             name="username"
+            data-i18n-placeholder="login.ph_reg_user"
             placeholder="3-20 ký tự, chữ/số/gạch dưới"
             autocomplete="username"
             autocapitalize="none"
@@ -118,11 +124,12 @@
         </div>
 
         <div class="field">
-          <label for="reg-display">Tên hiển thị</label>
+          <label for="reg-display" data-i18n="login.display_name">Tên hiển thị</label>
           <input
             id="reg-display"
             type="text"
             name="displayName"
+            data-i18n-placeholder="login.ph_display"
             placeholder="Tên xuất hiện trong phòng"
             autocomplete="nickname"
             maxlength="24"
@@ -132,11 +139,12 @@
         </div>
 
         <div class="field">
-          <label for="reg-password">Mật khẩu</label>
+          <label for="reg-password" data-i18n="login.password">Mật khẩu</label>
           <input
             id="reg-password"
             type="password"
             name="password"
+            data-i18n-placeholder="login.ph_reg_pass"
             placeholder="Ít nhất 6 ký tự"
             autocomplete="new-password"
             required
@@ -145,11 +153,12 @@
         </div>
 
         <div class="field">
-          <label for="reg-confirm">Xác nhận mật khẩu</label>
+          <label for="reg-confirm" data-i18n="login.confirm_pass">Xác nhận mật khẩu</label>
           <input
             id="reg-confirm"
             type="password"
             name="confirmPassword"
+            data-i18n-placeholder="login.ph_confirm"
             placeholder="Nhập lại mật khẩu"
             autocomplete="new-password"
             required
@@ -157,28 +166,29 @@
           <span class="field-error" id="err-reg-confirm"></span>
         </div>
 
-        <button id="btn-register" type="submit" class="btn btn-primary">
+        <button id="btn-register" type="submit" class="btn btn-primary" data-i18n="login.btn_register">
           Tạo tài khoản
         </button>
       </form>
     </section>
 
     <!-- ── Divider + Guest ─────────────────────────────────────────────── -->
-    <div class="divider"><span>hoặc</span></div>
+    <div class="divider"><span data-i18n="login.divider">hoặc</span></div>
 
     <div class="guest-section">
-      <button id="btn-guest" class="btn btn-guest" type="button">
+      <button id="btn-guest" class="btn btn-guest" type="button" data-i18n="login.btn_guest">
         Chơi như khách
       </button>
     </div>
 
   </main><!-- /.card -->
 
-  <footer class="page-footer">
+  <footer class="page-footer" data-i18n="login.footer">
     Play3CR &nbsp;·&nbsp; Self-hosted &nbsp;·&nbsp; Dữ liệu lưu cục bộ
   </footer>
 </div><!-- /.page -->
 
+<script src="js/i18n.js"></script>
 <script src="js/login.js"></script>
 </body>
 </html>
