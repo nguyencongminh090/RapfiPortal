@@ -33,6 +33,13 @@ const disconnectTimers = new Map();
  * @param {import('socket.io').Server} io
  */
 function init(io) {
+  // Listen for idle room destructions
+  roomManager.on('room_destroyed', (roomId) => {
+    io.to(roomId).emit('room:destroyed', { message: 'Phòng đã tự động đóng do quá lâu không có hoạt động.' });
+    io.in(roomId).socketsLeave(roomId);
+    io.to(LOBBY_ROOM).emit('lobby:update', { rooms: roomManager.listRooms() });
+  });
+
   // [7.2] Socket event flood protection middleware
   io.use((socket, next) => {
     let eventCount = 0;

@@ -207,6 +207,12 @@ client.on('room:kicked', (data) => {
   window.location.href = 'index.html';
 });
 
+// Room destroyed (e.g., idle timeout)
+client.on('room:destroyed', (data) => {
+  alert(data.message);
+  window.location.href = 'index.html';
+});
+
 // Room error
 client.on('room:error', (data) => {
   if (!roomData) {

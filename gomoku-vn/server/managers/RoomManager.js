@@ -22,13 +22,15 @@
 const { v4: uuidv4 } = require('uuid');
 const config = require('../config');
 const logger = require('../utils/logger');
+const EventEmitter = require('events');
 
 // =============================================================================
 // RoomManager — singleton
 // =============================================================================
 
-class RoomManager {
+class RoomManager extends EventEmitter {
   constructor() {
+    super();
     /** @type {Map<string, object>} roomId → room object */
     this.rooms = new Map();
 
@@ -581,6 +583,7 @@ class RoomManager {
     room.scoreTable = null;
 
     this.rooms.delete(roomId);
+    this.emit('room_destroyed', roomId);
   }
 
   /** Periodic cleanup: destroy rooms with no activity for IDLE_TIMEOUT_MS. */
