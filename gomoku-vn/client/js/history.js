@@ -1,10 +1,15 @@
 /**
- * history.js — Game History & Replay Viewer for GomokuVN.
+ * history.js — Game History & Replay Viewer with Tree Analysis.
  *
- * - Fetches game list from /api/games
- * - Renders a paginated table
- * - Loads a game for replay with step-through controls
- * - Reuses BoardRenderer from board.js
+ * Features:
+ *   - Paginated game list from /api/games
+ *   - Replay viewer with step-through controls
+ *   - Analysis mode: click board to add variations
+ *   - Tree panel: visual move tree with click navigation
+ *   - URL sharing via ?id=gameId
+ *   - Keyboard shortcuts
+ *
+ * Reuses: BoardRenderer (board.js), MoveTree (move-tree.js), TreeView (tree-view.js)
  */
 
 'use strict';
@@ -12,10 +17,10 @@
 // ---------------------------------------------------------------------------
 // Element refs
 // ---------------------------------------------------------------------------
-const viewList    = document.getElementById('view-list');
-const viewReplay  = document.getElementById('view-replay');
-const gameListEl  = document.getElementById('game-list');
-const gameTotalEl = document.getElementById('game-total');
+const viewList     = document.getElementById('view-list');
+const viewReplay   = document.getElementById('view-replay');
+const gameListEl   = document.getElementById('game-list');
+const gameTotalEl  = document.getElementById('game-total');
 const paginationEl = document.getElementById('pagination');
 
 // Replay elements
@@ -31,15 +36,23 @@ const btnNext       = document.getElementById('btn-next');
 const btnLast       = document.getElementById('btn-last');
 const btnPlay       = document.getElementById('btn-play');
 const btnBack       = document.getElementById('replay-back');
+const btnAnalysis   = document.getElementById('btn-analysis');
+const treePanel     = document.getElementById('tree-panel');
+const treeContainer = document.getElementById('tree-container');
+const btnDeleteBranch = document.getElementById('btn-delete-branch');
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 let currentPage = 1;
 let boardRenderer = null;
-let replayData = null;     // { game, moves, walls, portals, boardSize }
-let replayIndex = 0;       // Current move index (0 = empty board)
 let autoPlayTimer = null;
+
+// Tree-based state
+let moveTree = null;      // MoveTree instance
+let treeView = null;      // TreeView instance
+let analysisMode = false;
+let replayGameData = null; // Raw game data for info display
 
 // ---------------------------------------------------------------------------
 // Load game list
@@ -107,14 +120,9 @@ function renderGameTable(games) {
 }
 
 function renderPagination(p) {
-  if (p.totalPages <= 1) {
-    paginationEl.innerHTML = '';
-    return;
-  }
+  if (p.totalPages <= 1) { paginationEl.innerHTML = ''; return; }
 
-  let html = '';
-  html += `<button ${p.page <= 1 ? 'disabled' : ''} onclick="loadGames(${p.page - 1})">‹</button>`;
-
+  let html = `<button ${p.page <= 1 ? 'disabled' : ''} onclick="loadGames(${p.page - 1})">‹</button>`;
   for (let i = 1; i <= p.totalPages; i++) {
     if (p.totalPages > 7 && Math.abs(i - p.page) > 2 && i !== 1 && i !== p.totalPages) {
       if (i === 2 || i === p.totalPages - 1) html += '<button disabled>…</button>';
@@ -122,7 +130,6 @@ function renderPagination(p) {
     }
     html += `<button class="${i === p.page ? 'active' : ''}" onclick="loadGames(${i})">${i}</button>`;
   }
-
   html += `<button ${p.page >= p.totalPages ? 'disabled' : ''} onclick="loadGames(${p.page + 1})">›</button>`;
   paginationEl.innerHTML = html;
 }
@@ -141,14 +148,14 @@ async function openReplay(gameId) {
     }
 
     const game = data.game;
-    replayData = {
-      game,
-      moves: game.moves || [],
+    replayGameData = game;
+
+    // Build MoveTree from the flat move history
+    moveTree = MoveTree.fromMoveHistory(game.moves || [], {
+      boardSize: game.board_size,
       walls: game.walls || [],
       portals: game.portals || [],
-      boardSize: game.board_size,
-    };
-    replayIndex = 0;
+    });
 
     // Fill info
     replayBlack.textContent = `✕ ${game.black_player_name}`;
@@ -165,23 +172,33 @@ async function openReplay(gameId) {
     viewList.style.display = 'none';
     viewReplay.style.display = '';
 
-    // Update URL for sharing (without page reload)
+    // Update URL for sharing
     history.replaceState(null, '', `history.html?id=${gameId}`);
+
+    // Reset analysis mode
+    setAnalysisMode(false);
 
     // Init board renderer (once)
     if (!boardRenderer) {
       boardRenderer = new BoardRenderer(replayCanvas, {
-        boardSize: replayData.boardSize,
-        onCellClick: null,
+        boardSize: game.board_size,
+        onCellClick: handleBoardClick,
       });
     }
-    boardRenderer.boardSize = replayData.boardSize;
+    boardRenderer.boardSize = game.board_size;
     boardRenderer.interactive = false;
+
+    // Init tree view (once)
+    if (!treeView) {
+      treeView = new TreeView(treeContainer, {
+        onNodeClick: handleTreeNodeClick,
+      });
+    }
 
     // Let the DOM settle, then resize and render
     requestAnimationFrame(() => {
       boardRenderer.resize();
-      renderReplayBoard();
+      syncBoardToTree();
     });
   } catch (err) {
     alert('Lỗi khi tải ván đấu.');
@@ -190,105 +207,169 @@ async function openReplay(gameId) {
 
 function closeReplay() {
   stopAutoPlay();
+  setAnalysisMode(false);
   viewReplay.style.display = 'none';
   viewList.style.display = '';
-  replayData = null;
-  // Clear URL param
+  moveTree = null;
+  replayGameData = null;
   history.replaceState(null, '', 'history.html');
 }
 
-function renderReplayBoard() {
-  if (!replayData || !boardRenderer) return;
+// ---------------------------------------------------------------------------
+// Sync board display to current MoveTree position
+// ---------------------------------------------------------------------------
+function syncBoardToTree() {
+  if (!moveTree || !boardRenderer) return;
 
-  const { boardSize, walls, portals, moves } = replayData;
-
-  // Build board state up to replayIndex
-  const board = [];
-  for (let y = 0; y < boardSize; y++) {
-    board[y] = [];
-    for (let x = 0; x < boardSize; x++) {
-      board[y][x] = 0;
-    }
-  }
-
-  // Place walls
-  for (const w of walls) {
-    if (w.x >= 0 && w.x < boardSize && w.y >= 0 && w.y < boardSize) {
-      board[w.y][w.x] = -1;
-    }
-  }
-
-  // Place portal cells
-  for (const p of portals) {
-    if (p.a) board[p.a.y][p.a.x] = -2;
-    if (p.b) board[p.b.y][p.b.x] = -2;
-  }
-
-  // Place moves up to current index
-  let lastMove = null;
-  for (let i = 0; i < replayIndex; i++) {
-    const m = moves[i];
-    if (m && m.x >= 0 && m.x < boardSize && m.y >= 0 && m.y < boardSize) {
-      board[m.y][m.x] = m.color === 'BLACK' ? 1 : 2;
-      lastMove = { x: m.x, y: m.y };
-    }
-  }
+  const { board, lastMove } = moveTree.getBoardState();
+  const path = moveTree.getPath();
+  const totalMainLine = countMainLine(moveTree.root);
 
   boardRenderer.setState({
-    boardSize,
+    boardSize: moveTree.boardSize,
     board,
-    walls,
-    portals,
+    walls: moveTree.walls,
+    portals: moveTree.portals,
     lastMove,
     winLine: null,
     firstMoveZones: [],
     showZones: false,
-    interactive: false,
-    isMyTurn: false,
+    interactive: analysisMode,
+    isMyTurn: analysisMode,
+    myColor: analysisMode ? moveTree.getNextColor().toLowerCase() : null,
   });
 
   // Update counter
-  moveCounter.textContent = `${replayIndex} / ${moves.length}`;
-}
+  moveCounter.textContent = `${path.length} / ${totalMainLine}`;
 
-// Controls
-function goFirst() { replayIndex = 0; renderReplayBoard(); }
-function goPrev()  { if (replayIndex > 0) { replayIndex--; renderReplayBoard(); } }
-function goNext()  { if (replayData && replayIndex < replayData.moves.length) { replayIndex++; renderReplayBoard(); } }
-function goLast()  { if (replayData) { replayIndex = replayData.moves.length; renderReplayBoard(); } }
-
-function toggleAutoPlay() {
-  if (autoPlayTimer) {
-    stopAutoPlay();
-  } else {
-    startAutoPlay();
+  // Update tree view
+  if (treeView && treePanel.style.display !== 'none') {
+    treeView.setTree(moveTree);
   }
 }
 
+/** Count total moves in the main line (following children[0]). */
+function countMainLine(node) {
+  let count = 0;
+  let cur = node;
+  while (cur.children.length > 0) {
+    cur = cur.children[0];
+    count++;
+  }
+  return count;
+}
+
+// ---------------------------------------------------------------------------
+// Analysis Mode
+// ---------------------------------------------------------------------------
+function setAnalysisMode(on) {
+  analysisMode = on;
+  btnAnalysis.classList.toggle('active', on);
+  treePanel.style.display = on ? '' : 'none';
+
+  if (boardRenderer) {
+    boardRenderer.interactive = on;
+    boardRenderer.isMyTurn = on;
+    if (on && moveTree) {
+      boardRenderer.myColor = moveTree.getNextColor().toLowerCase();
+    }
+  }
+
+  // Re-render tree when entering analysis mode
+  if (on && treeView && moveTree) {
+    treeView.setTree(moveTree);
+  }
+}
+
+function toggleAnalysis() {
+  setAnalysisMode(!analysisMode);
+  syncBoardToTree();
+}
+
+// ---------------------------------------------------------------------------
+// Board click handler (analysis mode)
+// ---------------------------------------------------------------------------
+function handleBoardClick(x, y) {
+  if (!analysisMode || !moveTree) return;
+
+  // Check if cell is available
+  if (!moveTree.isCellAvailable(x, y)) return;
+
+  const color = moveTree.getNextColor();
+  moveTree.addMove(x, y, color);
+  syncBoardToTree();
+}
+
+// ---------------------------------------------------------------------------
+// Tree node click handler
+// ---------------------------------------------------------------------------
+function handleTreeNodeClick(node) {
+  if (!moveTree) return;
+  moveTree.goToNode(node);
+  syncBoardToTree();
+}
+
+// ---------------------------------------------------------------------------
+// Navigation controls
+// ---------------------------------------------------------------------------
+function goFirst() {
+  if (!moveTree) return;
+  moveTree.goToStart();
+  syncBoardToTree();
+}
+
+function goPrev() {
+  if (!moveTree) return;
+  moveTree.goBack();
+  syncBoardToTree();
+}
+
+function goNext() {
+  if (!moveTree) return;
+  moveTree.goForward();
+  syncBoardToTree();
+}
+
+function goLast() {
+  if (!moveTree) return;
+  moveTree.goToEnd();
+  syncBoardToTree();
+}
+
+function toggleAutoPlay() {
+  if (autoPlayTimer) stopAutoPlay();
+  else startAutoPlay();
+}
+
 function startAutoPlay() {
-  if (!replayData) return;
-  // If at end, restart from beginning
-  if (replayIndex >= replayData.moves.length) replayIndex = 0;
+  if (!moveTree) return;
+  if (moveTree.currentNode.isLeaf) moveTree.goToStart();
   
   btnPlay.textContent = '⏸';
   btnPlay.classList.add('playing');
   autoPlayTimer = setInterval(() => {
-    if (replayIndex >= replayData.moves.length) {
+    if (!moveTree.goForward()) {
       stopAutoPlay();
       return;
     }
-    replayIndex++;
-    renderReplayBoard();
+    syncBoardToTree();
   }, 600);
 }
 
 function stopAutoPlay() {
-  if (autoPlayTimer) {
-    clearInterval(autoPlayTimer);
-    autoPlayTimer = null;
-  }
+  if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
   btnPlay.textContent = '⏵';
   btnPlay.classList.remove('playing');
+}
+
+// ---------------------------------------------------------------------------
+// Delete current branch
+// ---------------------------------------------------------------------------
+function deleteBranch() {
+  if (!moveTree || !moveTree.currentNode || moveTree.currentNode.isRoot) return;
+  if (!confirm('Xoá nhánh này và tất cả các nước sau?')) return;
+  moveTree.deleteNode(moveTree.currentNode);
+  syncBoardToTree();
 }
 
 // ---------------------------------------------------------------------------
@@ -300,19 +381,28 @@ btnNext.addEventListener('click',  () => { stopAutoPlay(); goNext(); });
 btnLast.addEventListener('click',  () => { stopAutoPlay(); goLast(); });
 btnPlay.addEventListener('click',  toggleAutoPlay);
 btnBack.addEventListener('click',  closeReplay);
+btnAnalysis.addEventListener('click', toggleAnalysis);
+if (btnDeleteBranch) btnDeleteBranch.addEventListener('click', deleteBranch);
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if (!replayData || viewReplay.style.display === 'none') return;
-  if (e.key === 'ArrowLeft')  { stopAutoPlay(); goPrev(); }
-  if (e.key === 'ArrowRight') { stopAutoPlay(); goNext(); }
-  if (e.key === 'Home')       { stopAutoPlay(); goFirst(); }
-  if (e.key === 'End')        { stopAutoPlay(); goLast(); }
-  if (e.key === ' ')          { e.preventDefault(); toggleAutoPlay(); }
-  if (e.key === 'Escape')     closeReplay();
+  if (!moveTree || viewReplay.style.display === 'none') return;
+  // Don't capture if typing in an input
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  switch (e.key) {
+    case 'ArrowLeft':  stopAutoPlay(); goPrev(); e.preventDefault(); break;
+    case 'ArrowRight': stopAutoPlay(); goNext(); e.preventDefault(); break;
+    case 'Home':       stopAutoPlay(); goFirst(); e.preventDefault(); break;
+    case 'End':        stopAutoPlay(); goLast(); e.preventDefault(); break;
+    case ' ':          e.preventDefault(); toggleAutoPlay(); break;
+    case 'Escape':     closeReplay(); break;
+    case 'a': case 'A': toggleAnalysis(); break;
+    case 'Delete':     if (analysisMode) deleteBranch(); break;
+  }
 });
 
-// Expose for onclick
+// Expose for inline onclick
 window.openReplay = openReplay;
 window.loadGames  = loadGames;
 
@@ -321,10 +411,8 @@ window.loadGames  = loadGames;
 // ---------------------------------------------------------------------------
 function getResultText(g) {
   if (!g.winner || g.winner === 'draw') return 'Hoà';
-  // winner is a userId — match against player IDs
   if (g.winner === g.black_player_id) return g.black_player_name + ' thắng';
   if (g.winner === g.white_player_id) return g.white_player_name + ' thắng';
-  // Fallback: winner might match the name or be the first player
   return 'Có người thắng';
 }
 
@@ -353,6 +441,7 @@ function formatTime(isoStr) {
   if (!isoStr) return '—';
   try {
     const d = new Date(typeof isoStr === 'number' ? isoStr : isoStr);
+    if (isNaN(d.getTime())) return '—';
     const now = new Date();
     const isToday = d.toDateString() === now.toDateString();
     if (isToday) {
@@ -372,12 +461,12 @@ function escapeHtml(str) {
 }
 
 // ---------------------------------------------------------------------------
-// Init: load first page, or open replay if URL has ?id=...
+// Init
 // ---------------------------------------------------------------------------
 const urlParams = new URLSearchParams(window.location.search);
 const urlGameId = urlParams.get('id');
 if (urlGameId) {
-  loadGames(1); // Load list in background
+  loadGames(1);
   openReplay(urlGameId);
 } else {
   loadGames(1);

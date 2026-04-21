@@ -1,11 +1,11 @@
 /* =============================================================================
-   history.css — GomokuVN Game History & Replay Viewer
+   history.css — GomokuVN Game History & Replay Viewer + Tree Analysis
    ============================================================================= */
 
 /* ── Page layout ──────────────────────────────────────────────────────────── */
 .history {
   width: 100%;
-  max-width: 880px;
+  max-width: 1200px;
   box-sizing: border-box;
   margin: 0 auto;
   padding: 24px 20px 40px;
@@ -69,22 +69,11 @@
   vertical-align: middle;
 }
 
-.game-table tr:last-child td {
-  border-bottom: none;
-}
+.game-table tr:last-child td { border-bottom: none; }
+.game-table tr:hover td { background: rgba(0,0,0,0.02); }
 
-.game-table tr:hover td {
-  background: rgba(0,0,0,0.02);
-}
-
-.game-table .result-win {
-  color: #16a34a;
-  font-weight: 600;
-}
-.game-table .result-draw {
-  color: var(--c-ink-3);
-  font-weight: 600;
-}
+.game-table .result-win { color: #16a34a; font-weight: 600; }
+.game-table .result-draw { color: var(--c-ink-3); font-weight: 600; }
 
 .btn-replay {
   padding: 4px 12px;
@@ -98,10 +87,7 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.btn-replay:hover {
-  background: var(--c-brand);
-  color: #fff;
-}
+.btn-replay:hover { background: var(--c-brand); color: #fff; }
 
 /* ── Pagination ───────────────────────────────────────────────────────────── */
 .pagination {
@@ -122,21 +108,20 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.pagination button:hover:not(:disabled) {
-  background: var(--c-surface-2);
-}
-.pagination button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.pagination button.active {
-  background: var(--c-brand);
-  color: #fff;
-  border-color: var(--c-brand);
-}
+.pagination button:hover:not(:disabled) { background: var(--c-surface-2); }
+.pagination button:disabled { opacity: 0.4; cursor: default; }
+.pagination button.active { background: var(--c-brand); color: #fff; border-color: var(--c-brand); }
 
 /* ── Replay View ──────────────────────────────────────────────────────────── */
-.replay__back-btn {
+.replay__top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.replay__back-btn,
+.replay__analysis-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -149,11 +134,16 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
   cursor: pointer;
-  margin-bottom: 16px;
   transition: all 0.15s;
 }
-.replay__back-btn:hover {
+.replay__back-btn:hover,
+.replay__analysis-btn:hover {
   background: var(--c-surface-2);
+}
+.replay__analysis-btn.active {
+  background: var(--c-brand);
+  color: #fff;
+  border-color: var(--c-brand);
 }
 
 .replay__info {
@@ -161,7 +151,7 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius-lg);
   padding: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   text-align: center;
 }
 
@@ -173,33 +163,24 @@
   margin-bottom: 8px;
 }
 
-.replay__player {
-  font-size: 15px;
-  font-weight: 700;
-}
-.replay__player--black {
-  color: #222;
-}
-.replay__player--white {
-  color: #888;
+.replay__player { font-size: 15px; font-weight: 700; }
+.replay__player--black { color: #222; }
+.replay__player--white { color: #888; }
+.replay__vs { font-size: 12px; color: var(--c-ink-3); font-weight: 400; }
+
+.replay__result { font-size: 14px; font-weight: 600; color: var(--c-brand); margin-bottom: 4px; }
+.replay__meta { font-size: 12px; color: var(--c-ink-3); }
+
+/* ── Replay Body — Board + Tree side by side ─────────────────────────────── */
+.replay__body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
 }
 
-.replay__vs {
-  font-size: 12px;
-  color: var(--c-ink-3);
-  font-weight: 400;
-}
-
-.replay__result {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--c-brand);
-  margin-bottom: 4px;
-}
-
-.replay__meta {
-  font-size: 12px;
-  color: var(--c-ink-3);
+.replay__board-col {
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .replay__board-area {
@@ -211,12 +192,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
+  max-width: 600px;
 }
 
 .replay__board-area canvas {
-  width: min(100%, 600px);
-  height: auto;
-  aspect-ratio: 1 / 1;
+  display: block;
 }
 
 .replay__controls {
@@ -245,18 +226,8 @@
   justify-content: center;
   transition: all 0.15s;
 }
-.replay__btn:hover {
-  background: var(--c-border);
-}
-
-.replay__btn--play {
-  width: auto;
-  padding: 0 14px;
-  font-size: 13px;
-  font-weight: 600;
-  gap: 4px;
-}
-.replay__btn--play.playing {
+.replay__btn:hover { background: var(--c-border); }
+.replay__btn.playing {
   background: var(--c-brand);
   color: #fff;
   border-color: var(--c-brand);
@@ -270,8 +241,155 @@
   text-align: center;
 }
 
+/* ── Tree Panel ───────────────────────────────────────────────────────────── */
+.replay__tree-panel {
+  flex: 1 1 280px;
+  min-width: 220px;
+  max-width: 400px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+
+.tree-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
+}
+
+.tree-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-ink);
+}
+
+.tree-panel__action {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.tree-panel__action:hover { background: var(--c-surface-2); }
+
+.tree-panel__body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 8px;
+}
+
+/* ── Tree View Nodes ──────────────────────────────────────────────────────── */
+.tv-wrapper {
+  font-size: 12px;
+}
+
+.tv-line {
+  margin-bottom: 2px;
+}
+
+.tv-nodes-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: center;
+}
+
+.tv-nodes-row--cont {
+  margin-left: 0;
+}
+
+.tv-variations {
+  margin-left: 16px;
+  padding-left: 8px;
+  border-left: 2px solid var(--c-border);
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.tv-empty {
+  color: var(--c-ink-3);
+  font-style: italic;
+  padding: 4px;
+}
+
+/* Node pill */
+.tv-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 5px;
+  font-size: 11px;
+  font-family: var(--font);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--c-surface);
+  color: var(--c-ink);
+  transition: all 0.1s;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.tv-node:hover {
+  background: var(--c-surface-2);
+  border-color: var(--c-ink-3);
+}
+
+.tv-node--current {
+  background: var(--c-brand) !important;
+  color: #fff !important;
+  border-color: var(--c-brand) !important;
+  font-weight: 700;
+}
+
+.tv-node--black {
+  border-left: 3px solid #333;
+}
+.tv-node--white {
+  border-left: 3px solid #bbb;
+}
+
+.tv-node--var {
+  opacity: 0.85;
+}
+
+.tv-node--branch {
+  border-right: 2px solid var(--c-brand);
+}
+
+.tv-node__num {
+  font-size: 10px;
+  color: var(--c-ink-3);
+  font-weight: 400;
+}
+.tv-node--current .tv-node__num {
+  color: rgba(255,255,255,0.7);
+}
+
+.tv-node__coord {
+  font-weight: 600;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .replay__body {
+    flex-direction: column;
+  }
+
+  .replay__tree-panel {
+    max-width: 100%;
+    max-height: 200px;
+    flex: none;
+    width: 100%;
+  }
+
   .game-table th:nth-child(4),
   .game-table td:nth-child(4) {
     display: none;
