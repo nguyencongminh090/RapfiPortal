@@ -106,9 +106,14 @@ class SocketClient {
     const token = localStorage.getItem('gvn_token');
     if (!token) return null;
     try {
-      // Simple base64 decode of JWT payload (no verification — server does that)
-      const payload = token.split('.')[1];
-      return JSON.parse(atob(payload));
+      let payload = token.split('.')[1];
+      payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const decodedPayload = decodeURIComponent(
+        atob(payload).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')
+      );
+      return JSON.parse(decodedPayload);
     } catch {
       return null;
     }
