@@ -443,6 +443,7 @@ class RoomManager {
 
       list.push({
         roomId: room.roomId,
+        roomName: room.roomName,
         hostName: hostUser ? hostUser.displayName : '—',
         playerCount,                     // 0, 1, or 2 seated players
         userCount: room.users.size,      // Total people in room
