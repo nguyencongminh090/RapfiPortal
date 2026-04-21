@@ -528,8 +528,32 @@ function registerGameHandlers(io, socket) {
       return;
     }
 
+    if (!room._timeRequestsUsed) room._timeRequestsUsed = {};
+    const used = room._timeRequestsUsed[user.userId] || 0;
+
+    if (used < config.TIME_REQUEST_FREE) {
+      // Auto-grant without permission
+      room._timeRequestsUsed[user.userId] = used + 1;
+      const remaining = config.TIME_REQUEST_FREE - room._timeRequestsUsed[user.userId];
+
+      const timer = timerMap.get(room.roomId);
+      if (timer) {
+        const color = player.color === 'BLACK' ? 'black' : 'white';
+        timer.addTime(color, config.TIME_REQUEST_BONUS);
+
+        io.to(room.roomId).emit('timer:tick', timer.getTimers());
+        io.to(room.roomId).emit('chat:message', {
+          from: null, fromId: null,
+          text: `${user.displayName} đã dùng quyền thêm thời gian tự động (+${config.TIME_REQUEST_BONUS}s). Còn ${remaining} lần.`,
+          timestamp: Date.now(), isSystem: true,
+        });
+      }
+      return;
+    }
+
+    // Out of free requests, require permission
     // Store pending time request
-    room._timeRequestPending = { from: user.userId, fromName: user.displayName };
+    room._timeRequestPending = { from: user.userId, fromName: user.displayName, bonus: config.TIME_REQUEST_BONUS };
 
     // Notify all room members
     io.to(room.roomId).emit('game:time_offered', {
@@ -539,7 +563,7 @@ function registerGameHandlers(io, socket) {
     });
     io.to(room.roomId).emit('chat:message', {
       from: null, fromId: null,
-      text: `${user.displayName} xin thêm ${config.TIME_REQUEST_BONUS} giây.`,
+      text: `${user.displayName} xin thêm ${config.TIME_REQUEST_BONUS} giây (đã hết lượt tự động).`,
       timestamp: Date.now(), isSystem: true,
     });
   });
@@ -758,6 +782,8 @@ function startGame(io, room) {
   // Store game state on the room
   room.gameState = engine;
   room.state = 'playing';
+  room._timeRequestsUsed = {};
+  room._timeRequestPending = null;
 
   // Reset ready states
   for (const [, u] of room.users) {
