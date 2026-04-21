@@ -70,7 +70,7 @@ socketHandler.init(io);
 // Start
 // ---------------------------------------------------------------------------
 server.listen(config.HTTP_PORT, () => {
-  logger.info(`[Server] GomokuVN listening on http://localhost:${config.HTTP_PORT}`);
+  logger.info(`[Server] Play3CR listening on http://localhost:${config.HTTP_PORT}`);
 });
 
 module.exports = { app, server, io };

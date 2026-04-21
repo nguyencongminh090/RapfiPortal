@@ -1,7 +1,7 @@
 {
   "name": "gomoku-vn",
   "version": "1.0.0",
-  "description": "GomokuVN — Real-time multiplayer Gomoku platform with WALL & PORTAL mechanics",
+  "description": "Play3CR — Real-time multiplayer Gomoku platform with WALL & PORTAL mechanics",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

@@ -394,7 +394,7 @@ function updateUI() {
 
   // Update nav
   roomIdNav.textContent = roomData.roomName || roomData.roomId;
-  document.title = `GomokuVN — ${roomData.roomName || roomData.roomId}`;
+  document.title = `Play3CR — ${roomData.roomName || roomData.roomId}`;
 
   // Find my user in the room
   const me = roomData.users.find(u => u.userId === myUser.userId);
