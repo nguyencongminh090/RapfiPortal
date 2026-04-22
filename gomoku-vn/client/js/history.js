@@ -283,7 +283,11 @@ function setAnalysisMode(on) {
 
 function toggleAnalysis() {
   setAnalysisMode(!analysisMode);
-  syncBoardToTree();
+  // Let the DOM settle (tree panel show/hide), then resize board
+  requestAnimationFrame(() => {
+    if (boardRenderer) boardRenderer.resize();
+    syncBoardToTree();
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -409,18 +413,33 @@ window.loadGames  = loadGames;
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
+/**
+ * Resolve winner display name from game record.
+ * Handles both new data (player IDs stored) and old data (player IDs null).
+ */
+function resolveWinnerName(g) {
+  if (!g.winner || g.winner === 'draw') return null;
+  // Match by player ID (new data)
+  if (g.winner === g.black_player_id) return g.black_player_name;
+  if (g.winner === g.white_player_id) return g.white_player_name;
+  // Fallback: winner might be a name directly, or match via name
+  if (g.winner === g.black_player_name) return g.black_player_name;
+  if (g.winner === g.white_player_name) return g.white_player_name;
+  // Last resort: show winner raw value truncated
+  return g.winner.length > 15 ? g.black_player_name : g.winner;
+}
+
 function getResultText(g) {
   if (!g.winner || g.winner === 'draw') return 'Hoà';
-  if (g.winner === g.black_player_id) return g.black_player_name + ' thắng';
-  if (g.winner === g.white_player_id) return g.white_player_name + ' thắng';
-  return 'Có người thắng';
+  const name = resolveWinnerName(g);
+  return name ? `${name} thắng` : 'Có người thắng';
 }
 
 function getResultTextFull(g) {
   const reasonMap = {
-    normal: 'Thắng bình thường',
-    resign: 'Đối thủ đầu hàng',
-    timeout: 'Hết thời gian',
+    normal: '5 liên tiếp',
+    resign: 'Đầu hàng',
+    timeout: 'Hết giờ',
     draw_agreement: 'Đồng ý hoà',
     board_full: 'Bàn cờ đầy',
   };
@@ -429,12 +448,9 @@ function getResultTextFull(g) {
     return `Hoà — ${reasonMap[g.reason] || g.reason || ''}`;
   }
 
-  let winnerName;
-  if (g.winner === g.black_player_id) winnerName = g.black_player_name;
-  else if (g.winner === g.white_player_id) winnerName = g.white_player_name;
-  else winnerName = 'Người chơi';
-
-  return `${winnerName} thắng — ${reasonMap[g.reason] || g.reason || ''}`;
+  const name = resolveWinnerName(g) || 'Người chơi';
+  const reason = reasonMap[g.reason] || g.reason || '';
+  return `${name} thắng${reason ? ' — ' + reason : ''}`;
 }
 
 function formatTime(isoStr) {

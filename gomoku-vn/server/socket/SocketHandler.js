@@ -921,7 +921,7 @@ function handleGameEnd(io, room, opts = {}) {
           id: p.userId,
           name: p.displayName,
           color: p.color,
-          isGuest: true, // All players treated as guest for now
+          isGuest: false,
         })),
         result: engine.result,
         boardSize: engine.boardSize,

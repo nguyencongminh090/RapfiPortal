@@ -10,6 +10,7 @@
   margin: 0 auto;
   padding: 24px 20px 40px;
   padding-inline: clamp(12px, 4vw, 20px);
+  overflow-x: hidden;
 }
 
 .history__header {
@@ -176,11 +177,13 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  overflow: hidden;
 }
 
 .replay__board-col {
-  flex: 0 1 auto;
+  flex: 1 1 0%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .replay__board-area {
@@ -193,7 +196,6 @@
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  max-width: 600px;
 }
 
 .replay__board-area canvas {
@@ -243,9 +245,9 @@
 
 /* ── Tree Panel ───────────────────────────────────────────────────────────── */
 .replay__tree-panel {
-  flex: 1 1 280px;
-  min-width: 220px;
-  max-width: 400px;
+  flex: 0 0 300px;
+  min-width: 0;
+  max-width: 350px;
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-lg);
