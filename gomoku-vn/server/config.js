@@ -6,8 +6,8 @@
 // =============================================================================
 
 // --- Room limits ---
-const MAX_ROOMS             = 20;
-const MAX_USERS_PER_ROOM    = 10;      // 2 players + 8 guests
+const MAX_ROOMS             = 10;
+const MAX_USERS_PER_ROOM    = 20;      // 2 players + 18 guests
 const IDLE_TIMEOUT_MS       = 600_000; // 10 minutes
 
 // --- Disconnect grace ---

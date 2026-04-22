@@ -558,7 +558,7 @@ class RoomManager extends EventEmitter {
       : config.DEFAULT_TIMER_MODE;
 
     s.timerSeconds = (typeof settings.timerSeconds === 'number'
-                      && settings.timerSeconds >= 10
+                      && settings.timerSeconds >= 5
                       && settings.timerSeconds <= 3600)
       ? Math.floor(settings.timerSeconds)
       : config.DEFAULT_TIMER_SECONDS;

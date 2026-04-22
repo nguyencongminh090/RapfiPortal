@@ -565,7 +565,7 @@ function renderSettings() {
       <div class="setting-row">
         <span class="setting-label">Thời gian</span>
         <div class="timer-input">
-          <input type="number" id="r-timer" value="${s.timerSeconds}" min="10" max="3600" step="5" onchange="updateSettings()" />
+          <input type="number" id="r-timer" value="${s.timerSeconds}" min="5" max="3600" step="5" onchange="updateSettings()" />
           <span class="unit">giây</span>
         </div>
       </div>
