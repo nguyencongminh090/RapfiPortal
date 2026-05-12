@@ -449,9 +449,11 @@ void Board::newGame()
 
     assert(checkP4(this));
 
-    // Reset evaluator state to empty board
+    // PORTAL: Use syncWithBoard instead of initEmptyBoard to pass board reference.
+    // This lets the NNUE evaluator scan for WALL cells when computing shape encodings.
+    // Since ply == 0 at this point, syncWithBoard just calls initEmptyBoard internally.
     if (evaluator_)
-        evaluator_->initEmptyBoard();
+        evaluator_->syncWithBoard(*this);
 }
 
 template void Board::newGame<FREESTYLE>();
