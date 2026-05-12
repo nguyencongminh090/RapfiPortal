@@ -307,4 +307,4 @@ Follow this **exact module order**. Do not skip ahead. Complete and manually tes
 
 ---
 
-**Reference:** Always cross-check with `gomoku-vn-dev.md` for constraints and `gomoku_agent_prompt.md` for the full specification.
+**Reference:** Always cross-check with `.agents/rules/gomoku-vn-dev.md` for all non-negotiable constraints, schemas, and behavioral rules.
