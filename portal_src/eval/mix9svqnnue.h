@@ -118,10 +118,6 @@ public:
     Accumulator(int boardSize);
     ~Accumulator();
 
-    /// PORTAL: Set board reference for WALL-aware index table computation.
-    /// Must be called before clear() to enable wall-aware distance scanning.
-    void setBoard(const Board *b) { board_ = b; }
-
     /// Init accumulator state to empty board.
     void clear(const Weight &w);
     /// Incremental update mix6 network state.
@@ -159,10 +155,6 @@ private:
     int    currentVersion;
     int8_t groupIndex[32];
 
-    // PORTAL: Board reference for WALL cell scanning in initIndexTable() and move().
-    // Nullptr when no board is attached (constructor phase) — falls back to edge-only distance.
-    const Board *board_ = nullptr;
-
     void initIndexTable();
     int  getBucketIndex() { return 0; }
 };
@@ -180,9 +172,6 @@ public:
     void initEmptyBoard();
     void beforeMove(const Board &board, Pos pos);
     void afterUndo(const Board &board, Pos pos);
-
-    /// PORTAL: Override to pass board reference for WALL-aware NNUE init.
-    void syncWithBoard(const Board &board) override;
 
     ValueType evaluateValue(const Board &board, AccLevel level);
     void      evaluatePolicy(const Board &board, PolicyBuffer &policyBuffer, AccLevel level);

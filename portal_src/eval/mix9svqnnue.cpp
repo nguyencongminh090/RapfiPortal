@@ -260,24 +260,6 @@ void Accumulator::initIndexTable()
     // Clear shape table
     std::fill_n(&indexTable[0][0], 4 * boardSize * boardSize, 0);
 
-    // PORTAL: Wall-aware distance scan in one direction.
-    // Returns the number of playable cells before the nearest WALL or board edge,
-    // capped at half. When board_ is nullptr (constructor phase), falls back to
-    // edge-only distance which is identical to the original Rapfi behavior.
-    auto wallAwareDist = [&](int x, int y, int dx, int dy) -> int {
-        for (int i = 1; i <= half; i++) {
-            int nx = x + dx * i;
-            int ny = y + dy * i;
-            // Hit board edge
-            if (nx < 0 || nx >= boardSize || ny < 0 || ny >= boardSize)
-                return i - 1;
-            // PORTAL: Hit a WALL cell — treat as boundary
-            if (board_ && board_->cell(Pos(nx, ny)).piece == WALL)
-                return i - 1;
-        }
-        return half;  // no obstruction within half steps
-    };
-
     /// Get an empty line encoding with the given boarder distance.
     /// @param left The distance to the left boarder, in range [0, length/2].
     /// @param right The distance to the right boarder, in range [0, length/2].
@@ -319,30 +301,20 @@ void Accumulator::initIndexTable()
 
     for (int y = 0; y < boardSize; y++)
         for (int x = 0; x < boardSize; x++) {
-            auto &idxs = indexTable[y * boardSize + x];
-
-            // PORTAL: Use wall-aware distance for all 4 directions.
-            // When board_ is nullptr, wallAwareDist degrades to edge-only distance.
-            // Direction 0: DX=1, DY=0 (horizontal)
-            int distx0 = wallAwareDist(x, y, -1,  0);  // left
-            int distx1 = wallAwareDist(x, y, +1,  0);  // right
-            // Direction 1: DX=0, DY=1 (vertical)
-            int disty0 = wallAwareDist(x, y,  0, -1);  // up
-            int disty1 = wallAwareDist(x, y,  0, +1);  // down
+            auto &idxs   = indexTable[y * boardSize + x];
+            int   distx0 = std::min(x - 0, half);
+            int   distx1 = std::min(boardSize - 1 - x, half);
+            int   disty0 = std::min(y - 0, half);
+            int   disty1 = std::min(boardSize - 1 - y, half);
 
             // DX[0]=1, DY[0]=0
             idxs[0] = get_boarder_encoding(distx0, distx1);
             // DX[1]=0, DY[1]=1
             idxs[1] = get_boarder_encoding(disty0, disty1);
             // DX[2]=1, DY[2]=-1
-            // PORTAL: Scan diagonals with wall-aware distance
-            int dist_d2_neg = wallAwareDist(x, y, -1, +1);
-            int dist_d2_pos = wallAwareDist(x, y, +1, -1);
-            idxs[2] = get_boarder_encoding(dist_d2_neg, dist_d2_pos);
+            idxs[2] = get_boarder_encoding(std::min(distx0, disty1), std::min(distx1, disty0));
             // DX[3]=1, DY[3]=1
-            int dist_d3_neg = wallAwareDist(x, y, -1, -1);
-            int dist_d3_pos = wallAwareDist(x, y, +1, +1);
-            idxs[3] = get_boarder_encoding(dist_d3_neg, dist_d3_pos);
+            idxs[3] = get_boarder_encoding(std::min(distx0, disty0), std::min(distx1, disty1));
 
             assert(idxs[0] < ShapeNum);
             assert(idxs[1] < ShapeNum);
@@ -354,12 +326,6 @@ void Accumulator::initIndexTable()
 void Accumulator::clear(const Weight &w)
 {
     if (currentVersion == -1) {
-        // PORTAL: Re-compute index table with WALL awareness if board is set.
-        // During constructor phase (board_ == nullptr), initIndexTable() was already
-        // called with edge-only distances. Now that WALLs may be placed, re-scan.
-        if (board_)
-            initIndexTable();
-
         // Init mapConv to bias
         for (int i = 0; i < outerBoardSize * outerBoardSize; i++)
             simd::copy<FeatDWConvDim>(mapConv[i].data(), w.feature_dwconv_bias);
@@ -515,62 +481,34 @@ void Accumulator::move(const Weight &w, Color pieceColor, int x, int y)
     int dPower3     = pieceColor + 1;
 
     // Update shape table and record changes
-    // PORTAL: Split sweep into negative/positive halves with WALL break.
-    // A stone placed on one side of a WALL must NOT update shapes on the other side,
-    // because cells beyond the WALL cannot "see" the stone through it.
     const int boardSizeSub1 = boardSize - 1;
     int       newMapIdx     = changeNum.inner;
-
-    // PORTAL: Helper lambda to process one cell in the shape update sweep.
-    // Returns false if the cell is out-of-bounds or is a WALL (caller should break).
-    auto processCell = [&](int dir, int dist, int xi, int yi) -> bool {
-        // branchless test: xi < 0 || xi >= boardSize || yi < 0 || yi >= boardSize
-        if ((xi | (boardSizeSub1 - xi) | yi | (boardSizeSub1 - yi)) < 0)
-            return false;
-
-        // PORTAL: Stop at WALL — cells beyond cannot see the placed stone
-        if (board_ && board_->cell(Pos(xi, yi)).piece == WALL)
-            return false;
-
-        int             innerIdx = boardSize * yi + xi;
-        OnePointChange &c        = changeTable[changeCount++];
-        c.x                      = xi;
-        c.y                      = yi;
-        c.mappingIdx             = dir / 2;  // 0,1 -> 0; 2,3 -> 1
-        c.oldMapIdx              = versionInnerIndexTable[innerVersionIdxBase + innerIdx];
-        c.newMapIdx              = newMapIdx;
-
-        uint32_t oldShape     = indexTable[c.oldMapIdx][dir];
-        indexTable[newMapIdx] = indexTable[c.oldMapIdx];
-        uint32_t newShape = indexTable[newMapIdx][dir] = oldShape + dPower3 * Power3[dist + 5];
-        assert(newShape < ShapeNum);
-
-        c.oldCodebookIdx = w.mapping_index[c.mappingIdx][oldShape];
-        c.newCodebookIdx = w.mapping_index[c.mappingIdx][newShape];
-
-        versionInnerIndexTable[innerVersionIdxBase + innerIdx] = newMapIdx++;
-        return true;
-    };
-
     for (int dir = 0; dir < 4; dir++) {
-        // PORTAL: Sweep negative direction (dist -1 to -5), break at WALL.
-        // Must go outward from center to detect nearest WALL first.
-        for (int dist = -1; dist >= -5; dist--) {
+        for (int dist = -5; dist <= 5; dist++) {
             int xi = x + dist * DX[dir];
             int yi = y + dist * DY[dir];
-            if (!processCell(dir, dist, xi, yi))
-                break;
-        }
 
-        // Center cell (dist = 0) — always processed (it's the placed stone itself)
-        processCell(dir, 0, x, y);
+            // branchless test: xi < 0 || xi >= boardSize || yi < 0 || yi >= boardSize
+            if ((xi | (boardSizeSub1 - xi) | yi | (boardSizeSub1 - yi)) < 0)
+                continue;
 
-        // PORTAL: Sweep positive direction (dist +1 to +5), break at WALL
-        for (int dist = 1; dist <= 5; dist++) {
-            int xi = x + dist * DX[dir];
-            int yi = y + dist * DY[dir];
-            if (!processCell(dir, dist, xi, yi))
-                break;
+            int             innerIdx = boardSize * yi + xi;
+            OnePointChange &c        = changeTable[changeCount++];
+            c.x                      = xi;
+            c.y                      = yi;
+            c.mappingIdx             = dir / 2;  // 0,1 -> 0; 2,3 -> 1
+            c.oldMapIdx              = versionInnerIndexTable[innerVersionIdxBase + innerIdx];
+            c.newMapIdx              = newMapIdx;
+
+            uint32_t oldShape     = indexTable[c.oldMapIdx][dir];
+            indexTable[newMapIdx] = indexTable[c.oldMapIdx];
+            uint32_t newShape = indexTable[newMapIdx][dir] = oldShape + dPower3 * Power3[dist + 5];
+            assert(newShape < ShapeNum);
+
+            c.oldCodebookIdx = w.mapping_index[c.mappingIdx][oldShape];
+            c.newCodebookIdx = w.mapping_index[c.mappingIdx][newShape];
+
+            versionInnerIndexTable[innerVersionIdxBase + innerIdx] = newMapIdx++;
         }
     }
 
@@ -945,26 +883,6 @@ void Evaluator::initEmptyBoard()
     moveCache[WHITE].clear();
     accumulator[BLACK]->clear(*weight[BLACK]);
     accumulator[WHITE]->clear(*weight[WHITE]);
-}
-
-/// PORTAL: Override syncWithBoard to pass board reference before initialization.
-/// This ensures initIndexTable() can scan for WALL cells when computing shape encodings.
-/// Called from Board::newGame() and Board copy constructor.
-void Evaluator::syncWithBoard(const Board &board)
-{
-    // PORTAL: Set board reference on both accumulators BEFORE clear() runs
-    accumulator[BLACK]->setBoard(&board);
-    accumulator[WHITE]->setBoard(&board);
-
-    // Init empty board (calls clear() which now has WALL-aware indexTable)
-    initEmptyBoard();
-
-    // Replay all moves from the board's history
-    for (int i = 0; i < board.ply(); i++) {
-        Pos pos = board.getHistoryMove(i);
-        if (pos != Pos::PASS)
-            beforeMove(board, pos);
-    }
 }
 
 void Evaluator::beforeMove(const Board &board, Pos pos)

@@ -2,8 +2,8 @@
 name: portal-engine-skill
 description: >
   Deep knowledge of Portal Gomoku Engine architecture (portal_src) — use when
-  implementing or debugging board.h/board.cpp, getKeyAt(), NNUE encoding,
-  eval.cpp, or any WALL/Portal feature in the engine.
+  implementing or debugging board.h/board.cpp, getKeyAt(), classical eval.cpp,
+  search, or any WALL/Portal feature in the engine.
 ---
 
 # Skill: Portal Engine Development
@@ -17,50 +17,63 @@ portal_src/
     board.cpp        ← MODIFIED: newGame(), move(), undo()
     pattern.h/.cpp   ← DO NOT TOUCH (geometry-free pattern tables)
     wincheck.h       ← DO NOT TOUCH
-    movegen.h/.cpp   ← DO NOT TOUCH
+    movegen.h/.cpp   ← CAN MODIFY: move ordering heuristics for WALL/Portal
   eval/
-    mix9svqnnue.h    ← MODIFIED (WALL-aware): Accumulator stores wallMap
-    mix9svqnnue.cpp  ← MODIFIED (WALL-aware): initIndexTable(), move()
-    eval.cpp         ← MODIFIED: wallStrategicCorrection hook
+    eval.cpp         ← CAN MODIFY: WALL strategic correction hook
     eval.h           ← unchanged
     evaluator.h/.cpp ← unchanged
-    mix10nnue.*      ← DO NOT TOUCH (not in use for this variant)
+    mix9svqnnue.*    ← DO NOT TOUCH (NNUE modification is OUT OF SCOPE)
+    mix10nnue.*      ← DO NOT TOUCH
     simdops.h        ← DO NOT TOUCH
     weightloader.h   ← unchanged
-  config.h/.cpp      ← MODIFIED: Portal/WALL config storage
+  search/
+    searchthread.cpp ← CAN MODIFY: depth extensions for portal/wall threats
+    ab.cpp           ← CAN MODIFY: null-move and LMR tuning for WALL boards
+    vcfsearch.cpp    ← CAN MODIFY: VCF/VCT must follow portal teleportation
+  config.h/.cpp      ← MODIFIED: Portal/WALL config + new heuristic constants
   command/
     gomocup.cpp      ← MODIFIED: WALL/PORTAL protocol input
     opengen.cpp      ← MODIFIED: new rule support
   main.cpp           ← MODIFIED: new entry
-  [core/, search/, database/, tuning/, external/] ← DO NOT TOUCH
+  [core/, database/, tuning/, external/] ← DO NOT TOUCH
 ```
 
-**Build artifacts** (in `build/` relative to project root):
+**Build artifacts** (in `build/` relative to `portal_src/`):
 - `pbrain-MINT-P` — main engine binary
-- `portal-test` — test binary for portal mechanics
-- `portal-pattern-test` — test binary for pattern/key generation
+- `portal-test` — integration tests for portal mechanics
+- `portal-pattern-test` — pattern/key generation tests
 
 **Build command:**
 ```bash
-cd /path/to/rapfi-master/portal_src
-cmake --preset linux-clang-release   # or check CMakePresets.json for your preset
+cd portal_src
 ninja -C build
+# First time or after CMake changes:
+cmake --preset linux-clang-release && ninja -C build
 ```
 
-## 2. Rule Semantics
+## 2. Strategic Direction
+
+> **NNUE modification is OUT OF SCOPE.** The `mix9svqnnue` files are restored to
+> clean Rapfi baseline. All engine intelligence improvements go through:
+> 1. **Classical Evaluation** — `eval.cpp` WALL correction heuristics
+> 2. **Move Ordering** — `movegen.cpp` / `MovePicker` for topological awareness
+> 3. **Search Tuning** — `searchthread.cpp`, `ab.cpp`, `vcfsearch.cpp`
+
+## 3. Rule Semantics
 
 ### WALL
 - Immovable cell — `cells[pos].piece = WALL`.
 - Blocks lines in ALL 4 directions (exactly like a board boundary).
-- Stored in `bitKey` as `0b00` (same as boundary sentinel). **Must be explicitly set** in `newGame()` by calling `flipBitKey(p, BLACK); flipBitKey(p, WHITE)` because `newGame()` initializes all cells to `0b11` (EMPTY).
+- Stored in `bitKey` as `0b00`. **Must be explicitly set** in `newGame()` by calling
+  `flipBitKey(p, BLACK); flipBitKey(p, WHITE)` because `newGame()` initializes all cells to `0b11` (EMPTY).
 
 ### Portal Pair (A, B)
 - Both stored as `piece = WALL` in `cells[]`.
 - Teleport rule: a line scanning direction D that hits portal A → skip A, skip B, continue from B+direction in SAME direction D. Symmetric (B → A also).
 - Portal cells are **zero-width**: do NOT contribute bits to the pattern window.
-- Loop detection: if walking the virtual window revisits a physical cell already collected, terminate that end with WALL sentinel.
+- Loop detection: if walking the virtual window revisits a physical cell already collected, terminate with WALL sentinel.
 
-## 3. Key Data Structures
+## 4. Key Data Structures
 
 ### Portal Data (board.h)
 ```cpp
@@ -72,24 +85,16 @@ struct PortalPair {
 // Inside Board:
 PortalPair portals[MAX_PORTAL_PAIRS];
 Pos  portalPartner[FULL_BOARD_CELL_COUNT]; // O(1) lookup: partner of any portal cell
-bool portalAffected[4][FULL_BOARD_CELL_COUNT]; // true if cell within L steps of a portal in dir d
+bool portalAffected[4][FULL_BOARD_CELL_COUNT]; // true if cell within L steps of portal in dir d
+Pos  portalUpdateZone[MAX_PORTAL_PAIRS][4][2*HALF_LINE_LEN+1]; // extra update cells for move()
 ```
 
-### Shape / Encoding (mix9svqnnue)
-```cpp
-// Per cell, per direction — index into mapping_index[]
-indexTable[boardSize*boardSize][4]  // [cell][dir] → shape index in [0, ShapeNum)
-
-// WALL-aware version needs:
-wallDistTable[boardSize*boardSize][8]  // [cell][dir×2] → wall distance in each half-direction
-```
-
-## 4. `getKeyAt<R>(pos, dir)` — The Core Algorithm
+## 5. `getKeyAt<R>(pos, dir)` — The Core Algorithm
 
 This is the **ONLY** place portal teleportation is implemented.
 All downstream code (PATTERN2x lookup, PCODE, EVALS) is unchanged.
 
-```cpp
+```
 getKeyAt(pos, dir):
   // Fast path: no portal in range — use existing bitKey rotation (unchanged Rapfi code)
   if (!portalAffected[dir][pos]):
@@ -115,48 +120,46 @@ portalStep(cur, dir, sign):
   return next
 ```
 
-## 5. WALL-Aware Encoding in `initIndexTable()`
+## 6. Classical Evaluation Enhancement Points
 
-**Current bug:** Only uses board-edge distance, ignoring internal WALLs.
-**Fix:** Scan each direction from `(x, y)` up to `half=5` steps; stop at WALL or boundary.
-
+The classical eval pipeline in `eval.cpp`:
 ```cpp
-// WALL-AWARE (pseudocode):
-auto wallAwareDist = [&](int x, int y, int dx, int dy) -> int {
-    for (int i = 1; i <= half; i++) {
-        int nx = x + dx*i, ny = y + dy*i;
-        if (nx < 0 || nx >= boardSize || ny < 0 || ny >= boardSize) return i - 1;
-        if (board->cell(Pos(nx, ny)).piece == WALL) return i - 1;
-    }
-    return half;
-};
-int distx0 = wallAwareDist(x, y, -1, 0);  // LEFT
-int distx1 = wallAwareDist(x, y, +1, 0);  // RIGHT
-// ... similarly for all 4 directions
+Value basicEval  = evaluateBasic(st0, self) + evaluateBasic(st1, self);
+Value threatEval = evaluateThreat<R>(st0, self);
+Value eval       = clamp(basicEval + threatEval, VALUE_EVAL_MIN, VALUE_EVAL_MAX);
+
+// [PORTAL: WALL CORRECTION — the correct place to add WALL awareness]
+if (board.hasWalls()) {
+    Value wallCorrection = computeWallStrategicCorrection<R>(board, self);
+    eval = clamp(eval + wallCorrection, VALUE_EVAL_MIN, VALUE_EVAL_MAX);
+}
 ```
 
-This function is called at game start (in `initIndexTable(board*)`) and produces the correct
-shape index for each cell that encodes WALL-truncated line length.
+Key WALL heuristics to implement (see `wall-eval` skill for full details):
+- **Dead pocket penalty**: regions enclosed by walls too small for a 5-in-a-row
+- **Corridor squeeze bonus**: open-4 in an exactly-5-cell corridor = unstoppable
+- **Isolated threat discount**: threats that cannot extend past WALL boundaries
 
-## 6. Update Zone in `move()`
+## 7. Move Ordering Enhancement Points
 
-When a stone is placed at `pos`, cells needing `pattern2x` refresh:
+In `movegen.cpp` / `MovePicker::score()`:
+```cpp
+// [PORTAL:] Bonus for moves adjacent to WALL (defensive necessity)
+if (board.isAdjacentToWall(pos))
+    score += WALL_ADJACENCY_MOVE_BONUS;
 
+// [PORTAL:] Bonus for moves adjacent to portal (attacking opportunity)
+if (board.isAdjacentToPortal(pos))
+    score += PORTAL_ADJACENCY_MOVE_BONUS;
 ```
-Normal zone (unchanged from Rapfi):
-  All cells within [-L, +L] in each of 4 directions from pos
 
-Portal extension (NEW — PORTAL: comment required):
-  For each direction D where a portal falls within [-L, +L] of pos:
-    Also refresh cells within [-L, +L] around the portal's PARTNER in direction D
+## 8. Search Enhancement Points
 
-Reason: placing near portal A changes the virtual line seen by cells near portal B.
-```
+In `searchthread.cpp` / `ab.cpp`:
+- **Reduced LMR for portal interactions**: if a candidate move is portal-adjacent and has a certain threat level, reduce the LMR reduction by 1 ply to search it deeper.
+- **VCF portal extension** (`vcfsearch.cpp`): the threat sequence scanner must call `getKeyAt()` which already handles portals — verify this code path is exercised.
 
-Also in `move()`: when sweeping to update `indexTable` entries for WALL-aware encoding,
-**break the sweep loop** when encountering a WALL cell — do not update cells on the other side.
-
-## 7. `newGame()` Checklist
+## 9. `newGame()` Checklist
 
 ```cpp
 // 1. Standard board init (existing Rapfi code) ...
@@ -173,42 +176,26 @@ for (auto &pp : portals)
     portalPartner[pp.a] = pp.b, portalPartner[pp.b] = pp.a;
 
 // 4. [PORTAL:] Compute portalAffected[4][] by walking L steps from each portal
-// 5. [PORTAL:] Call initIndexTable(this) on NNUE accumulator with board pointer
+// 5. [PORTAL:] Compute portalUpdateZone[][] for use in move()
+// 6. Reset evaluator via initEmptyBoard() — DO NOT use syncWithBoard()
 ```
 
-## 8. `binary_file` / Classical Eval Compatibility
+## 10. Classical Eval Table Compatibility
 
-The classical evaluation tables (`EVALS`, `P4SCORES`, `EVALS_THREAT`) are **100% reusable**:
+The classical evaluation tables (`EVALS`, `P4SCORES`) are **100% reusable**:
 - `PatternCode` is derived from 4 direction patterns — same types, same table
 - `EVALS[rule][pcode]` maps pattern combinations to scores — pattern MEANING is preserved through portals
 - F5 through portal = still F5 = WIN
+- The WALL correction (§6 above) is ADDITIVE to the existing table output
 
-Portal positions create unusual pattern combinations not seen in original Rapfi training,
-but the engine correctly evaluates threats. Re-tuning the classical eval improves accuracy
-but is NOT required initially.
-
-## 9. NNUE Evaluation Strategy Near WALLs
-
-Beyond encoding fixes, the value head needs strategic context. In `eval.cpp`:
-
-```cpp
-// After getting NNUE value, apply WALL strategic correction:
-Value wallCorrection = computeWallCorrection(board, ply);
-// wallCorrection factors:
-//   - number of dead pockets (wall-enclosed regions)
-//   - corridor width (single-cell corridors are tactically critical)
-//   - number of wall-adjacent threats blocked for each side
-Value finalValue = blend(nnueValue, nnueValue + wallCorrection, wallInfluence);
-```
-
-## 10. Common Pitfalls
+## 11. Common Pitfalls
 
 | Pitfall | Correct Approach |
 |---------|-----------------|
 | Forgetting to update B's neighborhood when stone placed near A | Extend update zone via `portalUpdateZone` in `move()` |
-| Loop in collinear portal chain | Keep `posList` in `buildPortalKey`; terminate window if a cell is visited twice |
+| Loop in collinear portal chain | Keep `posList` in `buildPortalKey`; terminate window if cell visited twice |
 | Using `Pos::NONE` (0) as sentinel | Cell (0,0) IS a valid board cell! Use `Pos::PASS` (-1) instead |
-| Forgetting to fix WALL bitKey in `newGame()` | Rapfi inits empty cells to `0b11`. WALLs need `0b00`. Call `flipBitKey` for each WALL/Portal pos |
-| Calling `initIndexTable()` before portals/WALLs are set up | WALLs must be registered in `cells[]` BEFORE `initIndexTable` scans for them |
-| Modifying "copied, unchanged" files | Only touch files marked MODIFIED in the source map above |
-| Sweeping past WALLs in `move()` update | Break the update loop at WALL boundaries in all 4 directions |
+| Forgetting to fix WALL bitKey in `newGame()` | Rapfi inits empty cells to `0b11`. WALLs need `0b00`. Call `flipBitKey` |
+| Modifying NNUE files | `mix9svqnnue.*` is clean Rapfi baseline — DO NOT TOUCH |
+| Modifying "copied, unchanged" files | Only touch files marked MODIFIED or CAN MODIFY in §1 source map |
+| Adding eval heuristics in the wrong place | Add `wallCorrection` AFTER `basicEval + threatEval`, BEFORE NNUE path |

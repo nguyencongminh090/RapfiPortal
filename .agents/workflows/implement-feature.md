@@ -10,8 +10,7 @@ description: implement a new feature or module in portal_src
 
 1. **Read the relevant `portal_src/` files that will be touched:**
    - Board changes → read `game/board.h` and `game/board.cpp` in full.
-   - NNUE changes → read `eval/mix9svqnnue.h` and `eval/mix9svqnnue.cpp` in full.
-   - Eval/strategy changes → read `eval/eval.cpp` in full.
+   - Eval/strategy changes → read `eval/eval.cpp` and `game/pattern.cpp` in full.
    - Config changes → read `config.h` and `config.cpp`.
    
 2. **Summarize** before writing any code:
@@ -34,7 +33,7 @@ description: implement a new feature or module in portal_src
 4. Write a concrete plan:
    - List files to **CREATE** or **MODIFY** (with justification).
    - For each new function: write pseudocode with portal semantics and edge cases.
-   - For NNUE changes: specify which layers are frozen and which are trained.
+   - For Search changes: summarize how node evaluations or branch pruning is affected.
    - Flag any `[ASSUMPTION: ...]` about Rapfi internals.
    - **STOP and wait for user approval before writing any code.**
 
@@ -67,6 +66,5 @@ description: implement a new feature or module in portal_src
 8. Confirm correctness:
    - Portal WIN case: a 5-in-a-row passing through a portal pair is detected.
    - WALL blocking: a 5-in-a-row interrupted by a WALL is NOT detected.
-   - For NNUE changes: verify `initIndexTable` produces different indices near WALLs vs. open board.
 
 9. **Document known limitations** — list any edge cases NOT yet handled in a comment at the top of modified files.

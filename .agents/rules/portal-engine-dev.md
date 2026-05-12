@@ -20,6 +20,12 @@ This is **Portal Gomoku Engine** — a fork of Rapfi engine extended with:
   Portal cells themselves are **zero-width**: they do not contribute bits to the pattern window.
   Collinearity is only checked to prevent infinite recursive loops for adjacent portals.
 
+## Strategic Direction: Classical Eval & Search
+**CRITICAL**: NNUE modification (e.g., `mix9svqnnue.cpp`) for WALL/PORTAL support is **OUT OF SCOPE**. Previous attempts proved too complex and introduced regressions. 
+Instead, we focus exclusively on:
+1. **Classical Evaluation** (`evals`, `P4SCORES`): Enhancing the traditional evaluation pipeline to better understand WALL and Portal constraints without neural network overhead.
+2. **Search Algorithms** (`Alpha-Beta`, `MCTS`): Adjusting search heuristics, move generation ordering, and pruning techniques to play more strategically around obstacles.
+
 ## Source Layout
 ```
 portal_src/         ← NEW engine source (based on Rapfi)

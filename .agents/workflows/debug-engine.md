@@ -14,11 +14,10 @@ Before doing anything, classify what's wrong:
 |---------|----------------|
 | Win not detected through portal | `getKeyAt()` / `buildPortalKey()` |
 | Win detected that shouldn't be (false win) | Loop detection in `buildPortalKey()` |
-| WALL doesn't block a line | `initIndexTable()` not using WALL distance |
-| Cells on far side of WALL get wrong eval | `move()` update zone crossing WALL boundary |
+| WALL doesn't block a line | `getKeyAt()` bitKey not set for WALL in `newGame()` |
+| Cells on far side of WALL get wrong eval | `move()` update zone in `board.cpp` crossing WALL boundary |
 | Patterns wrong near board edge but not WALL | Not a portal bug — likely existing Rapfi issue |
-| Engine plays obviously wrong near WALLs | NNUE encoding bug in `Accumulator::initIndexTable()` |
-| Engine plays well tactically but poor strategy | NNUE value head not adapted for WALL board |
+| Engine plays strategically wrong near WALLs | Classical eval correction missing — use `/enhance-search` workflow |
 
 ## Step 2 — Reproduce in Test Binary
 
@@ -83,38 +82,23 @@ For pattern/win bugs, trace the key computation chain:
 ## Step 5 — Check Update Zone
 
 If the bug only appears after several moves (not in a static position), the update zone
-in `move()` is likely too narrow:
+in `board.cpp::move()` is likely too narrow:
 
 ```cpp
-// Suspect: WALL cells blocking the update sweep
-// In Accumulator::move() — check whether the sweep stops at WALLs:
-for (int i = 1; i <= half; i++) {
+// In Board::move<R,MT>() — check whether the pattern update loop stops at WALLs:
+// The loop that refreshes pattern4[] for affected cells must not cross WALL boundaries.
+for (int i = 1; i <= HALF_LINE_LEN; i++) {
     Pos next = pos + DIRECTION[dir] * i;
-    if (board->cell(next).piece == WALL) break;  // this break must be present
-    // ... update next's patterns
+    if (!board.isInBound(next) || board.cell(next).piece == WALL) break;
+    // ... refresh next's pattern
 }
 
-// Suspect: portal extension zone missing
-// After a stone near portal A, cells near portal B must also be updated
-// Check: does move() call updateZoneAroundPortal()?
+// Portal extension zone:
+// After a stone near portal A, cells near portal B must also be updated.
+// Check: does move() iterate over portalUpdateZone[][] entries?
 ```
 
-## Step 6 — Check NNUE Encoding
-
-If the tactical logic is correct but evaluation near WALLs is obviously wrong (e.g.,
-engine ignores a forced win), the NNUE input is corrupted:
-
-```bash
-# Add a debug mode to Accumulator to print indexTable values near a WALL
-# Compare indexTable[cellNearWall][dir] vs indexTable[cellNearEdge][dir]
-# They should differ — if they're identical, initIndexTable() hasn't been fixed
-```
-
-Verify in `Accumulator::initIndexTable()` (line ~255 in `mix9svqnnue.cpp`):
-- The distance calculation must stop at WALL cells, NOT just board edges.
-- Check: `wallAwareDist()` helper is called with the board pointer.
-
-## Step 7 — Fix and Confirm
+## Step 6 — Fix and Confirm
 
 1. Make the minimal fix.
 2. Add `// PORTAL: bugfix — [description]` comment on changed lines.
@@ -129,3 +113,4 @@ Verify in `Accumulator::initIndexTable()` (line ~255 in `mix9svqnnue.cpp`):
    DONE
    BEGIN
    ```
+7. If the bug is strategic (not pattern/win detection) → use `/enhance-search` workflow instead.
