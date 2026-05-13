@@ -72,7 +72,7 @@ void SPSAPanel::setupLayout() {
     mainBox_.append(lblStab_);
     mainBox_.append(spinStab_);
 
-    auto adjGames = Gtk::Adjustment::create(20, 2, 200, 2, 10, 0);
+    auto adjGames = Gtk::Adjustment::create(20, 2, 1000, 2, 10, 0);
     spinGames_.set_adjustment(adjGames);
     spinGames_.set_numeric(true);
     mainBox_.append(lblGames_);
@@ -102,7 +102,7 @@ void SPSAPanel::setupLayout() {
     mainBox_.append(lblMatchTime_);
     mainBox_.append(spinMatchTime_);
 
-    auto adjConc = Gtk::Adjustment::create(1, 1, 8, 1, 1, 0);
+    auto adjConc = Gtk::Adjustment::create(1, 1, 256, 1, 1, 0);
     spinConcurrency_.set_adjustment(adjConc);
     spinConcurrency_.set_numeric(true);
     mainBox_.append(lblConcurrency_);
@@ -117,7 +117,7 @@ void SPSAPanel::setupLayout() {
     mainBox_.append(lblValInterval_);
     mainBox_.append(spinValInterval_);
 
-    auto adjValG = Gtk::Adjustment::create(20, 2, 200, 2, 10, 0);
+    auto adjValG = Gtk::Adjustment::create(20, 2, 1000, 2, 10, 0);
     spinValGames_.set_adjustment(adjValG);
     spinValGames_.set_numeric(true);
     mainBox_.append(lblValGames_);
