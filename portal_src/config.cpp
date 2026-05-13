@@ -30,6 +30,7 @@
 #include "search/hashtable.h"
 #include "search/mcts/searcher.h"
 #include "search/searchthread.h"
+#include "tuning/tunemap.h"
 
 #ifdef USE_ORT_EVALUATOR
     #include "eval/onnxevaluator.h"
@@ -120,16 +121,27 @@ int MaxSearchDepth = 99;
 
 /// Penalty per stone trapped in a region too small to win.
 int WALL_DEAD_POCKET_PENALTY = -60;
+TUNE(WALL_DEAD_POCKET_PENALTY, -200, 0);
+
 /// Bonus per B4 threat in a 5-cell corridor bounded by WALLs/edges.
 int WALL_CORRIDOR_FOUR_BONUS = 450;
+TUNE(WALL_CORRIDOR_FOUR_BONUS, 200, 800);
+
 /// Penalty per H_FLEX3+ threat isolated in a small walled-off region.
 int WALL_ISOLATED_THREAT_PENALTY = -30;
+TUNE(WALL_ISOLATED_THREAT_PENALTY, -100, 0);
+
 /// Bonus for WALL-adjacent moves during move ordering.
 int WALL_ADJACENCY_MOVE_BONUS = 80;
+TUNE(WALL_ADJACENCY_MOVE_BONUS, 50, 200);
+
 /// Bonus for portal-adjacent moves during move ordering.
 int PORTAL_ADJACENCY_MOVE_BONUS = 60;
+TUNE(PORTAL_ADJACENCY_MOVE_BONUS, 40, 150);
+
 /// Bonus for first move in the 8-cell zone around any WALL.
 int WALL_FIRST_MOVE_BONUS = 250;
+TUNE(WALL_FIRST_MOVE_BONUS, 100, 400);
 
 /// Expand node (evaluating policy) when first evaluate a node (evaluating value).
 bool ExpandWhenFirstEvaluate = false;
