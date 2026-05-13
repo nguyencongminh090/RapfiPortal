@@ -445,9 +445,19 @@ void SPSAPanel::onProgressUpdated() {
     int done = spsaCtrl_.gamesCompleted();
     int total = spsaCtrl_.gamesTotalCurrent();
     int active = spsaCtrl_.activeSlotsCount();
+    double plus = spsaCtrl_.currentScorePlus();
+    double minus = spsaCtrl_.currentScoreMinus();
+    double draws = spsaCtrl_.currentDraws();
 
-    lblProgress_.set_text("Games: " + std::to_string(done) + "/" + std::to_string(total)
-                          + "  Slots: " + std::to_string(active) + " active");
+    std::string pLabel = (spsaCtrl_.state() == controller::SPSAState::Validating) ? "T" : "+";
+    std::string mLabel = (spsaCtrl_.state() == controller::SPSAState::Validating) ? "B" : "-";
+
+    std::ostringstream progressText;
+    progressText << "Games: " << done << "/" << total 
+                 << "  [ " << pLabel << ":" << plus << "  " << mLabel << ":" << minus << "  D:" << draws << " ]"
+                 << "  Slots: " << active << " active";
+                 
+    lblProgress_.set_text(progressText.str());
     if (total > 0)
         progressBar_.set_fraction(static_cast<double>(done) / total);
     else

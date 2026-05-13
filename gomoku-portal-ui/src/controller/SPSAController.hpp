@@ -162,6 +162,9 @@ public:
     [[nodiscard]] int gamesCompleted() const { return gamesCompleted_; }
     [[nodiscard]] int gamesTotalCurrent() const { return gamesTotalCurrent_; }
     [[nodiscard]] int activeSlotsCount() const;
+    [[nodiscard]] double currentScorePlus() const { return matchScorePlus_; }
+    [[nodiscard]] double currentScoreMinus() const { return matchScoreMinus_; }
+    [[nodiscard]] double currentDraws() const { return matchDraws_; }
 
     // -----------------------------------------------------------------------
     // Spectate
