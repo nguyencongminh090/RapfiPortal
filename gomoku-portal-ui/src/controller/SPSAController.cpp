@@ -280,15 +280,21 @@ void SPSAController::dispatchToSlot(int slotId) {
     }
 
     auto entries = opening.toBoardEntries();
+    slot.plusTimeLeftMs = config_.matchTimeMs;
+    slot.minusTimeLeftMs = config_.matchTimeMs;
+
     if (slot.isPlusTurn) {
         slot.engineMinus.loadPositionSilent(entries);
+        if (config_.matchTimeMs > 0) slot.enginePlus.send_raw_if_idle("INFO time_left " + std::to_string(slot.plusTimeLeftMs));
         if (entries.empty()) { slot.enginePlus.loadPositionSilent(entries); slot.enginePlus.requestEngineMove(); }
         else slot.enginePlus.loadPosition(entries);
     } else {
         slot.enginePlus.loadPositionSilent(entries);
+        if (config_.matchTimeMs > 0) slot.engineMinus.send_raw_if_idle("INFO time_left " + std::to_string(slot.minusTimeLeftMs));
         if (entries.empty()) { slot.engineMinus.loadPositionSilent(entries); slot.engineMinus.requestEngineMove(); }
         else slot.engineMinus.loadPosition(entries);
     }
+    slot.turnStartTime = std::chrono::steady_clock::now();
 }
 
 void SPSAController::onSlotMove(int slotId, bool fromPlus, int x, int y) {
@@ -296,6 +302,18 @@ void SPSAController::onSlotMove(int slotId, bool fromPlus, int x, int y) {
     auto& slot = *slots_[slotId];
     if (!slot.busy) return;
     if (fromPlus != slot.isPlusTurn) return;
+
+    if (config_.matchTimeMs > 0) {
+        auto now = std::chrono::steady_clock::now();
+        int elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - slot.turnStartTime).count();
+        if (fromPlus) {
+            slot.plusTimeLeftMs -= elapsedMs;
+            if (slot.plusTimeLeftMs < 0) { endSlotGame(slotId, 2); return; }
+        } else {
+            slot.minusTimeLeftMs -= elapsedMs;
+            if (slot.minusTimeLeftMs < 0) { endSlotGame(slotId, 1); return; }
+        }
+    }
 
     util::Coord mv(x, y);
     if (mv == util::Coord::none()) {
@@ -318,6 +336,12 @@ void SPSAController::onSlotMove(int slotId, bool fromPlus, int x, int y) {
     if (slot.board.isBoardFull()) { endSlotGame(slotId, 0); return; }
 
     slot.isPlusTurn = !slot.isPlusTurn;
+    if (config_.matchTimeMs > 0) {
+        if (slot.isPlusTurn) slot.enginePlus.send_raw_if_idle("INFO time_left " + std::to_string(slot.plusTimeLeftMs));
+        else slot.engineMinus.send_raw_if_idle("INFO time_left " + std::to_string(slot.minusTimeLeftMs));
+    }
+    slot.turnStartTime = std::chrono::steady_clock::now();
+    
     if (slot.isPlusTurn) slot.enginePlus.makeMove(x, y);
     else slot.engineMinus.makeMove(x, y);
 }

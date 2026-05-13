@@ -114,6 +114,9 @@ struct GameSlot {
     bool                       busy = false;
     int                        openingIdx = 0;
     int                        gameInOpening = 0;
+    std::chrono::time_point<std::chrono::steady_clock> turnStartTime;
+    int                        plusTimeLeftMs = 0;
+    int                        minusTimeLeftMs = 0;
 
     // Signal connections for this slot
     std::vector<sigc::connection> connections;
