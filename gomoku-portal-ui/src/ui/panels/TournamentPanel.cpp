@@ -3,6 +3,8 @@
 #include <gtkmm/window.h>
 #include <gtkmm/adjustment.h>
 #include <giomm/file.h>
+#include <sstream>
+#include <iomanip>
 
 namespace ui::panels {
 
@@ -192,11 +194,28 @@ void TournamentPanel::onScoreChanged() {
     
     lblProgress_.set_text("Status: Played " + std::to_string(gPlayed) + " / " + std::to_string(gTotal));
     
-    std::string scoreStr = "<big><b>A: " + std::to_string(tournCtrl_.scoreEngineA()) + 
-                           " | B: " + std::to_string(tournCtrl_.scoreEngineB()) + 
-                           " | Draws: " + std::to_string(tournCtrl_.scoreDraws()) + "</b></big>";
+    auto get_basename = [](const std::string& path) {
+        auto pos = path.find_last_of("/\\");
+        return pos == std::string::npos ? path : path.substr(pos + 1);
+    };
+
+    std::string nameA = pathEngineA_.empty() ? "Engine A" : get_basename(pathEngineA_);
+    std::string nameB = pathEngineB_.empty() ? "Engine B" : get_basename(pathEngineB_);
+
+    int scoreA = tournCtrl_.scoreEngineA();
+    int scoreB = tournCtrl_.scoreEngineB();
+    int scoreD = tournCtrl_.scoreDraws();
+
+    double winrateA = gPlayed > 0 ? (scoreA + scoreD / 2.0) / gPlayed * 100.0 : 0.0;
+
+    std::ostringstream oss;
+    oss << "<span size='large' weight='bold' color='#4a90e2'>" << nameA << "</span>: " << scoreA
+        << "  |  <span size='large' weight='bold' color='#e24a4a'>" << nameB << "</span>: " << scoreB
+        << "  |  <b>Draws:</b> " << scoreD
+        << "\n<span size='medium' weight='bold'>Winrate (A): " << std::fixed << std::setprecision(1) << winrateA << "%</span>";
+
     lblScore_.set_use_markup(true);
-    lblScore_.set_markup(scoreStr);
+    lblScore_.set_markup(oss.str());
 }
 
 } // namespace ui::panels

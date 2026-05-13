@@ -70,6 +70,22 @@ void TournamentController::stopTournament() {
     log("Tournament stopped.");
 }
 
+std::string TournamentController::currentBlackEngineName() const {
+    if (state_ == TournamentState::Idle) return "Engine";
+    bool engineAIsBlack = (currentGameInOpening_ % 2 == 0);
+    std::string path = engineAIsBlack ? config_.engineA_Path : config_.engineB_Path;
+    auto pos = path.find_last_of("/\\");
+    return pos == std::string::npos ? path : path.substr(pos + 1);
+}
+
+std::string TournamentController::currentWhiteEngineName() const {
+    if (state_ == TournamentState::Idle) return "Engine";
+    bool engineAIsBlack = (currentGameInOpening_ % 2 == 0);
+    std::string path = engineAIsBlack ? config_.engineB_Path : config_.engineA_Path;
+    auto pos = path.find_last_of("/\\");
+    return pos == std::string::npos ? path : path.substr(pos + 1);
+}
+
 void TournamentController::startTournament(const TournamentConfig& config) {
     config_ = config;
     openings_ = model::OBFManager::readOpenings(config_.obfPath);

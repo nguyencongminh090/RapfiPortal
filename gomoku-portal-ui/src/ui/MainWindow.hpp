@@ -104,6 +104,9 @@ private:
     widgets::ClockWidget clockWidget_;
     widgets::StatusIndicator statusIndicator_;
     Gtk::Label           engineNameLabel_{"No engine"};
+    Gtk::Label           playerWhiteLabel_{"<span size='large' weight='bold' color='#555555'>White: Human</span>"};
+    Gtk::Label           playerBlackLabel_{"<span size='large' weight='bold' color='#111111'>Black: Human</span>"};
+    Gtk::Box             boardContainer_{Gtk::Orientation::VERTICAL};
 
     // =========================================================================
     // Side Panel
@@ -135,6 +138,8 @@ private:
     void setupSignals();
     void setupShortcuts();
     void startPollingTimer();
+    
+    void updatePlayerLabels();
 
     // =========================================================================
     // Handlers

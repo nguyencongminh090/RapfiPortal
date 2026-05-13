@@ -135,7 +135,19 @@ void MainWindow::setupLayout() {
     boardCanvas_.set_vexpand(true);
     boardArea_.append(boardCanvas_);
 
-    centerPaned_.set_start_child(boardArea_);
+    // Board Container with Player Labels
+    playerWhiteLabel_.set_use_markup(true);
+    playerBlackLabel_.set_use_markup(true);
+    
+    // Add margin to make it look clean
+    playerWhiteLabel_.set_margin(4);
+    playerBlackLabel_.set_margin(4);
+    
+    boardContainer_.append(playerWhiteLabel_);
+    boardContainer_.append(boardArea_);
+    boardContainer_.append(playerBlackLabel_);
+
+    centerPaned_.set_start_child(boardContainer_);
 
     // Side panel notebook
     sideNotebook_.set_size_request(280, -1);
@@ -422,6 +434,33 @@ bool MainWindow::onPollTimer() {
     return true;  // Keep the timer running
 }
 
+void MainWindow::updatePlayerLabels() {
+    std::string blackName = "Human";
+    std::string whiteName = "Human";
+
+    if (tournCtrl_.state() != controller::TournamentState::Idle && tournCtrl_.state() != controller::TournamentState::Finished) {
+        // Tournament mode
+        blackName = tournCtrl_.currentBlackEngineName();
+        whiteName = tournCtrl_.currentWhiteEngineName();
+    } else {
+        // Normal game mode based on combo box
+        int active = comboMode_.get_active_row_number();
+        if (active == 1 || active == 2) {
+            std::string engName = engineNameLabel_.get_text();
+            if (engName.empty() || engName == "No engine") engName = "Engine";
+            
+            if (active == 1) { // Human is Black, Engine is White
+                whiteName = engName;
+            } else if (active == 2) { // Human is White, Engine is Black
+                blackName = engName;
+            }
+        }
+    }
+
+    playerWhiteLabel_.set_markup("<span size='large' weight='bold' color='#555555'>White: " + whiteName + "</span>");
+    playerBlackLabel_.set_markup("<span size='large' weight='bold' color='#111111'>Black: " + blackName + "</span>");
+}
+
 // =============================================================================
 // Toolbar Handlers
 // =============================================================================
@@ -441,6 +480,7 @@ void MainWindow::onModeChanged() {
     } else if (active == 2) {
         gameCtrl_.setGameMode(controller::GameMode::HumanVsEngine, controller::HumanSide::White);
     }
+    updatePlayerLabels();
 }
 
 void MainWindow::onUndo() {
@@ -764,6 +804,7 @@ void MainWindow::onBoardChanged() {
         boardCanvas_.setSetupHover(std::nullopt);
     }
     boardCanvas_.refresh();
+    updatePlayerLabels();
 }
 
 void MainWindow::onEngineStateChanged(engine::EngineState state) {
@@ -799,6 +840,7 @@ void MainWindow::onEngineMessage(const std::string& msg) {
 
 void MainWindow::onEngineName(const std::string& name) {
     engineNameLabel_.set_text(name);
+    updatePlayerLabels();
 }
 
 void MainWindow::onRawComm(bool isSend, const std::string& msg) {

@@ -45,6 +45,9 @@ public:
     [[nodiscard]] int gamesPlayed() const { return currentMatchIndex_; }
     [[nodiscard]] int totalGames() const { return totalMatches_; }
     
+    std::string currentBlackEngineName() const;
+    std::string currentWhiteEngineName() const;
+    
     // Scores
     [[nodiscard]] int scoreEngineA() const { return scoreA_; }
     [[nodiscard]] int scoreEngineB() const { return scoreB_; }
