@@ -993,9 +993,42 @@ moves_loop:
 
         int  distOppo = Pos::distance(move, (ss - 1)->currentMove);
         int  distSelf = Pos::distance(move, (ss - 2)->currentMove);
-        // PORTAL FIX: Khoảng cách vật lý vô nghĩa khi có Portal. 
-        // Nếu bàn cờ có portal, tắt cờ distract để tránh cắt tỉa nhầm đòn phòng thủ/tấn công xuyên cổng.
-        bool distract = board.portalCount() == 0 && distSelf > (Rule == RENJU ? 5 : 4) && distOppo > 4;
+        // [PORTAL: WALL/Portal-aware distract detection]
+        // On portal boards, physical distance is meaningless — disable distract entirely.
+        // On WALL boards without portals, a move is a distraction only if it is far from
+        // recent moves AND there is no WALL cell separating move from the opponent's last move.
+        // A move across a WALL boundary is a genuine cross-region play, NOT a distraction.
+        bool distract = false;
+        if (board.portalCount() == 0) {
+            if (distSelf > (Rule == RENJU ? 5 : 4) && distOppo > 4) {
+                if (board.wallCount() > 0) {
+                    // Quick WALL-crossing check: if a WALL cell lies on or near the segment from
+                    // oppo's last move to this move, do NOT treat it as a distraction.
+                    // Approximation: scan cells at 1/3 and 2/3 along the segment.
+                    Pos oppo_pos = (ss - 1)->currentMove;
+                    if (board.isInBoard(oppo_pos)) {
+                        int ax = oppo_pos.x(), ay = oppo_pos.y();
+                        int bx = move.x(),     by = move.y();
+                        // Check midpoint and quarter-points for WALL cells
+                        auto checkWall = [&](int t_num, int t_den) -> bool {
+                            int cx = ax + (bx - ax) * t_num / t_den;
+                            int cy = ay + (by - ay) * t_num / t_den;
+                            Pos cp(cx, cy);
+                            return cp.isInBoard(board.size(), board.size())
+                                   && board.isWallCell(cp);
+                        };
+                        bool wallCrossing = checkWall(1, 2)  // midpoint
+                                          || checkWall(1, 3)  // 1/3
+                                          || checkWall(2, 3); // 2/3
+                        distract = !wallCrossing;
+                    } else {
+                        distract = true;  // no recent move to check against
+                    }
+                } else {
+                    distract = true;  // standard free board
+                }
+            }
+        }
 
         // Step 12. Pruning at shallow depth
         // Do pruning only when we have non-losing moves, otherwise we may have a false mate.

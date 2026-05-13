@@ -765,6 +765,84 @@ static void test_portal_wall_in_gap()
 }
 
 // -------------------------------------------------------
+// P-COLLINEAR-NO-WIN: [A] X X X X O _ _ [B] — only 4 Xs, no win through portal
+// Portal A=(5,7), B=(13,7), gap = cells 6..12 (7 cells)
+// BLACK at (6,7)(7,7)(8,7)(9,7), WHITE at (10,7)
+// Cell (12,7): looking right through B→A sees X X X X but center is EMPTY,
+// so at most 4 Xs → no F5.
+// -------------------------------------------------------
+static void test_collinear_no_win()
+{
+    std::cout << "\n=== PHASE 2: Collinear no-win — [A] X X X X O _ _ [B] ===\n";
+    Board board(15);
+    board.addPortal(Pos{5, 7}, Pos{13, 7});
+    board.newGame<FREESTYLE>();
+    resetDummies();
+
+    // Place 4 blacks + 1 white inside the gap
+    placeBlackWhite(board, Pos{6, 7});   // BLACK(6,7), WHITE dummy
+    placeBlackWhite(board, Pos{7, 7});   // BLACK(7,7), WHITE dummy
+    placeBlackWhite(board, Pos{8, 7});   // BLACK(8,7), WHITE dummy
+    placeBlackWhite(board, Pos{9, 7});   // BLACK(9,7), WHITE dummy
+    // ply=8 (even) → next move is BLACK.
+    // Place BLACK dummy far away, then WHITE at (10,7)
+    board.move<FREESTYLE>(Pos{0, 0});    // BLACK dummy (ply 8→9)
+    board.move<FREESTYLE>(Pos{10, 7});   // WHITE at (10,7) (ply 9→10)
+
+    // Check (11,7): it's empty, between white and empty
+    // [A] X(6) X(7) X(8) X(9) O(10) _(11) _(12) [B]
+    // Playing at (11,7) gives X. Going left hits O at (10,7). Going right hits _(12,7).
+    // It does not connect to the 4 Xs because it's blocked by O.
+    Pos check{11, 7};
+    printCell(board, check);
+    Pattern  p  = board.cell(check).pattern(BLACK, 0);
+    Pattern4 p4 = board.cell(check).pattern4[BLACK];
+    std::cout << "  (11,7) H=" << patternName(p) << " p4=" << int(p4) << "\n";
+    CHECK(p4 < A_FIVE,
+          "Collinear no-win: (11,7) NOT A_FIVE — playing here doesn't connect 5 Xs");
+}
+
+// -------------------------------------------------------
+// P-COLLINEAR-WIN: [A] X X X X O _ X [B] — 5 Xs through portal = win!
+// Portal A=(5,7), B=(13,7), gap = cells 6..12 (7 cells)
+// BLACK at (6,7)(7,7)(8,7)(9,7)(12,7), WHITE at (10,7), EMPTY at (11,7)
+// Cell (12,7): looking right through B→A sees (6,7)X (7,7)X (8,7)X (9,7)X
+// + center (12,7)X = 5 consecutive Xs → F5!
+// -------------------------------------------------------
+static void test_collinear_win()
+{
+    std::cout << "\n=== PHASE 2: Collinear win — [A] X X X X O _ X [B] ===\n";
+    Board board(15);
+    board.addPortal(Pos{5, 7}, Pos{13, 7});
+    board.newGame<FREESTYLE>();
+    resetDummies();
+
+    // Place 5 blacks + 1 white
+    placeBlackWhite(board, Pos{6, 7});   // BLACK(6,7), WHITE dummy
+    placeBlackWhite(board, Pos{7, 7});   // BLACK(7,7), WHITE dummy
+    placeBlackWhite(board, Pos{8, 7});   // BLACK(8,7), WHITE dummy
+    placeBlackWhite(board, Pos{9, 7});   // BLACK(9,7), WHITE dummy
+    placeBlackWhite(board, Pos{12, 7});  // BLACK(12,7), WHITE dummy
+    // ply=10 (even) → next move is BLACK.
+    // Place BLACK dummy far away, then WHITE at (10,7)
+    board.move<FREESTYLE>(Pos{0, 0});    // BLACK dummy (ply 10→11)
+    board.move<FREESTYLE>(Pos{10, 7});   // WHITE at (10,7) (ply 11→12)
+
+    // [A=(5,7)] X(6) X(7) X(8) X(9) O(10) _(11) X(12) [B=(13,7)]
+    // From (12,7) going right → portal B → teleport to A → (6,7)X (7,7)X (8,7)X (9,7)X
+    // = center(12,7)X + 4 Xs through portal = 5 in a row → F5!
+    Pos check{12, 7};
+    printCell(board, check);
+    Pattern  p  = board.cell(check).pattern(BLACK, 0);
+    Pattern4 p4 = board.cell(check).pattern4[BLACK];
+    std::cout << "  (12,7) H=" << patternName(p) << " p4=" << int(p4) << "\n";
+    CHECK(p == F5,
+          "Collinear win: (12,7) H = F5 (5 Xs through collinear portal)");
+    CHECK(p4 == A_FIVE,
+          "Collinear win: p4 = A_FIVE");
+}
+
+// -------------------------------------------------------
 // P-Pattern2x: Portal-spanning position, check both colors get correct Pattern2x
 // -------------------------------------------------------
 static void test_portal_pattern2x()
@@ -839,6 +917,8 @@ int main()
     test_portal_b4();
     test_portal_f4();
     test_portal_wall_in_gap();
+    test_collinear_no_win();
+    test_collinear_win();
     test_portal_pattern2x();
 
     std::cout << "\n================================================================\n";

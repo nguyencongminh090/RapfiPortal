@@ -489,7 +489,14 @@ void BoardRenderer::drawAnalysisOverlays(const Cairo::RefPtr<Cairo::Context>& cr
         
         // Draw Winrate percentage text centered
         int percent = static_cast<int>(std::round(winrate * 100.0));
-        std::string winTxt = std::to_string(percent) + "%";
+        std::string winTxt;
+        if (mv.score >= 20000) {
+            winTxt = "+M";
+        } else if (mv.score <= -20000) {
+            winTxt = "-M";
+        } else {
+            winTxt = std::to_string(percent) + "%";
+        }
         
         cr->select_font_face("Sans",
                              Cairo::ToyFontFace::Slant::NORMAL,

@@ -309,6 +309,24 @@ public:
     /// PORTAL: Get number of active portal pairs.
     int portalCount() const { return numPortals; }
 
+    /// PORTAL: Get number of static WALL cells placed via addWall().
+    int wallCount() const { return numWalls; }
+
+    /// PORTAL: Return true if any of the 8 neighbors of pos is a WALL cell.
+    /// Used for move ordering and opening-zone detection.
+    [[nodiscard]] bool isAdjacentToWall(Pos pos) const
+    {
+        int x = pos.x(), y = pos.y();
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+                Pos nb = Pos(x + dx, y + dy);
+                if (nb.isInBoard(boardSize, boardSize) && wallMask[nb])
+                    return true;
+            }
+        return false;
+    }
+
     /// PORTAL: Check if a cell is portal-affected in a specific direction (debug/test)
     [[nodiscard]] bool isPortalAffected(Pos pos, int dir) const
     {
@@ -446,6 +464,9 @@ private:
     /// PORTAL: Portal pair definitions (set by addPortal, frozen at newGame).
     PortalPair portals[MAX_PORTAL_PAIRS];
     int        numPortals = 0;
+
+    /// PORTAL: Number of static WALL cells added via addWall().
+    int numWalls = 0;
 
     /// PORTAL: Per-cell partner lookup.
     ///
@@ -640,8 +661,12 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
         if (int(cur) < 0 || int(cur) >= FULL_BOARD_CELL_COUNT)
             break;
 
-        // Loop detection: if cur was already placed anywhere in windowCells[L..i-1]
-        // (right side or center), we have a ring — treat as closed (WALL).
+        // Loop detection: same-direction only — check windowCells[L..i-1]
+        // (center + right window so far). We do NOT check the left window here
+        // because cross-window duplicates are valid for collinear portal lines:
+        // e.g. [A] X X X X O _ X [B] → the 4 Xs after A appear in both the
+        // left walk (physically) and right walk (through portal), forming a
+        // legitimate 5-in-a-row.
         bool dup = false;
         for (int j = L; j < i; j++) {
             if (windowCells[j] != UNSET && windowCells[j] == cur) {
@@ -651,6 +676,53 @@ inline uint64_t Board::buildPortalKey(Pos pos, int dir) const
         if (dup) break;
 
         windowCells[i] = cur;
+    }
+
+    // --- PORTAL: Collinear loop size check ---
+    //
+    // When the virtual line passes through a collinear portal, cells can appear
+    // in BOTH halves of the window (the same physical cells are reachable from
+    // both directions). This is correct for pattern detection UNLESS the loop
+    // contains fewer than 5 unique cells — in that case, no 5-in-a-row is
+    // possible regardless of stone placement, so force DEAD.
+    //
+    // Example: gap of 4 cells between collinear portals → 4 unique cells
+    // appear as 7+ in the window → false F1. After this check → DEAD.
+    // Gap of 7+ cells → 7 unique → patterns are valid → F5 works.
+    {
+        // Count unique non-UNSET cells (including center)
+        int uniqueCount = 0;
+        Pos seen[WindowLen];
+        for (int i = 0; i < WindowLen; i++) {
+            if (windowCells[i] == UNSET) continue;
+            bool found = false;
+            for (int k = 0; k < uniqueCount; k++) {
+                if (seen[k] == windowCells[i]) { found = true; break; }
+            }
+            if (!found) seen[uniqueCount++] = windowCells[i];
+        }
+
+        // If fewer than 5 unique cells in the window, no 5-in-a-row is possible.
+        // Clear all slots to UNSET (→ WALL) except center, forcing DEAD pattern.
+        if (uniqueCount < 5 && uniqueCount < WindowLen) {
+            // Check if there ARE duplicates (if no dups, this is just a short line
+            // near the board edge, not a loop — don't force DEAD)
+            bool hasDuplicates = false;
+            for (int i = 0; i < WindowLen && !hasDuplicates; i++) {
+                if (windowCells[i] == UNSET) continue;
+                for (int j = i + 1; j < WindowLen; j++) {
+                    if (windowCells[j] == windowCells[i]) {
+                        hasDuplicates = true;
+                        break;
+                    }
+                }
+            }
+            if (hasDuplicates) {
+                for (int i = 0; i < WindowLen; i++) {
+                    if (i != L) windowCells[i] = UNSET;
+                }
+            }
+        }
     }
 
     // --- Build 64-bit key from logical window ---

@@ -88,6 +88,234 @@ inline int classicalEvalMargin(Value bound)
 
 }  // namespace
 
+namespace {
+
+// =============================================================================
+// PORTAL: WALL Board Strategic Correction
+// =============================================================================
+
+/// Flood-fill to find the size (in cells) of the connected region around `start`
+/// bounded by WALL cells, portal cells, and board edges. Uses the scratch `visited` array.
+/// Returns the number of empty+stone cells reachable (WALL cells themselves not counted).
+static int regionSize(const Board &board,
+                      Pos          start,
+                      bool (&visited)[FULL_BOARD_CELL_COUNT])
+{
+    // BFS with a small inline stack (no heap allocation in search-hot code)
+    Pos   stack[FULL_BOARD_CELL_COUNT];
+    int   top  = 0;
+    int   size = 0;
+    int   bs   = board.size();
+
+    stack[top++] = start;
+    visited[int(start)] = true;
+    while (top > 0) {
+        Pos cur = stack[--top];
+        size++;
+        // Check 4 orthogonal neighbors
+        static constexpr int DX[4] = {0, 0, 1, -1};
+        static constexpr int DY[4] = {1, -1, 0, 0};
+        for (int d = 0; d < 4; d++) {
+            Pos nb = Pos(cur.x() + DX[d], cur.y() + DY[d]);
+            if (!nb.isInBoard(bs, bs)) continue;
+            if (visited[int(nb)]) continue;
+            // WALL cells and portal cells are region boundaries
+            if (board.cell(nb).piece == WALL) continue;
+            visited[int(nb)] = true;
+            stack[top++] = nb;
+        }
+    }
+    return size;
+}
+
+/// Returns true if a region of the given size can possibly contain a 5-in-a-row.
+/// A region is "dead" if it is < 5 cells in every straight-line dimension.
+/// Approximation: a region with fewer than 5 cells total cannot contain a win.
+inline bool regionCanWin(int regionSz)
+{
+    return regionSz >= 5;
+}
+
+/// [PORTAL: WALL CORRECTION A] Dead Pocket Penalty
+/// Flood-fill all regions. Regions with < 5 cells are dead pockets.
+/// Count stones of each color trapped inside and return (selfDead, oppoDead).
+static std::pair<int,int> countDeadPocketStones(const Board &board, Color self)
+{
+    static thread_local bool visited[FULL_BOARD_CELL_COUNT];
+    std::fill_n(visited, board.cellCount(), false);
+
+    int bs = board.size();
+    int selfDead = 0, oppoDead = 0;
+
+    for (int i = 0; i < board.cellCount(); i++) {
+        Pos pos(i);
+        if (visited[i]) continue;
+        if (board.cell(pos).piece == WALL) { visited[i] = true; continue; }
+
+        // BFS to collect region cells and count stones
+        Pos   stack[FULL_BOARD_CELL_COUNT];
+        int   top   = 0;
+        int   sz    = 0;
+        int   selfN = 0, oppoN = 0;
+
+        stack[top++]  = pos;
+        visited[i]    = true;
+        while (top > 0) {
+            Pos cur = stack[--top];
+            sz++;
+            Color piece = board.cell(cur).piece;
+            if (piece == self)        selfN++;
+            else if (piece == ~self)  oppoN++;
+
+            static constexpr int DX[4] = {0, 0, 1, -1};
+            static constexpr int DY[4] = {1, -1, 0, 0};
+            for (int d = 0; d < 4; d++) {
+                Pos nb = Pos(cur.x() + DX[d], cur.y() + DY[d]);
+                if (!nb.isInBoard(bs, bs)) continue;
+                if (visited[int(nb)]) continue;
+                if (board.cell(nb).piece == WALL) continue;
+                visited[int(nb)] = true;
+                stack[top++] = nb;
+            }
+        }
+
+        if (!regionCanWin(sz)) {
+            // All stones in this dead pocket are useless
+            selfDead += selfN;
+            oppoDead += oppoN;
+        }
+    }
+    return {selfDead, oppoDead};
+}
+
+/// [PORTAL: WALL CORRECTION B] Corridor Squeeze Bonus
+/// Scan each row/column/diagonal for segments bounded by WALL/edge with exactly 5 playable cells.
+/// If `side` has a B4 (open four) pattern in such a segment, it is unstoppable.
+/// Returns the count of such unstoppable B4s for `side`.
+static int countCorridorFours(const Board &board, Color side)
+{
+    int count = 0;
+    int bs    = board.size();
+
+    // Directions: H, V, diagonal \, diagonal /
+    static constexpr int DX[4] = {1, 0, 1,  1};
+    static constexpr int DY[4] = {0, 1, 1, -1};
+
+    for (int dir = 0; dir < 4; dir++) {
+        // Enumerate all line starts (cells where the line leaves the board if going backward)
+        for (int r = 0; r < bs; r++) {
+            for (int c = 0; c < bs; c++) {
+                // Only start at line origins to avoid double-counting
+                int pr = r - DX[dir], pc = c - DY[dir];
+                if (Pos(pr, pc).isInBoard(bs, bs)
+                    && board.cell(Pos(pr, pc)).piece != WALL)
+                    continue;  // not a line start
+
+                // Walk forward, collecting segments between WALLs/edges
+                int segLen = 0;
+                bool hasBFour = false;
+                int x = r, y = c;
+                while (Pos(x, y).isInBoard(bs, bs)) {
+                    Pos cur(x, y);
+                    if (board.cell(cur).piece == WALL) {
+                        // Segment ended at WALL — check if exactly 5
+                        if (segLen == 5 && hasBFour)
+                            count++;
+                        segLen  = 0;
+                        hasBFour = false;
+                    } else {
+                        segLen++;
+                        // B_FLEX4 or higher = open four that wins in a 5-cell corridor
+                        if (board.cell(cur).pattern4[side] >= B_FLEX4)
+                            hasBFour = true;
+                    }
+                    x += DX[dir];
+                    y += DY[dir];
+                }
+                // Segment ended at board edge
+                if (segLen == 5 && hasBFour)
+                    count++;
+            }
+        }
+    }
+    return count;
+}
+
+/// [PORTAL: WALL CORRECTION C] Isolated Threat Discount
+/// Count threats (H_FLEX3 and above) for `side` that are in regions smaller
+/// than regionThreshold — they cannot grow into cross-region threats.
+static int countIsolatedThreats(const Board &board, Color side, int regionThreshold = 10)
+{
+    static thread_local bool visited[FULL_BOARD_CELL_COUNT];
+    std::fill_n(visited, board.cellCount(), false);
+
+    int bs = board.size();
+    int isolated = 0;
+
+    for (int i = 0; i < board.cellCount(); i++) {
+        Pos pos(i);
+        if (visited[i]) continue;
+        if (board.cell(pos).piece == WALL) { visited[i] = true; continue; }
+
+        Pos   stack[FULL_BOARD_CELL_COUNT];
+        int   top       = 0;
+        int   sz        = 0;
+        int   threatCnt = 0;
+
+        stack[top++] = pos;
+        visited[i]   = true;
+        while (top > 0) {
+            Pos cur = stack[--top];
+            sz++;
+            if (board.cell(cur).pattern4[side] >= H_FLEX3)
+                threatCnt++;
+
+            static constexpr int DX[4] = {0, 0, 1, -1};
+            static constexpr int DY[4] = {1, -1, 0, 0};
+            for (int d = 0; d < 4; d++) {
+                Pos nb = Pos(cur.x() + DX[d], cur.y() + DY[d]);
+                if (!nb.isInBoard(bs, bs)) continue;
+                if (visited[int(nb)]) continue;
+                if (board.cell(nb).piece == WALL) continue;
+                visited[int(nb)] = true;
+                stack[top++] = nb;
+            }
+        }
+
+        if (sz < regionThreshold)
+            isolated += threatCnt;
+    }
+    return isolated;
+}
+
+/// [PORTAL: WALL STRATEGIC CORRECTION]
+/// Compute a correction value to add to classical eval when WALL cells exist.
+/// Positive = good for `self`, negative = bad for `self`.
+/// Clamped to ±800 to avoid dominating the NNUE signal.
+template <Rule R>
+Value computeWallStrategicCorrection(const Board &board, Color self)
+{
+    int correction = 0;
+
+    // [A] Dead pocket penalty — stones trapped in sub-5 dead regions are useless
+    auto [selfDead, oppoDead] = countDeadPocketStones(board, self);
+    correction += (oppoDead - selfDead) * Config::WALL_DEAD_POCKET_PENALTY;
+
+    // [B] Corridor squeeze bonus — B4 in 5-cell corridor is unstoppable
+    int selfCorridors = countCorridorFours(board, self);
+    int oppoCorridors = countCorridorFours(board, ~self);
+    correction += (selfCorridors - oppoCorridors) * Config::WALL_CORRIDOR_FOUR_BONUS;
+
+    // [C] Isolated threat discount — B3/B4 behind small walled regions cannot grow
+    int selfIso = countIsolatedThreats(board, self);
+    int oppoIso = countIsolatedThreats(board, ~self);
+    correction += (oppoIso - selfIso) * Config::WALL_ISOLATED_THREAT_PENALTY;
+
+    return Value(std::clamp(correction, -800, 800));
+}
+
+}  // namespace (WALL correction)
+
 namespace Evaluation {
 
 /// Calculates the final evaluation of a board.
@@ -104,6 +332,14 @@ Value evaluate(const Board &board, Value alpha, Value beta)
     Value basicEval  = (evaluateBasic(st0, self) + evaluateBasic(st1, self)) / 2;
     Value threatEval = evaluateThreat<R>(st0, self);
     Value eval       = std::clamp(basicEval + threatEval, VALUE_EVAL_MIN, VALUE_EVAL_MAX);
+
+    // [PORTAL: WALL CORRECTION] Apply WALL-specific strategic bonus/penalty when
+    // static WALL cells exist on the board. This compensates for the NNUE being
+    // trained on free-board data and not understanding WALL geometry.
+    if (board.wallCount() > 0) {
+        Value wallCorr = computeWallStrategicCorrection<R>(board, self);
+        eval = std::clamp(eval + wallCorr, VALUE_EVAL_MIN, VALUE_EVAL_MAX);
+    }
 
     if (board.evaluator()) {
         // Use evaluator eval if classical eval are in alpha-beta window margin

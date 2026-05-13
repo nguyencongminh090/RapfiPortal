@@ -1,0 +1,146 @@
+================================================================
+  Portal Gomoku Engine — Pattern Detection Test Suite
+================================================================
+Config loaded.
+
+--- PHASE 1: Normal Pattern Tests ---
+
+=== PHASE 1: DEAD — WALLs within ±2 ===
+  (5,7)  H=DEAD V=F1 /=F1 \=F1  p4[B]=NONE p4[W]=NONE
+  PASS: DEAD: WALLs at ±2 → H pattern = DEAD
+  PASS: DEAD: symmetric for WHITE
+
+=== PHASE 1: F5 — 4 blacks adjacent, playing completes 5 ===
+  (8,7)  H=F5 V=F1 /=F1 \=F1  p4[B]=A_FIVE p4[W]=NONE
+  PASS: F5: 4 blacks on left → H pattern = F5
+  PASS: F5: pattern4[BLACK] = A_FIVE
+  (3,7)  H=F5 V=F1 /=F1 \=F1  p4[B]=A_FIVE p4[W]=NONE
+  PASS: F5: 4 blacks on right → H pattern = F5 (opposite end)
+
+=== PHASE 1: B4 — WALL+3 blacks, playing makes blocked 4 ===
+  (7,7)  H=B4 V=F1 /=F1 \=F1  p4[B]=E_BLOCK4 p4[W]=NONE
+  PASS: B4: WALL at pos-4, 3 blacks pos-3..-1 → H pattern = B4
+  PASS: B4: pattern4 >= E_BLOCK4
+
+=== PHASE 1: F4 — 3 blacks, both ends open → playing makes open 4 ===
+  (8,7)  H=F4 V=F1 /=F1 \=F1  p4[B]=B_FLEX4 p4[W]=NONE
+  PASS: F4: check (8,7) — 3 blacks on left, open both ends → H=F4
+  PASS: F4: pattern4[BLACK] = B_FLEX4
+  (4,7)  H=F4 V=F1 /=F1 \=F1  p4[B]=B_FLEX4 p4[W]=NONE
+  PASS: F4: check (4,7) — 3 blacks on right, open both ends → H=F4
+
+=== PHASE 1: B3 — WALL+2 blacks, playing makes blocked 3 ===
+  (6,7)  H=B3 V=F1 /=F1 \=F1  p4[B]=K_BLOCK3 p4[W]=NONE
+  PASS: B3: WALL+2 blacks → H pattern = B3
+  PASS: B3: pattern4 in {K_BLOCK3, I_BLOCK3_PLUS, G_FLEX3_PLUS}
+
+=== PHASE 1: F3S — 2 blacks, open both sides → 2 ways to F4 ===
+  (7,7)  H=F3S V=F1 /=F1 \=F1  p4[B]=H_FLEX3 p4[W]=NONE
+  PASS: F3S: 2 blacks adjacent, open ends → H=F3S
+  PASS: F3S: pattern4 contains flex3 component
+
+=== PHASE 1: F3 — WALL limits one side → 1 way to F4 ===
+  (7,7)  H=F3 V=F1 /=F1 \=F1  p4[B]=H_FLEX3 p4[W]=NONE
+  PASS: F3: WALL at left-2, 2 blacks → H=F3
+  PASS: F3: pattern4 >= H_FLEX3
+
+=== PHASE 1: B2 — WALL+1 black, playing makes blocked 2 ===
+  (5,7)  H=B2 V=F1 /=F1 \=F1  p4[B]=NONE p4[W]=NONE
+  PASS: B2: WALL+1 black → H pattern = B2
+
+=== PHASE 1: F2/F2A/F2B — open two variants ===
+  (7,7)  H=F2B V=F1 /=F1 \=F1  p4[B]=L_FLEX2 p4[W]=NONE
+  PASS: F2 variant (adjacent stone): H=F2|F2A|F2B
+  (adjacent stone at 6,7) → H=F2B
+  (7,7)  H=F2A V=F1 /=F1 \=F1  p4[B]=L_FLEX2 p4[W]=NONE
+  PASS: F2 variant (stone at gap-1): H=F2|F2A|F2B
+  (stone at 5,7, gap at 6,7) → H=F2A
+  (7,7)  H=F2 V=F1 /=F1 \=F1  p4[B]=L_FLEX2 p4[W]=NONE
+  PASS: F2 variant (stone at gap-2): H in [F1..F2B]
+  (stone at 4,7, gap at 5,6) → H=F2
+
+=== PHASE 1: F1/B1 — single stone ===
+  (8,7)  H=F2A V=F1 /=F1 \=F1  p4[B]=L_FLEX2 p4[W]=NONE
+  PASS: F1 region: single black 2 cells away, open → H=F1 or F2-variant
+  H=F2A
+  (2,7)  H=DEAD V=F1 /=F1 \=F1  p4[B]=NONE p4[W]=NONE
+  PASS: B1/B2/DEAD: tightly bracketed single black → H in {DEAD,B1,B2}
+  H=DEAD (DEAD expected: run space < 5)
+
+=== PHASE 1: OL — overline (STANDARD rule only) ===
+  [Resetting for OL test]
+  B stones at x=3,4,5,6 and x=8,9,10. Check (7,7) H:
+  (7,7)  H=OL V=F1 /=F1 \=F1  p4[B]=NONE p4[W]=NONE
+  (7,7) H pattern for BLACK = OL
+  PASS: OL: surrounded by 3+3 blacks → STANDARD H=OL
+  FREESTYLE same setup → H=F5
+  PASS: FREESTYLE: same overline setup → H=F5 (overline is win)
+
+=== PHASE 1: Pattern2x — both colors in one lookup ===
+  (8,7)  H=F5 V=F1 /=F1 \=F1  p4[B]=A_FIVE p4[W]=NONE
+  Pattern2x H: patBlack=F5 patWhite=B2
+  pattern(BLACK,H)=F5 pattern(WHITE,H)=B2
+  PASS: Pattern2x: operator[] == pattern() for BLACK
+  PASS: Pattern2x: operator[] == pattern() for WHITE
+  PASS: Pattern2x: patBlack > patWhite (4 blacks left vs 1 white right)
+
+=== PHASE 1: Multi-direction — H≠V independence ===
+  (7,7)  H=F1 V=F4 /=F1 \=F1  p4[B]=B_FLEX4 p4[W]=NONE
+  H=F1 V=F4
+  PASS: Multi-dir: V should be B3 or higher (3 stones above)
+  PASS: Multi-dir: H and V patterns different (stones only on V)
+
+--- PHASE 2: Portal Pattern Tests ---
+
+=== PHASE 2: Portal H — F5 spanning horizontal portal ===
+  (12,7)  H=F5 V=F1 /=F1 \=F1  p4[B]=A_FIVE p4[W]=NONE
+  Portal H=(5,7)↔(10,7), blacks at (2,3,4,11,7). Check (12,7):
+  PASS: Portal H-F5: (12,7) H = F5 (virtual 5 across portal)
+  PASS: Portal H-F5: p4[BLACK] = A_FIVE
+  PASS: Portal H-F5: p4Count(BLACK, A_FIVE) >= 1
+
+=== PHASE 2: Portal V — F5 spanning vertical portal ===
+  (7,11)  H=F1 V=F5 /=F1 \=F1  p4[B]=A_FIVE p4[W]=NONE
+  PASS: Portal V-F5: (7,11) V = F5 (virtual 5 across vertical portal)
+  PASS: Portal V-F5: p4[BLACK] = A_FIVE
+
+=== PHASE 2: Portal H — B4 (WALL on virtual left) ===
+  (11,7)  H=B4 V=F1 /=F1 \=F1  p4[B]=E_BLOCK4 p4[W]=NONE
+  Portal H B4 check (11,7) H=B4
+  PASS: Portal B4: (11,7) H in {B4,F4,F5} (WALL blocks virtual left end)
+  PASS: Portal B4: p4[BLACK] >= E_BLOCK4
+
+=== PHASE 2: Portal H — F4 (open 4 across portal) ===
+  (12,7)  H=F4 V=F1 /=F1 \=F1  p4[B]=B_FLEX4 p4[W]=NONE
+  Portal H F4 check (12,7) H=F4
+  PASS: Portal F4: (12,7) H in {F4, F5} (3 portal-virtual blacks, open)
+  (2,7)  H=F4 V=F1 /=F1 \=F1  p4[B]=B_FLEX4 p4[W]=NONE
+  Portal H F4 check (2,7) H=F4
+  PASS: Portal F4: (2,7) H in {F4, F5, B4}
+
+=== PHASE 2: Collinear portal — gap cell sees WALL (no teleport) ===
+  (7,7)  H=DEAD V=F1 /=F1 \=F1  p4[B]=NONE p4[W]=NONE
+  Gap cell (7,7) between collinear portals → H=DEAD
+  PASS: Collinear gap: (7,7) H <= B1 (portal acts as WALL, no teleport in same dir)
+
+=== PHASE 2: Collinear no-win — [A] X X X X O _ _ [B] ===
+  (11,7)  H=B4 V=F1 /=F1 \=F1  p4[B]=E_BLOCK4 p4[W]=NONE
+  (11,7) H=B4 p4=9
+  PASS: Collinear no-win: (11,7) NOT A_FIVE — playing here doesn't connect 5 Xs
+
+=== PHASE 2: Collinear win — [A] X X X X O _ X [B] ===
+  (12,7) piece=BLACK
+  (12,7) H=F5 p4=13
+  PASS: Collinear win: (12,7) H = F5 (5 Xs through collinear portal)
+  PASS: Collinear win: p4 = A_FIVE
+
+=== PHASE 2: Portal Pattern2x — both colors through portal ===
+  (4,7)  H=B2 V=F1 /=F1 \=F1  p4[B]=NONE p4[W]=L_FLEX2
+  (4,7) Pattern2x H: patBlack=B2 patWhite=F2
+  PASS: Portal Pattern2x: operator[] == pattern() for BLACK
+  PASS: Portal Pattern2x: operator[] == pattern() for WHITE
+  [WHITE stone at (11,7) visible through portal at (5,7)↔(10,7)]
+
+================================================================
+  RESULTS: 44 passed, 0 failed
+================================================================

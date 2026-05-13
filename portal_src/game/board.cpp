@@ -180,6 +180,7 @@ void Board::addWall(Pos pos)
 {
     assert(pos.isInBoard(boardSize, boardSize));
     wallMask[pos] = true;
+    numWalls++;
 }
 
 /// PORTAL: Add a portal pair.
@@ -199,6 +200,7 @@ void Board::addPortal(Pos a, Pos b)
 void Board::clearPortals()
 {
     numPortals = 0;
+    numWalls   = 0;
     std::fill_n(portalPartner, FULL_BOARD_CELL_COUNT, Pos::PASS);
     std::memset(portalAffected, 0, sizeof(portalAffected));
     std::memset(wallMask, 0, sizeof(wallMask));
@@ -267,14 +269,13 @@ void Board::initPortals()
     // will use portalStep during buildPortalKey anyway — the mask just needs to be
     // conservative (may slightly over-mark, never under-mark).
     //
-    // Actually, we need to think about this more carefully:
-    // If cell C is near portal A, and C's window walks through A→B, and B is near
-    // another portal D, the window might also pass through D. The cell IS affected
-    // by both portals. But portalAffected only needs to be true/false — and
     // buildPortalKey handles ALL portals naturally via portalStep chaining.
     // So we just need to mark any cell within L physical steps of any portal.
     //
-    // BUT: gap cells (between collinear portals in that direction) must NOT be marked.
+    // NOTE: Gap cells (between collinear portals) ARE marked portalAffected.
+    // Teleportation through collinear portals is valid — buildPortalKey's global
+    // duplicate detection prevents counting the same physical cell twice in the
+    // window, which correctly limits the visible line length.
     for (int i = 0; i < numPortals; i++) {
         for (int dir = 0; dir < 4; dir++) {
             Direction step = DIRECTION[dir];

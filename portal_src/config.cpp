@@ -114,6 +114,23 @@ int NumIterationAfterMate = 6;
 int NumIterationAfterSingularRoot = 4;
 /// Max depth to search.
 int MaxSearchDepth = 99;
+
+// -------------------------------------------------
+// PORTAL: WALL/Portal classical eval & search constants (default values)
+
+/// Penalty per stone trapped in a region too small to win.
+int WALL_DEAD_POCKET_PENALTY = -60;
+/// Bonus per B4 threat in a 5-cell corridor bounded by WALLs/edges.
+int WALL_CORRIDOR_FOUR_BONUS = 450;
+/// Penalty per H_FLEX3+ threat isolated in a small walled-off region.
+int WALL_ISOLATED_THREAT_PENALTY = -30;
+/// Bonus for WALL-adjacent moves during move ordering.
+int WALL_ADJACENCY_MOVE_BONUS = 80;
+/// Bonus for portal-adjacent moves during move ordering.
+int PORTAL_ADJACENCY_MOVE_BONUS = 60;
+/// Bonus for first move in the 8-cell zone around any WALL.
+int WALL_FIRST_MOVE_BONUS = 250;
+
 /// Expand node (evaluating policy) when first evaluate a node (evaluating value).
 bool ExpandWhenFirstEvaluate = false;
 /// The maximum number of visits per playout in MCTS search.

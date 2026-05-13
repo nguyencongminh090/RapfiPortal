@@ -7,7 +7,17 @@
 
 namespace ui::panels {
 
-LogPanel::LogPanel(bool dualColumn) : Gtk::Box(Gtk::Orientation::HORIZONTAL), dualColumn_(dualColumn) {
+LogPanel::LogPanel(bool dualColumn) : Gtk::Box(Gtk::Orientation::VERTICAL), dualColumn_(dualColumn) {
+    // Setup Header
+    btnClear_.signal_clicked().connect(sigc::mem_fun(*this, &LogPanel::clearLogs));
+    btnClear_.set_margin(5);
+    headerBox_.append(btnClear_);
+    
+    // Setup Expander
+    expander_.set_label("Engine Logs");
+    expander_.set_expanded(true);
+    expander_.set_expand(true); // Take remaining space vertically
+    
     // Setup TextView
     textView_.set_editable(false);
     textView_.set_cursor_visible(false);
@@ -36,10 +46,17 @@ LogPanel::LogPanel(bool dualColumn) : Gtk::Box(Gtk::Orientation::HORIZONTAL), du
         
         prefixScrolledWindow_.set_size_request(85, -1);
         
-        append(prefixScrolledWindow_);
+        contentBox_.append(prefixScrolledWindow_);
     }
 
-    append(scrolledWindow_);
+    contentBox_.append(scrolledWindow_);
+    expander_.set_child(contentBox_);
+    
+    append(headerBox_);
+    append(expander_);
+    
+    // Setup Dispatcher
+    dispatcher_.connect(sigc::mem_fun(*this, &LogPanel::onDispatcherEmit));
 }
 
 void LogPanel::appendLog(const std::string& msg) {
@@ -47,17 +64,32 @@ void LogPanel::appendLog(const std::string& msg) {
 }
 
 void LogPanel::appendLog(const std::string& prefix, const std::string& msg) {
-    if (!textBuffer_) return;
+    {
+        std::lock_guard<std::mutex> lock(queueMutex_);
+        pendingLogs_.emplace_back(prefix, msg);
+    }
+    dispatcher_.emit();
+}
 
-    if (dualColumn_ && prefixTextBuffer_) {
-        auto pIter = prefixTextBuffer_->end();
-        prefixTextBuffer_->insert(pIter, prefix + "\n");
+void LogPanel::onDispatcherEmit() {
+    std::vector<std::pair<std::string, std::string>> logs;
+    {
+        std::lock_guard<std::mutex> lock(queueMutex_);
+        logs = std::move(pendingLogs_);
     }
 
-    auto iter = textBuffer_->end();
-    textBuffer_->insert(iter, msg + "\n");
+    if (!textBuffer_ || logs.empty()) return;
 
-    // Auto-scroll to bottom using a persistent mark (avoids leaking anonymous marks)
+    for (const auto& [prefix, msg] : logs) {
+        if (dualColumn_ && prefixTextBuffer_) {
+            auto pIter = prefixTextBuffer_->end();
+            prefixTextBuffer_->insert(pIter, prefix + "\n");
+        }
+
+        auto iter = textBuffer_->end();
+        textBuffer_->insert(iter, msg + "\n");
+    }
+
     auto endMark = textBuffer_->get_mark("scroll-end");
     if (!endMark) {
         endMark = textBuffer_->create_mark("scroll-end", textBuffer_->end());

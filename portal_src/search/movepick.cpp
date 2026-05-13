@@ -18,6 +18,7 @@
 
 #include "movepick.h"
 
+#include "../config.h"
 #include "../eval/evaluator.h"
 #include "../game/board.h"
 #include "../game/movegen.h"
@@ -149,6 +150,17 @@ MovePicker::MovePicker(Rule rule, const Board &board, ExtraArgs<MovePicker::ROOT
 
     if (useNormalizedPolicy)
         fastPartialSort(curMove, endMove, 0, ScoredMove::PolicyComparator {});
+
+    // [PORTAL: Opening first-move zone preference]
+    // On WALL boards at ply==0, heavily prefer the 8 cells surrounding any WALL.
+    // This satisfies the game rule: first stone must be placed adjacent to a WALL.
+    if (board.ply() == 0 && board.wallCount() > 0 && !useNormalizedPolicy) {
+        for (auto *m = curMove; m < endMove; ++m)
+            if (board.isAdjacentToWall(m->pos))
+                m->score += Config::WALL_FIRST_MOVE_BONUS;
+        // Re-sort after bonus injection
+        fastPartialSort(curMove, endMove, 0, ScoredMove::ScoreComparator {});
+    }
 }
 
 /// MovePicker constructor for the main search.
@@ -313,6 +325,27 @@ void MovePicker::scoreAllMoves()
                 if (counterMove == m.pos && counterMoveP4 <= c.pattern4[self])
                     m.score += CounterMoveBonus;
             }
+        }
+
+        // [PORTAL: WALL/Portal adjacency move ordering bonuses]
+        // Cells adjacent to WALL cells are strategically critical —
+        // they sit in the narrowest zones where patterns are most constrained.
+        if (board.wallCount() > 0 && board.isAdjacentToWall(m.pos))
+            m.score += Config::WALL_ADJACENCY_MOVE_BONUS;
+        // Portal-adjacent cells enable teleportation threats.
+        if (board.portalCount() > 0 && !board.isPortalCell(m.pos)) {
+            // Check if any 8-neighbor is a portal cell (avoid adding bonus twice)
+            int  x = m.pos.x(), y = m.pos.y(), bs = board.size();
+            bool adjPortal = false;
+            for (int dx = -1; dx <= 1 && !adjPortal; dx++)
+                for (int dy = -1; dy <= 1 && !adjPortal; dy++) {
+                    if (dx == 0 && dy == 0) continue;
+                    Pos nb = Pos(x + dx, y + dy);
+                    if (nb.isInBoard(bs, bs) && board.isPortalCell(nb))
+                        adjPortal = true;
+                }
+            if (adjPortal)
+                m.score += Config::PORTAL_ADJACENCY_MOVE_BONUS;
         }
 
         maxScore = std::max(maxScore, m.score);

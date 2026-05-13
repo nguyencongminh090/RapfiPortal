@@ -1,0 +1,441 @@
+================================================================
+  Portal Gomoku Engine — Board Logic Test Suite
+================================================================
+Config loaded from internal config.
+
+=== TEST 1: Basic Board (no portals) ===
+  PASS: board size = 15
+  PASS: center is empty
+  PASS: center piece = EMPTY
+  PASS: no portals
+  PASS: center = BLACK after move
+  PASS: ply = 1
+  PASS: center empty after undo
+  PASS: ply = 0 after undo
+  [basic board works]
+
+=== TEST 2: WALL Placement ===
+  PASS: WALL at (5,5)
+  PASS: WALL at (3,3)
+  PASS: isWallCell(5,5) = true
+  PASS: WALL cell not empty
+  PASS: non-wall cell IS empty
+  (4,5) p4[B]=NONE p4[W]=NONE pat[B]: H=B1 V=F1 /=F1 \=F1
+  (6,5) p4[B]=NONE p4[W]=NONE pat[B]: H=DEAD V=F1 /=F1 \=F1
+  [WALL placement works]
+
+=== TEST 3: Portal Setup ===
+  PASS: 1 portal pair
+  PASS: portal A is WALL
+  PASS: portal B is WALL
+  PASS: isPortalCell(3,6)
+  PASS: isPortalCell(7,3)
+  PASS: non-portal cell
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 . . . . . . . . . . . . . . . 0
+ 1 . . . . . . . . . . . . . . . 1
+ 2 . . . . . . . . . . . . . . . 2
+ 3 . . . . . . . P . . . . . . . 3
+ 4 . . . . . . . . . . . . . . . 4
+ 5 . . . . . . . . . . . . . . . 5
+ 6 . . . P . . . . . . . . . . . 6
+ 7 . . . . . . . . . . . . . . . 7
+ 8 . . . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . . . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+
+=== TEST 4: portalAffected Mask (Diagnostic) ===
+  --- H-direction (dir=0) ---
+  Row 6 (near portal A=(3,6)):
+    (0,6): affected=1
+    (1,6): affected=1
+    (2,6): affected=1
+    (3,6): affected=0 [PORTAL]
+    (4,6): affected=1
+    (5,6): affected=1
+    (6,6): affected=1
+    (7,6): affected=1
+    (8,6): affected=0
+    (9,6): affected=0
+    (10,6): affected=0
+    (11,6): affected=0
+    (12,6): affected=0
+    (13,6): affected=0
+    (14,6): affected=0
+  Row 3 (near portal B=(7,3)):
+    (0,3): affected=0
+    (1,3): affected=0
+    (2,3): affected=0
+    (3,3): affected=1
+    (4,3): affected=1
+    (5,3): affected=1
+    (6,3): affected=1
+    (7,3): affected=0 [PORTAL]
+    (8,3): affected=1
+    (9,3): affected=1
+    (10,3): affected=1
+    (11,3): affected=1
+    (12,3): affected=0
+    (13,3): affected=0
+    (14,3): affected=0
+  --- V-direction (dir=1) ---
+  Col 3 (near portal A=(3,6)):
+    (3,0): affected=0
+    (3,1): affected=0
+    (3,2): affected=1
+    (3,3): affected=1
+    (3,4): affected=1
+    (3,5): affected=1
+    (3,6): affected=0 [PORTAL]
+    (3,7): affected=1
+    (3,8): affected=1
+    (3,9): affected=1
+    (3,10): affected=1
+    (3,11): affected=0
+    (3,12): affected=0
+    (3,13): affected=0
+    (3,14): affected=0
+  PASS: portalAffected[H][(0,6)] = true
+  PASS: portalAffected[H][(1,6)] = true
+  PASS: portalAffected[H][(2,6)] = true
+  PASS: portalAffected[H][(4,6)] = true
+  PASS: portalAffected[H][(8,3)] = true
+  PASS: portalAffected[H][(9,3)] = true
+
+  portalStep((2,6), H, +1) = (8,3)
+  PASS: portalStep (2,6)→right = (8,3) [teleport through A→B]
+  portalStep((8,3), H, -1) = (2,6)
+  PASS: portalStep (8,3)→left = (2,6) [teleport through B→A]
+
+  After placing B@(1,6):
+    getKeyAt((0,6), H) = 0x3fb00
+  (0,6) p4[B]=NONE p4[W]=NONE pat[B]: H=B2 V=F1 /=B1 \=B1
+
+=== TEST 5: Horizontal Win Through Portal ===
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 O O O O . . . . . . . . . . . 0
+ 1 . . . . . . . . . . . . . . . 1
+ 2 . . . . . . . . . . . . . . . 2
+ 3 . . . . . . . P X X . . . . . 3
+ 4 . . . . . . . . . . . . . . . 4
+ 5 . . . . . . . . . . . . . . . 5
+ 6 . X X P . . . . . . . . . . . 6
+ 7 . . . . . . . . . . . . . . . 7
+ 8 . . . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . . . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+  (0,6) p4[B]=A_FIVE p4[W]=NONE pat[B]: H=F5 V=F1 /=B1 \=B1
+  PASS: H-dir pattern = F5 at (0,6)
+  PASS: p4[BLACK] = A_FIVE at (0,6)
+  PASS: p4Count(BLACK, A_FIVE) > 0
+
+=== TEST 6: Vertical Win Through Portal ===
+  Portal: A=(3,6), B=(7,3)
+  Virtual V line: ★(3,3) X(3,4) X(3,5) [A→exit(7,4)] X(7,4) X(7,5)
+
+  Before winning move (3,3):
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 O O O . O . . . . . . . . . . 0
+ 1 . . . . . . . . . . . . . . . 1
+ 2 . . . . . . . . . . . . . . . 2
+ 3 . . . . . . . P . . . . . . . 3
+ 4 . . . X . . . X . . . . . . . 4
+ 5 . . . X . . . X . . . . . . . 5
+ 6 . . . P . . . . . . . . . . . 6
+ 7 . . . . . . . . . . . . . . . 7
+ 8 . . . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . . . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+  (3,3) p4[B]=A_FIVE p4[W]=NONE pat[B]: H=F1 V=F5 /=F1 \=F1
+  Cell (3,3) V pattern for BLACK: F5
+  Cell (3,3) p4[BLACK]: A_FIVE
+  PASS: V-dir pattern = F5 at (3,3)
+  PASS: p4[BLACK] = A_FIVE at (3,3)
+
+=== TEST 7: Diagonal \ Win Through Portal ===
+  Portal: A=(3,6), B=(7,3)
+  Virtual \ line: ★(0,3) X(1,4) X(2,5) [A→exit(8,4)] X(8,4) X(9,5)
+
+  Before winning move (0,3):
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 O O O . O . . . . . . . . . . 0
+ 1 . . . . . . . . . . . . . . . 1
+ 2 . . . . . . . . . . . . . . . 2
+ 3 . . . . . . . P . . . . . . . 3
+ 4 . X . . . . . . X . . . . . . 4
+ 5 . . X . . . . . . X . . . . . 5
+ 6 . . . P . . . . . . . . . . . 6
+ 7 . . . . . . . . . . . . . . . 7
+ 8 . . . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . . . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+  (0,3) p4[B]=A_FIVE p4[W]=NONE pat[B]: H=B1 V=F1 /=DEAD \=F5
+  Cell (0,3) \ pattern for BLACK: F5
+  Cell (0,3) p4[BLACK]: A_FIVE
+  PASS: \-dir pattern = F5 at (0,3)
+  PASS: p4[BLACK] = A_FIVE at (0,3)
+
+=== TEST 8: Anti-diagonal / Win Through Portal ===
+  Portal: A=(3,6), B=(7,3)
+  Virtual / line: ★(0,9) X(1,8) X(2,7) [A→exit(8,2)] X(8,2) X(9,1)
+
+  Before winning move (0,9):
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 O O O . O . . . . . . . . . . 0
+ 1 . . . . . . . . . X . . . . . 1
+ 2 . . . . . . . . X . . . . . . 2
+ 3 . . . . . . . P . . . . . . . 3
+ 4 . . . . . . . . . . . . . . . 4
+ 5 . . . . . . . . . . . . . . . 5
+ 6 . . . P . . . . . . . . . . . 6
+ 7 . . X . . . . . . . . . . . . 7
+ 8 . X . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . . . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+  (0,9) p4[B]=A_FIVE p4[W]=NONE pat[B]: H=B1 V=F1 /=F5 \=B1
+  Cell (0,9) / pattern for BLACK: F5
+  Cell (0,9) p4[BLACK]: A_FIVE
+  PASS: /-dir pattern = F5 at (0,9)
+  PASS: p4[BLACK] = A_FIVE at (0,9)
+
+=== TEST 9: Reverse Direction (B→A) ===
+  Portal: A=(3,6), B=(7,3)
+  Same virtual line as Test 5, checking from B side
+
+  Before winning move (9,3):
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 O O O O . . . . . . . . . . . 0
+ 1 . . . . . . . . . . . . . . . 1
+ 2 . . . . . . . . . . . . . . . 2
+ 3 . . . . . . . P X . . . . . . 3
+ 4 . . . . . . . . . . . . . . . 4
+ 5 . . . . . . . . . . . . . . . 5
+ 6 X X X P . . . . . . . . . . . 6
+ 7 . . . . . . . . . . . . . . . 7
+ 8 . . . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . . . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+  (9,3) p4[B]=A_FIVE p4[W]=NONE pat[B]: H=F5 V=F1 /=F1 \=F1
+  Cell (9,3) H pattern for BLACK: F5
+  Cell (9,3) p4[BLACK]: A_FIVE
+  PASS: H-dir pattern = F5 at (9,3)
+  PASS: p4[BLACK] = A_FIVE at (9,3)
+
+=== TEST 10: Gap in Line (Winning Move) ===
+  (1,6) p4=A_FIVE H=F5
+  PASS: (1,6) H=F5 (gap is winning move)
+  PASS: (1,6) p4=A_FIVE
+  PASS: p4Count(A_FIVE) > 0 (gap is winning)
+  PASS: 3 stones: no A_FIVE possible
+
+=== TEST 11: Move/Undo Consistency ===
+  State after 2 moves:
+  (1,6) p4[B]=NONE p4[W]=NONE pat[B]: H=DEAD V=F1 /=F1 \=F1
+  (9,3) p4[B]=NONE p4[W]=NONE pat[B]: H=B1 V=F1 /=F1 \=F1
+  After move(1,6):
+  (9,3) p4[B]=NONE p4[W]=NONE pat[B]: H=B1 V=F1 /=F1 \=F1
+  After undo:
+  (1,6) p4[B]=NONE p4[W]=NONE pat[B]: H=DEAD V=F1 /=F1 \=F1
+  (9,3) p4[B]=NONE p4[W]=NONE pat[B]: H=B1 V=F1 /=F1 \=F1
+  PASS: pattern at (1,6) restored after undo
+  PASS: pattern at (9,3) restored after undo
+  PASS: pattern4 at (1,6) restored after undo
+
+=== TEST 12: Collinear Portal — Gap Cells ===
+  Portal: A=(3,5), B=(8,5) (same row = H-collinear)
+  Gap cells (4-7, 5) in H dir should see WALL, not teleport
+
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 . . . . . . . . . . . . . . . 0
+ 1 . . . . . . . . . . . . . . . 1
+ 2 . . . . . . . . . . . . . . . 2
+ 3 . . . . . . . . . . . . . . . 3
+ 4 . . . . . . . . . . . . . . . 4
+ 5 . . . P . . . . P . . . . . . 5
+ 6 . . . . . . . . . . . . . . . 6
+ 7 . . . . . . . . . . . . . . . 7
+ 8 . . . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . . . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+  Gap cell pattern info (H dir, with BLACK stone at (5,5) inside gap):
+  (4,5) p4[B]=NONE p4[W]=NONE pat[B]: H=DEAD V=F1 /=F1 \=F1
+  (6,5) p4[B]=NONE p4[W]=NONE pat[B]: H=DEAD V=F1 /=F1 \=F1
+  (4,5) H pat[B]=DEAD
+  PASS: BUG-005: (4,5) H no F5/F4/B4 (portal WALL bounds sub-line)
+  (6,5) H pat[B]=DEAD
+  PASS: BUG-005: (6,5) H no F5/F4/B4 (sub-line too short between portal WALLs)
+  (9,5) H pat[B]=F1 (F1 expected: natural empty cell, gap stone invisible)
+  PASS: BUG-005: (9,5) H <= F1 (gap stone invisible — no strength added beyond empty baseline)
+
+=== TEST 13: Incremental Remote Update ===
+  Portal: A=(3,6), B=(7,3)
+  Place X at (2,6) near A → check (8,3) near B sees it
+
+  Before move - (8,3) H pat[B]: F1
+  After B@(2,6) - (8,3) H pat[B]: F2A
+  After B@(2,6) - (8,3) p4[B]: L_FLEX2
+  PASS: (8,3) H pattern sees stone through portal
+
+=== TEST 14: Stress Test — Multiple Move/Undo Cycles ===
+  Cycle 0: placing 10 stones...
+    ply=10
+    after undo: ply=0
+  PASS: ply back to 0 after full undo
+  Cycle 1: placing 10 stones...
+    ply=10
+    after undo: ply=0
+  PASS: ply back to 0 after full undo
+  Cycle 2: placing 10 stones...
+    ply=10
+    after undo: ply=0
+  PASS: ply back to 0 after full undo
+  PASS: cell back to empty after stress test
+
+=== TEST 15: Two Portal Pairs ===
+  PASS: 2 portal pairs
+  PASS: pair 0 A
+  PASS: pair 0 B
+  PASS: pair 1 A
+  PASS: pair 1 B
+  PASS: portal cell = WALL
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+ 0 . . . . . . . . . . . . . . . 0
+ 1 . . . . . P . . . . . . . . . 1
+ 2 . . . . . . . . . . . . . . . 2
+ 3 . . . . . . . P . . . . . . . 3
+ 4 . . . . . . . . . . . . . . . 4
+ 5 . . . . . . . . . . . . . . . 5
+ 6 . . . P . . . . . . . . . . . 6
+ 7 . . . . . . . . . . . . . . . 7
+ 8 . . . . . . . . . . . . . . . 8
+ 9 . . . . . . . . . . . . . . . 9
+10 . . . . . . . . . . P . . . . 10
+11 . . . . . . . . . . . . . . . 11
+12 . . . . . . . . . . . . . . . 12
+13 . . . . . . . . . . . . . . . 13
+14 . . . . . . . . . . . . . . . 14
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 
+  [two portal pairs set up OK]
+
+=== TEST 16: Board Trace (visual) ===
+  Hash: 17c6e82dacd008aa
+  Ply: 4
+  NonPassCount: 4
+  PassCount[Black]: 0  PassCount[White]: 0
+  SideToMove: Black
+  LastPos: J4
+  Eval[Black]: 25
+  LastP4[Black][A]: None  LastP4[White][A]: None
+  LastP4[Black][B]: None  LastP4[White][B]: None
+  LastP4[Black][C]: None  LastP4[White][C]: None
+  LastF4[Black]: None  LastF4[White]: None
+  ----------------Board----------------
+  Portals: 1 pair(s)
+    P0: (3,6) <-> (7,3)
+  . . . . . * * * * * 1 
+  . . . . . * * * * * 2 
+  . * * . . * * * * * 3 
+  * * * * * * * O O 4 
+  * * * * * * * * * * 5 
+  * * * * * * * * * 6 
+  * X X * * * * * * 7 
+  * * * * * * . . * * 8 
+  * * * * * * . . . . 9 
+  * * * * * * . . . . 10
+  A B C D E F G H I J 
+  ----------Pattern4----Black----------
+  . . . . . . . . . . 1 
+  . . . . . . . . . . 2 
+  . . . . . . . . . . 3 
+  . L L . L L . . . 4 
+  ... (truncated)
+
+=== TEST 17: Win Detection — Normal 5-in-a-row (no portals) ===
+  PASS: Normal 5-in-a-row: p4Count(BLACK, A_FIVE) >= 1
+  PASS: Normal 5-in-a-row: WHITE has no A_FIVE (scattered dummies)
+  PASS: After undo: ply == 8 (4B+4W)
+
+=== TEST 18: Win Detection — Portal-spanning Horizontal 5 ===
+  p4Count(BLACK, A_FIVE) = 2
+  (4,7) piece=BLACK
+  (11,7) piece=BLACK
+  PASS: Portal H five: p4Count(BLACK, A_FIVE) >= 1
+  PASS: After undo: ply restored
+
+=== TEST 19: Win Detection — Portal-spanning Vertical 5 ===
+  p4Count(BLACK, A_FIVE) = 1
+  (7,2) piece=BLACK
+  (7,10) piece=BLACK
+  PASS: Portal V five: p4Count(BLACK, A_FIVE) >= 1
+  PASS: After undo: ply restored
+
+=== TEST 20: Win Detection — WALL blocks 5-in-a-row ===
+  p4Count(BLACK, A_FIVE) = 0  (expect 0 — WALL blocks)
+  PASS: WALL splits 2+3: no A_FIVE
+  After extending right: p4Count(BLACK, A_FIVE) = 1
+  PASS: Right-side 5 clear of WALL: A_FIVE detected
+
+=== TEST 21: Win Detection — B_FLEX4 through portal ===
+  p4Count(BLACK, A_FIVE)         = 2
+  p4Count(BLACK, B_FLEX4)        = 0
+  p4Count(BLACK, C_BLOCK4_FLEX3) = 0
+  (1,7) p4[B]=A_FIVE p4[W]=NONE pat[B]: H=F5 V=F1 /=F1 \=F1
+  (12,7) p4[B]=A_FIVE p4[W]=NONE pat[B]: H=F5 V=F1 /=F1 \=F1
+  PASS: Portal open-four: sees A_FIVE or B_FLEX4 or C_BLOCK4_FLEX3
+
+=== TEST 22: quickWinCheck() Integration ===
+  PASS: 2-stone board: quickWinCheck == VALUE_ZERO
+  p4Count(WHITE,A_FIVE)=0  p4Count(BLACK,A_FIVE)=2
+  PASS: Normal win setup: WHITE has no A_FIVE (scattered dummies)
+  PASS: Normal win setup: BLACK has A_FIVE
+  Normal win: quickWinCheck = -29998
+  PASS: After BLACK normal win: quickWinCheck < 0 for WHITE (mated)
+  p4Count(WHITE,A_FIVE)=0  p4Count(BLACK,A_FIVE)=2
+  PASS: Portal win setup: WHITE has no A_FIVE
+  PASS: Portal win setup: BLACK has A_FIVE via portal
+  Portal win: quickWinCheck = -29998
+  PASS: After portal-spanning win: quickWinCheck < 0 for WHITE (mated)
+  p4Count(BLACK,A_FIVE)=0  p4Count(WHITE,A_FIVE)=0
+  PASS: WALL-blocked: p4Count(BLACK,A_FIVE) == 0
+  PASS: WALL-blocked: p4Count(WHITE,A_FIVE) == 0 (scattered dummies)
+  WALL-blocked: quickWinCheck = 0
+  PASS: WALL splits 5: quickWinCheck == VALUE_ZERO
+
+================================================================
+  RESULTS: 79 passed, 0 failed
+================================================================

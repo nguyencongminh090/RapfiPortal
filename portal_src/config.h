@@ -120,6 +120,32 @@ extern int  NumIterationAfterMate;
 extern int  NumIterationAfterSingularRoot;
 extern int  MaxSearchDepth;
 
+// -------------------------------------------------
+// PORTAL: WALL/Portal classical eval & search constants
+// Tunable via config file. Starting estimates — tune via self-play tournaments.
+
+/// Penalty per stone trapped in a region too small to ever win (<5 cells).
+/// Negative = bad for the trapped side. Range: [-200, 0].
+extern int WALL_DEAD_POCKET_PENALTY;
+
+/// Bonus per B4 threat that exists in a 5-cell corridor bounded by WALLs/edges.
+/// Such threats are effectively unstoppable. Range: [200, 800].
+extern int WALL_CORRIDOR_FOUR_BONUS;
+
+/// Penalty per H_FLEX3+ threat that is isolated in a small walled-off region.
+/// Such threats cannot grow into the rest of the board. Range: [-100, 0].
+extern int WALL_ISOLATED_THREAT_PENALTY;
+
+/// Bonus for WALL-adjacent moves during main move ordering. Range: [50, 200].
+extern int WALL_ADJACENCY_MOVE_BONUS;
+
+/// Bonus for portal-adjacent moves during main move ordering. Range: [40, 150].
+extern int PORTAL_ADJACENCY_MOVE_BONUS;
+
+/// Bonus for first move landing in the 8-cell zone around any WALL (ply==0 only).
+extern int WALL_FIRST_MOVE_BONUS;
+
+
 extern bool  ExpandWhenFirstEvaluate;
 extern int   MaxNumVisitsPerPlayout;
 extern int   NodesToPrintMCTSRootmoves;

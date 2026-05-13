@@ -801,8 +801,9 @@ void MainWindow::onEngineName(const std::string& name) {
     engineNameLabel_.set_text(name);
 }
 
-void MainWindow::onRawComm(bool /*isSend*/, const std::string& /*msg*/) {
-    // Protocol display removed as per UI modification request.
+void MainWindow::onRawComm(bool isSend, const std::string& msg) {
+    std::string prefix = isSend ? "-> " : "<- ";
+    logPanel_.appendLog(prefix + msg);
 }
 
 }  // namespace ui
