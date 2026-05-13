@@ -54,6 +54,10 @@ private:
     Gtk::Button btnSelectOBF_{"Select Opening File (.obf)..."};
     Gtk::Label  lblOBF_{"No OBF selected", Gtk::Align::START};
 
+    // Params config
+    Gtk::Button btnSelectParamsConfig_{"Select Params Config (.csv)..."};
+    Gtk::Label  lblParamsConfig_{"No Params config selected", Gtk::Align::START};
+
     // SPSA hyperparameters
     Gtk::Label      lblA_{"a (learning rate):"};
     Gtk::SpinButton spinA_;
@@ -112,6 +116,7 @@ private:
     std::string pathBaseline_;
     std::string pathOBF_;
     std::string pathState_ = "data/spsa/spsa_state.json";
+    std::string pathParamsConfig_;
 
     void setupLayout();
     void setupSignals();
@@ -120,6 +125,7 @@ private:
     void onSelectBaseline();
     void onSelectOBF();
     void onSelectState();
+    void onSelectParamsConfig();
     void onStart();
     void onStop();
 

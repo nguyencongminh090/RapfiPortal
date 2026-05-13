@@ -34,20 +34,28 @@ void SPSAPanel::setupLayout() {
     mainBox_.append(lblTitle_);
     mainBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::HORIZONTAL));
 
+    auto* boxFiles = Gtk::make_managed<Gtk::Box>(Gtk::Orientation::VERTICAL, 4);
+    mainBox_.append(*boxFiles);
+
     // Engine selection
     lblEngine_.set_wrap(true);
-    mainBox_.append(btnSelectEngine_);
-    mainBox_.append(lblEngine_);
+    boxFiles->append(btnSelectEngine_);
+    boxFiles->append(lblEngine_);
 
     // Baseline engine selection
     lblBaseline_.set_wrap(true);
-    mainBox_.append(btnSelectBaseline_);
-    mainBox_.append(lblBaseline_);
+    boxFiles->append(btnSelectBaseline_);
+    boxFiles->append(lblBaseline_);
 
     // OBF
     lblOBF_.set_wrap(true);
-    mainBox_.append(btnSelectOBF_);
-    mainBox_.append(lblOBF_);
+    boxFiles->append(btnSelectOBF_);
+    boxFiles->append(lblOBF_);
+
+    // Params config
+    lblParamsConfig_.set_wrap(true);
+    boxFiles->append(btnSelectParamsConfig_);
+    boxFiles->append(lblParamsConfig_);
 
     // State file
     lblState_.set_wrap(true);
@@ -192,6 +200,8 @@ void SPSAPanel::setupSignals() {
         sigc::mem_fun(*this, &SPSAPanel::onSelectBaseline));
     btnSelectOBF_.signal_clicked().connect(
         sigc::mem_fun(*this, &SPSAPanel::onSelectOBF));
+    btnSelectParamsConfig_.signal_clicked().connect(
+        sigc::mem_fun(*this, &SPSAPanel::onSelectParamsConfig));
     btnSelectState_.signal_clicked().connect(
         sigc::mem_fun(*this, &SPSAPanel::onSelectState));
     btnStart_.signal_clicked().connect(
@@ -285,6 +295,22 @@ void SPSAPanel::onSelectState() {
     });
 }
 
+void SPSAPanel::onSelectParamsConfig() {
+    auto* window = dynamic_cast<Gtk::Window*>(get_root());
+    if (!window) return;
+    auto dialog = Gtk::FileDialog::create();
+    dialog->set_title("Select Params Config (.csv)");
+    dialog->open(*window, [this, dialog](Glib::RefPtr<Gio::AsyncResult>& result) {
+        try {
+            auto file = dialog->open_finish(result);
+            if (file) {
+                pathParamsConfig_ = file->get_path();
+                lblParamsConfig_.set_text(file->get_basename());
+            }
+        } catch (const Glib::Error&) {}
+    });
+}
+
 // ============================================================================
 // Start / Stop
 // ============================================================================
@@ -300,6 +326,7 @@ void SPSAPanel::onStart() {
     cfg.baselinePath = pathBaseline_; // empty = no validation
     cfg.obfPath = pathOBF_;
     cfg.statePath = pathState_;
+    cfg.paramsConfigPath = pathParamsConfig_;
     cfg.a = spinA_.get_value();
     cfg.c = spinC_.get_value();
     cfg.A = spinStab_.get_value();

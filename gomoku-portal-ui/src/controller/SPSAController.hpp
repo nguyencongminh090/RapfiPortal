@@ -42,6 +42,8 @@ struct SPSAParam {
     double      min;        ///< Lower bound
     double      max;        ///< Upper bound
     double      initial;    ///< Starting value (for reference)
+    double      a = 0.0;    ///< Parameter-specific learning rate base
+    double      c = 0.0;    ///< Parameter-specific perturbation base
 };
 
 /// SPSA gain sequence configuration.
@@ -50,6 +52,7 @@ struct SPSAConfig {
     std::string baselinePath;       ///< Path to the baseline engine binary (for validation)
     std::string obfPath;            ///< Path to opening book file
     std::string statePath;          ///< Path to save/load state JSON
+    std::string paramsConfigPath;   ///< Path to CSV with initial parameter definitions
 
     // Gain sequence constants (Spall's recommended defaults)
     double a     = 1.0;            ///< Learning rate base
@@ -235,14 +238,11 @@ private:
     // Gain sequences
     // -----------------------------------------------------------------------
 
-    [[nodiscard]] double a_k() const;
-    [[nodiscard]] double c_k() const;
-
-    // -----------------------------------------------------------------------
-    // Algorithm steps
-    // -----------------------------------------------------------------------
-
+    // SPSA Mathematics
+    double a_k(double base_a) const;
+    double c_k(double base_c) const;
     void initDefaultParams();
+    void loadParamsConfig(const std::string& path);
     void generatePerturbation();
     void applyPerturbedParams(GameSlot& slot);
     void applyCurrentParams(engine::EngineController& engine);

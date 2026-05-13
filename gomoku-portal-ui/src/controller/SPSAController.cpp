@@ -125,7 +125,11 @@ void SPSAController::start(const SPSAConfig& config) {
             + " with " + std::to_string(params_.size()) + " params.");
     } else {
         iteration_ = 0; history_.clear();
-        initDefaultParams();
+        if (!config_.paramsConfigPath.empty()) {
+            loadParamsConfig(config_.paramsConfigPath);
+        } else {
+            initDefaultParams();
+        }
         log("Starting fresh SPSA with " + std::to_string(params_.size()) + " params.");
     }
 
@@ -157,17 +161,59 @@ void SPSAController::pollEngines() {
     }
 }
 
-double SPSAController::a_k() const { return config_.a / std::pow(config_.A + iteration_ + 1.0, config_.alpha); }
-double SPSAController::c_k() const { return config_.c / std::pow(iteration_ + 1.0, config_.gamma); }
+double SPSAController::a_k(double base_a) const { return base_a / std::pow(config_.A + iteration_ + 1.0, config_.alpha); }
+double SPSAController::c_k(double base_c) const { return base_c / std::pow(iteration_ + 1.0, config_.gamma); }
 
 void SPSAController::initDefaultParams() {
     params_.clear();
-    params_.push_back({"WALL_DEAD_POCKET_PENALTY",     -60.0, -200.0,   0.0, -60.0});
-    params_.push_back({"WALL_CORRIDOR_FOUR_BONUS",     450.0,  200.0, 800.0, 450.0});
-    params_.push_back({"WALL_ISOLATED_THREAT_PENALTY", -30.0, -100.0,   0.0, -30.0});
-    params_.push_back({"WALL_ADJACENCY_MOVE_BONUS",     80.0,   50.0, 200.0,  80.0});
-    params_.push_back({"PORTAL_ADJACENCY_MOVE_BONUS",   60.0,   40.0, 150.0,  60.0});
-    params_.push_back({"WALL_FIRST_MOVE_BONUS",        250.0,  100.0, 400.0, 250.0});
+    params_.push_back({"WALL_DEAD_POCKET_PENALTY",     -60.0, -200.0,   0.0, -60.0, 0.0, 0.0});
+    params_.push_back({"WALL_CORRIDOR_FOUR_BONUS",     450.0,  200.0, 800.0, 450.0, 0.0, 0.0});
+    params_.push_back({"WALL_ISOLATED_THREAT_PENALTY", -30.0, -100.0,   0.0, -30.0, 0.0, 0.0});
+    params_.push_back({"WALL_ADJACENCY_MOVE_BONUS",     80.0,   50.0, 200.0,  80.0, 0.0, 0.0});
+    params_.push_back({"PORTAL_ADJACENCY_MOVE_BONUS",   60.0,   40.0, 150.0,  60.0, 0.0, 0.0});
+    params_.push_back({"WALL_FIRST_MOVE_BONUS",        250.0,  100.0, 400.0, 250.0, 0.0, 0.0});
+}
+
+void SPSAController::loadParamsConfig(const std::string& path) {
+    std::ifstream file(path);
+    if (!file) {
+        log("Failed to open params config: " + path);
+        initDefaultParams();
+        return;
+    }
+    params_.clear();
+    std::string line;
+    // skip header if it exists
+    if (std::getline(file, line) && line.find(',') != std::string::npos) {
+        if (line.find("Name") == std::string::npos && line.find("name") == std::string::npos) {
+            file.clear();
+            file.seekg(0);
+        }
+    }
+    while (std::getline(file, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        std::istringstream ss(line);
+        std::string name, initStr, minStr, maxStr, aStr, cStr;
+        if (std::getline(ss, name, ',') &&
+            std::getline(ss, initStr, ',') &&
+            std::getline(ss, minStr, ',') &&
+            std::getline(ss, maxStr, ',')) {
+            
+            std::getline(ss, aStr, ',');
+            std::getline(ss, cStr, ',');
+            
+            try {
+                double initial = std::stod(initStr);
+                double min = std::stod(minStr);
+                double max = std::stod(maxStr);
+                double a = aStr.empty() ? 0.0 : std::stod(aStr);
+                double c = cStr.empty() ? 0.0 : std::stod(cStr);
+                params_.push_back({name, initial, min, max, initial, a, c});
+            } catch(...) {
+                log("Error parsing param line: " + line);
+            }
+        }
+    }
 }
 
 void SPSAController::generatePerturbation() {
@@ -177,12 +223,15 @@ void SPSAController::generatePerturbation() {
 }
 
 void SPSAController::applyPerturbedParams(GameSlot& slot) {
-    double ck = c_k();
     for (size_t i = 0; i < params_.size(); ++i) {
+        double p_c = (params_[i].c > 0) ? params_[i].c : config_.c;
+        double ck = c_k(p_c);
         double pp = std::clamp(params_[i].value + ck * delta_[i], params_[i].min, params_[i].max);
         slot.enginePlus.send_raw_if_idle("INFO " + params_[i].name + " " + std::to_string(static_cast<int>(std::round(pp))));
     }
     for (size_t i = 0; i < params_.size(); ++i) {
+        double p_c = (params_[i].c > 0) ? params_[i].c : config_.c;
+        double ck = c_k(p_c);
         double pm = std::clamp(params_[i].value - ck * delta_[i], params_[i].min, params_[i].max);
         slot.engineMinus.send_raw_if_idle("INFO " + params_[i].name + " " + std::to_string(static_cast<int>(std::round(pm))));
     }
@@ -212,7 +261,6 @@ void SPSAController::sendStartToSlotEngine(engine::EngineController& engine, con
 
 void SPSAController::startIterationMatches() {
     log("=== SPSA Iteration " + std::to_string(iteration_ + 1) + " ===");
-    log("a_k=" + std::to_string(a_k()) + " c_k=" + std::to_string(c_k()));
 
     matchScorePlus_ = 0; matchScoreMinus_ = 0; matchDraws_ = 0;
     gamesCompleted_ = 0;
@@ -424,12 +472,15 @@ void SPSAController::finalizeIteration() {
     double Wminus = matchScoreMinus_ + 0.5 * matchDraws_;
     double total = matchScorePlus_ + matchScoreMinus_ + matchDraws_;
     double scoreDiff = (total > 0) ? (Wplus - Wminus) / total : 0.0;
-    double ak = a_k(); double ck = c_k();
 
     log("Iter " + std::to_string(iteration_+1) + ": +=" + std::to_string(matchScorePlus_)
         + " -=" + std::to_string(matchScoreMinus_) + " D=" + std::to_string(matchDraws_));
 
     for (size_t i = 0; i < params_.size(); ++i) {
+        double p_a = (params_[i].a > 0) ? params_[i].a : config_.a;
+        double p_c = (params_[i].c > 0) ? params_[i].c : config_.c;
+        double ak = a_k(p_a);
+        double ck = c_k(p_c);
         double g_hat = scoreDiff / (2.0 * ck * delta_[i]);
         double newVal = std::clamp(params_[i].value + ak * g_hat, params_[i].min, params_[i].max);
         log("  " + params_[i].name + ": " + std::to_string((int)std::round(params_[i].value))
