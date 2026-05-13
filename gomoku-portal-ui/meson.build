@@ -36,12 +36,14 @@ app_sources = files(
     'src/controller/AnalysisController.cpp',
     'src/controller/DatabaseController.cpp',
     'src/controller/TournamentController.cpp',
+    'src/controller/SPSAController.cpp',
     'src/ui/panels/DatabasePanel.cpp',
     'src/ui/panels/AnalysisPanel.cpp',
     'src/ui/panels/EngineSettingsPanel.cpp',
     'src/ui/panels/UISettingsPanel.cpp',
     'src/ui/panels/OpeningEditorPanel.cpp',
     'src/ui/panels/TournamentPanel.cpp',
+    'src/ui/panels/SPSAPanel.cpp',
     'src/util/SettingsManager.cpp',
 )
 

@@ -249,6 +249,11 @@ void EngineController::queryDatabaseText()               { send(EngineProtocol::
 void EngineController::deleteDatabaseOne()               { send(EngineProtocol::yxDeleteDatabaseOne()); }
 void EngineController::deleteDatabaseAll()               { send(EngineProtocol::yxDeleteDatabaseAll()); }
 
+void EngineController::send_raw_if_idle(const std::string& cmd) {
+    if (state_ != EngineState::Idle) return;
+    send(cmd);
+}
+
 // =============================================================================
 // Polling & Dispatch
 // =============================================================================

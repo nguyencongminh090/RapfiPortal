@@ -145,6 +145,14 @@ public:
     void showHashUsage();
 
     // =========================================================================
+    // Raw Command (for SPSA parameter injection)
+    // =========================================================================
+
+    /// Send a raw command string if engine is in Idle state.
+    /// Used by SPSAController to inject "INFO <param> <value>" commands.
+    void send_raw_if_idle(const std::string& cmd);
+
+    // =========================================================================
     // Signals (emitted on GTK main thread via drainOutput)
     // =========================================================================
 

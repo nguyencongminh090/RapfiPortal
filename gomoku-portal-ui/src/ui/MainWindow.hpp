@@ -31,6 +31,7 @@
 #include "../ui/panels/UISettingsPanel.hpp"
 #include "../ui/panels/OpeningEditorPanel.hpp"
 #include "../ui/panels/TournamentPanel.hpp"
+#include "../ui/panels/SPSAPanel.hpp"
 
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/box.h>
@@ -95,6 +96,7 @@ private:
     controller::SetupController setupCtrl_;
     controller::AnalysisController analysisCtrl_;
     controller::TournamentController tournCtrl_;
+    controller::SPSAController spsaCtrl_;
 
     // =========================================================================
     // Board & Widgets
@@ -119,6 +121,7 @@ private:
     panels::UISettingsPanel uiSettingsPanel_;
     panels::OpeningEditorPanel openingEditorPanel_;
     panels::TournamentPanel tournamentPanel_;
+    panels::SPSAPanel spsaPanel_;
 
     // =========================================================================
     // Timer for engine polling

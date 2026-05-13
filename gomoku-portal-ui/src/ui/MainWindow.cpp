@@ -29,6 +29,7 @@ MainWindow::MainWindow(controller::GameController& gameCtrl)
     , analysisPanel_(analysisCtrl_)
     , openingEditorPanel_(gameCtrl_)
     , tournamentPanel_(tournCtrl_)
+    , spsaPanel_(spsaCtrl_)
 {
     set_title("Portal Gomoku Engine UI");
     
@@ -158,6 +159,7 @@ void MainWindow::setupLayout() {
     sideNotebook_.append_page(uiSettingsPanel_, "UI Settings");
     sideNotebook_.append_page(openingEditorPanel_, "Opening Editor");
     sideNotebook_.append_page(tournamentPanel_, "Tournament");
+    sideNotebook_.append_page(spsaPanel_, "SPSA Tuner");
     
     // Set Log as default page
     sideNotebook_.set_current_page(0);
@@ -416,6 +418,36 @@ void MainWindow::setupSignals() {
     connections_.push_back(
         tournCtrl_.signalRawComm.connect(
             sigc::mem_fun(*this, &MainWindow::onRawComm)));
+
+    // SPSA controller signals -> UI board updates
+    connections_.push_back(
+        spsaCtrl_.signalBoardUpdated.connect([this](const model::Board& b) {
+            gameCtrl_.board().reset(b.size());
+            gameCtrl_.board().setTopology(b.topology());
+            for (const auto& m : b.history()) {
+                if (m.isPass()) gameCtrl_.board().pass(m.color);
+                else gameCtrl_.board().placeStone(m.coord, m.color);
+            }
+            onBoardChanged();
+        }));
+
+    connections_.push_back(
+        spsaCtrl_.signalMoveMade.connect([this](int x, int y, int color) {
+            util::Coord coord(x, y);
+            auto c = (color == 1) ? model::Color::Black : model::Color::White;
+            if (coord == util::Coord::none()) {
+                gameCtrl_.board().pass(c);
+            } else {
+                gameCtrl_.board().placeStone(coord, c);
+            }
+            onBoardChanged();
+        }));
+
+    connections_.push_back(
+        spsaCtrl_.signalMatchInfo.connect([this](const std::string& bName, const std::string& wName) {
+            playerBlackLabel_.set_markup("<b>" + bName + "</b> (Black)");
+            playerWhiteLabel_.set_markup("<b>" + wName + "</b> (White)");
+        }));
 }
 
 // =============================================================================
@@ -431,6 +463,7 @@ void MainWindow::startPollingTimer() {
 bool MainWindow::onPollTimer() {
     gameCtrl_.pollEngine();
     tournCtrl_.pollEngines();
+    spsaCtrl_.pollEngines();
     return true;  // Keep the timer running
 }
 
@@ -442,6 +475,9 @@ void MainWindow::updatePlayerLabels() {
         // Tournament mode
         blackName = tournCtrl_.currentBlackEngineName();
         whiteName = tournCtrl_.currentWhiteEngineName();
+    } else if (spsaCtrl_.state() != controller::SPSAState::Idle && spsaCtrl_.state() != controller::SPSAState::Finished) {
+        // SPSA mode sets its own labels via signalMatchInfo
+        return;
     } else {
         // Normal game mode based on combo box
         int active = comboMode_.get_active_row_number();
