@@ -18,10 +18,12 @@
 #include <gtkmm/box.h>
 #include <gtkmm/button.h>
 #include <gtkmm/label.h>
+#include <gtkmm/progressbar.h>
 #include <gtkmm/scrolledwindow.h>
 #include <gtkmm/separator.h>
 #include <gtkmm/spinbutton.h>
 #include <gtkmm/textview.h>
+#include <gtkmm/togglebutton.h>
 
 namespace ui::panels {
 
@@ -67,6 +69,10 @@ private:
     Gtk::SpinButton spinThreads_;
     Gtk::Label      lblMemory_{"Memory (MB):"};
     Gtk::SpinButton spinMemory_;
+    Gtk::Label      lblMatchTime_{"Match Time (ms, 0=off):"};
+    Gtk::SpinButton spinMatchTime_;
+    Gtk::Label      lblConcurrency_{"Concurrent Games:"};
+    Gtk::SpinButton spinConcurrency_;
 
     // Validation settings
     Gtk::Label      lblValInterval_{"Validate every N iters:"};
@@ -85,6 +91,9 @@ private:
     // Status
     Gtk::Label  lblStatus_{"Status: Idle"};
     Gtk::Label  lblIteration_{"Iteration: 0"};
+    Gtk::Label  lblProgress_{"Games: 0/0  Slots: 0 active"};
+    Gtk::ProgressBar progressBar_;
+    Gtk::ToggleButton btnSpectate_{"Spectate"};
 
     // Parameter display
     Gtk::Label  lblParamTitle_{"<b>Current Parameters</b>"};
@@ -119,6 +128,7 @@ private:
     void onIterationComplete();
     void onParamsUpdated();
     void onValidationComplete();
+    void onProgressUpdated();
 
     void refreshParamDisplay();
     void refreshValidationDisplay();

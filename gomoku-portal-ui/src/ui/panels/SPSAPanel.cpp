@@ -99,6 +99,18 @@ void SPSAPanel::setupLayout() {
     mainBox_.append(lblMemory_);
     mainBox_.append(spinMemory_);
 
+    auto adjMatchTime = Gtk::Adjustment::create(0, 0, 600000, 1000, 5000, 0);
+    spinMatchTime_.set_adjustment(adjMatchTime);
+    spinMatchTime_.set_numeric(true);
+    mainBox_.append(lblMatchTime_);
+    mainBox_.append(spinMatchTime_);
+
+    auto adjConc = Gtk::Adjustment::create(1, 1, 8, 1, 1, 0);
+    spinConcurrency_.set_adjustment(adjConc);
+    spinConcurrency_.set_numeric(true);
+    mainBox_.append(lblConcurrency_);
+    mainBox_.append(spinConcurrency_);
+
     mainBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::HORIZONTAL));
 
     // Validation settings
@@ -126,8 +138,14 @@ void SPSAPanel::setupLayout() {
     // Status
     lblStatus_.set_halign(Gtk::Align::START);
     lblIteration_.set_halign(Gtk::Align::START);
+    lblProgress_.set_halign(Gtk::Align::START);
     mainBox_.append(lblStatus_);
     mainBox_.append(lblIteration_);
+    mainBox_.append(lblProgress_);
+    progressBar_.set_show_text(true);
+    mainBox_.append(progressBar_);
+    btnSpectate_.set_active(false);
+    mainBox_.append(btnSpectate_);
 
     mainBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::HORIZONTAL));
 
@@ -191,6 +209,12 @@ void SPSAPanel::setupSignals() {
         sigc::mem_fun(*this, &SPSAPanel::onParamsUpdated));
     spsaCtrl_.signalValidationComplete.connect(
         sigc::mem_fun(*this, &SPSAPanel::onValidationComplete));
+    spsaCtrl_.signalProgressUpdated.connect(
+        sigc::mem_fun(*this, &SPSAPanel::onProgressUpdated));
+
+    btnSpectate_.signal_toggled().connect([this]() {
+        spsaCtrl_.setSpectating(btnSpectate_.get_active());
+    });
 }
 
 // ============================================================================
@@ -285,6 +309,8 @@ void SPSAPanel::onStart() {
     cfg.maxMemory = static_cast<int64_t>(spinMemory_.get_value_as_int()) * 1024 * 1024;
     cfg.validationInterval = spinValInterval_.get_value_as_int();
     cfg.validationGames = spinValGames_.get_value_as_int();
+    cfg.matchTimeMs = spinMatchTime_.get_value_as_int();
+    cfg.concurrency = spinConcurrency_.get_value_as_int();
 
     spsaCtrl_.start(cfg);
 }
@@ -316,6 +342,8 @@ void SPSAPanel::onStateChanged() {
     spinTurnTime_.set_sensitive(!busy);
     spinThreads_.set_sensitive(!busy);
     spinMemory_.set_sensitive(!busy);
+    spinMatchTime_.set_sensitive(!busy);
+    spinConcurrency_.set_sensitive(!busy);
     spinValInterval_.set_sensitive(!busy);
     spinValGames_.set_sensitive(!busy);
 
@@ -397,6 +425,20 @@ void SPSAPanel::refreshValidationDisplay() {
             << "</span>\n";
     }
     lblValResults_.set_markup(oss.str());
+}
+
+void SPSAPanel::onProgressUpdated() {
+    int done = spsaCtrl_.gamesCompleted();
+    int total = spsaCtrl_.gamesTotalCurrent();
+    int active = spsaCtrl_.activeSlotsCount();
+
+    lblProgress_.set_text("Games: " + std::to_string(done) + "/" + std::to_string(total)
+                          + "  Slots: " + std::to_string(active) + " active");
+    if (total > 0)
+        progressBar_.set_fraction(static_cast<double>(done) / total);
+    else
+        progressBar_.set_fraction(0.0);
+    progressBar_.set_text(std::to_string(done) + "/" + std::to_string(total));
 }
 
 } // namespace ui::panels

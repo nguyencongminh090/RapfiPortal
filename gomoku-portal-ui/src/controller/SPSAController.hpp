@@ -1,17 +1,16 @@
 /*
- *  Portal Gomoku UI — SPSA Tuning Controller
+ *  Portal Gomoku UI — SPSA Tuning Controller (Concurrent)
  *  Implements Simultaneous Perturbation Stochastic Approximation
  *  for automated engine parameter optimization via self-play.
  *
- *  Algorithm reference: Spall, J.C. (1998)
- *  "Implementation of the Simultaneous Perturbation Algorithm
- *   for Stochastic Optimization"
+ *  Architecture:
+ *    - N concurrent GameSlots, each owning 2 engines + 1 board.
+ *    - Work-queue scheduling: slots grab games from a shared queue.
+ *    - Optional Spectate mode: pipe one slot's board to the main UI.
+ *    - Validation matches (θ vs baseline) reuse the same slot pool.
+ *    - State persisted to JSON after every iteration for stop/continue.
  *
- *  Key design:
- *    - Each iteration plays N games between θ+ and θ- perturbed engines.
- *    - Every M iterations, a validation match runs: current θ vs baseline.
- *    - State is persisted to JSON after every iteration for stop/continue.
- *    - Parameters are sent to engines via "INFO <name> <value>" protocol.
+ *  Algorithm reference: Spall, J.C. (1998)
  */
 
 #pragma once
@@ -23,7 +22,11 @@
 #include <sigc++/sigc++.h>
 #include <string>
 #include <vector>
+#include <queue>
 #include <random>
+#include <mutex>
+#include <atomic>
+#include <memory>
 #include <filesystem>
 
 namespace controller {
@@ -57,12 +60,15 @@ struct SPSAConfig {
 
     // Match settings
     int gamesPerIteration = 20;    ///< Total games per SPSA iteration
-    int turnTimeMs        = 5000;  ///< Per-move time limit
-    int matchTimeMs       = 0;     ///< Match time (0=unlimited)
+    int turnTimeMs        = 5000;  ///< Per-move time limit (info timeout_turn)
+    int matchTimeMs       = 0;     ///< Per-game total time (info timeout_match)
     int threads           = 1;     ///< Threads per engine
     int64_t maxMemory     = 350LL * 1024 * 1024; ///< Memory per engine
     int boardSize         = 15;    ///< Board size for games
     int rule              = 0;     ///< Game rule
+
+    // Concurrency
+    int concurrency       = 1;     ///< Number of concurrent game slots
 
     // Validation settings
     int validationInterval = 5;    ///< Run validation every N SPSA iterations
@@ -94,6 +100,26 @@ enum class SPSAState {
 };
 
 // ============================================================================
+// GameSlot — self-contained game runner
+// ============================================================================
+
+/// A single concurrent game slot owning 2 engines and 1 board.
+struct GameSlot {
+    int                        id = 0;
+    engine::EngineController   enginePlus;   ///< θ+ engine (or tuned in validation)
+    engine::EngineController   engineMinus;  ///< θ- engine (or baseline in validation)
+    model::Board               board{15};
+    bool                       isPlusTurn = false;
+    int                        gameIndex = -1;   ///< Which game# from the queue
+    bool                       busy = false;
+    int                        openingIdx = 0;
+    int                        gameInOpening = 0;
+
+    // Signal connections for this slot
+    std::vector<sigc::connection> connections;
+};
+
+// ============================================================================
 // Controller
 // ============================================================================
 
@@ -107,10 +133,9 @@ public:
     // -----------------------------------------------------------------------
 
     /// Start (or resume) SPSA tuning with the given config.
-    /// If a state file exists at config.statePath, it will be loaded.
     void start(const SPSAConfig& config);
 
-    /// Gracefully stop after the current iteration finishes.
+    /// Gracefully stop after the current games finish.
     void stop();
 
     /// Must be called periodically from GTK timer.
@@ -126,6 +151,19 @@ public:
     [[nodiscard]] const std::vector<SPSAIterationResult>& history() const { return history_; }
     [[nodiscard]] const std::vector<SPSAValidationResult>& validationHistory() const { return valHistory_; }
 
+    /// Progress: how many games completed / total in current iteration
+    [[nodiscard]] int gamesCompleted() const { return gamesCompleted_; }
+    [[nodiscard]] int gamesTotalCurrent() const { return gamesTotalCurrent_; }
+    [[nodiscard]] int activeSlotsCount() const;
+
+    // -----------------------------------------------------------------------
+    // Spectate
+    // -----------------------------------------------------------------------
+
+    /// Enable spectating: pipe one slot's board to signalBoardUpdated.
+    void setSpectating(bool enabled) { spectating_ = enabled; }
+    [[nodiscard]] bool isSpectating() const { return spectating_; }
+
     // -----------------------------------------------------------------------
     // Signals
     // -----------------------------------------------------------------------
@@ -135,8 +173,9 @@ public:
     sigc::signal<void()>                     signalIterationComplete;
     sigc::signal<void()>                     signalParamsUpdated;
     sigc::signal<void()>                     signalValidationComplete;
+    sigc::signal<void()>                     signalProgressUpdated;
 
-    // Game observation signals
+    // Game observation signals (only emitted when spectating)
     sigc::signal<void(const model::Board&)>  signalBoardUpdated;
     sigc::signal<void(int, int, int)>        signalMoveMade; // x, y, color
     sigc::signal<void(const std::string&, const std::string&)> signalMatchInfo;
@@ -146,6 +185,8 @@ private:
     SPSAConfig  config_;
     int         iteration_ = 0;
     bool        stopRequested_ = false;
+    bool        spectating_ = false;
+    int         spectateSlot_ = 0;   ///< Which slot we are spectating
 
     // Parameters being tuned
     std::vector<SPSAParam> params_;
@@ -159,30 +200,32 @@ private:
     // Validation history
     std::vector<SPSAValidationResult> valHistory_;
 
-    // Engines for SPSA: θ+ (plus) and θ- (minus)
-    // Also reused for validation: tuned (plus) vs baseline (minus)
-    engine::EngineController enginePlus_;
-    engine::EngineController engineMinus_;
+    // -----------------------------------------------------------------------
+    // Concurrent game slots
+    // -----------------------------------------------------------------------
+
+    static constexpr int MAX_SLOTS = 8;
+    std::vector<std::unique_ptr<GameSlot>> slots_;
+
+    // Work queue: indices of games still to be played
+    std::queue<int> pendingGames_;
+
+    // Aggregated match results (across all slots)
+    int matchScorePlus_  = 0;
+    int matchScoreMinus_ = 0;
+    int matchDraws_      = 0;
+    int gamesCompleted_  = 0;
+    int gamesTotalCurrent_ = 0;
+
+    // Opening assignment: track which opening goes with which game index
+    // Opening index = (gameIndex / 2) % openings_.size()
+    // Game-in-opening = gameIndex % 2
 
     // Opening book
     std::vector<model::GameRecord> openings_;
 
-    // Match state within one iteration / validation
-    model::Board matchBoard_{15};
-    int matchScorePlus_  = 0;   // θ+ score (SPSA) or tuned score (validation)
-    int matchScoreMinus_ = 0;   // θ- score (SPSA) or baseline score (validation)
-    int matchDraws_      = 0;
-    int matchGameIndex_  = 0;
-    int matchTotalGames_ = 0;
-    int currentOpeningIdx_ = 0;
-    int currentGameInOpening_ = 0;
-    bool isPlusTurn_ = false;
-
     // RNG for perturbation
     std::mt19937 rng_;
-
-    // Signal connections
-    std::vector<sigc::connection> connections_;
 
     // -----------------------------------------------------------------------
     // Gain sequences
@@ -197,39 +240,55 @@ private:
 
     void initDefaultParams();
     void generatePerturbation();
-    void applyPerturbedParams();
+    void applyPerturbedParams(GameSlot& slot);
+    void applyCurrentParams(engine::EngineController& engine);
+
+    // -----------------------------------------------------------------------
+    // Slot management
+    // -----------------------------------------------------------------------
+
+    /// Create and wire up N game slots.
+    void initSlots(int count);
+
+    /// Destroy all slots and their engines.
+    void destroySlots();
+
+    /// Connect engines in a slot and send START.
+    bool connectSlotEngines(GameSlot& slot, const std::string& plusPath,
+                            const std::string& minusPath);
+
+    /// Dispatch the next pending game to a specific slot.
+    void dispatchToSlot(int slotId);
+
+    /// Handle a move from a slot's engine.
+    void onSlotMove(int slotId, bool fromPlus, int x, int y);
+
+    /// Handle an error from a slot's engine.
+    void onSlotError(int slotId, bool fromPlus, const std::string& err);
+
+    /// End a game on a specific slot. result: 1=plus wins, 2=minus wins, 0=draw
+    void endSlotGame(int slotId, int result);
+
+    /// Send START + position to a slot's engine.
+    void sendStartToSlotEngine(engine::EngineController& engine,
+                               const model::GameRecord& rec);
+
+    // -----------------------------------------------------------------------
+    // Iteration management
+    // -----------------------------------------------------------------------
+
     void startIterationMatches();
-    void setupNextGame();
-    void handleEngineMove(bool fromPlus, int x, int y);
-    void endCurrentGame(int result);
+    void onAllGamesFinished();
     void finalizeIteration();
-    void sendStartToEngine(engine::EngineController& engine,
-                           const model::GameRecord& rec);
 
     // -----------------------------------------------------------------------
     // Validation (current θ vs baseline)
     // -----------------------------------------------------------------------
 
-    /// Check if validation should run after this iteration.
     [[nodiscard]] bool shouldValidate() const;
-
-    /// Start a validation match: current θ vs baseline engine.
     void startValidationMatch();
-
-    /// Set up the next game in a validation match.
-    void setupNextValidationGame();
-
-    /// Handle a move during validation.
-    void handleValidationMove(bool fromTuned, int x, int y);
-
-    /// End a single validation game.
-    void endValidationGame(int result);
-
-    /// Finalize validation match and resume SPSA.
+    void onAllValidationGamesFinished();
     void finalizeValidation();
-
-    /// Apply current best θ params to the tuned engine (no perturbation).
-    void applyCurrentParams(engine::EngineController& engine);
 
     // -----------------------------------------------------------------------
     // Persistence
