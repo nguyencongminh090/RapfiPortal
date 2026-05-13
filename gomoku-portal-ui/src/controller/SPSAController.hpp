@@ -117,6 +117,7 @@ struct GameSlot {
     std::chrono::time_point<std::chrono::steady_clock> turnStartTime;
     int                        plusTimeLeftMs = 0;
     int                        minusTimeLeftMs = 0;
+    float                      lastEvalWR = 50.0f;
 
     // Signal connections for this slot
     std::vector<sigc::connection> connections;
@@ -265,9 +266,8 @@ private:
 
     /// Handle a move from a slot's engine.
     void onSlotMove(int slotId, bool fromPlus, int x, int y);
-
-    /// Handle an error from a slot's engine.
     void onSlotError(int slotId, bool fromPlus, const std::string& err);
+    void onSlotMessage(int slotId, bool fromPlus, const std::string& msg);
 
     /// End a game on a specific slot. result: 1=plus wins, 2=minus wins, 0=draw
     void endSlotGame(int slotId, int result);

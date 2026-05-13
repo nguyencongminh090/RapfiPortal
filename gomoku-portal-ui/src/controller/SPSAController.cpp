@@ -73,6 +73,12 @@ void SPSAController::initSlots(int count) {
         slots_[i]->connections.push_back(
             slots_[i]->engineMinus.signalError.connect(
                 [this, i](const std::string& e) { onSlotError(i, false, e); }));
+        slots_[i]->connections.push_back(
+            slots_[i]->enginePlus.signalMessage.connect(
+                [this, i](const std::string& msg) { onSlotMessage(i, true, msg); }));
+        slots_[i]->connections.push_back(
+            slots_[i]->engineMinus.signalMessage.connect(
+                [this, i](const std::string& msg) { onSlotMessage(i, false, msg); }));
     }
 }
 
@@ -250,6 +256,7 @@ void SPSAController::dispatchToSlot(int slotId) {
     slot.busy = true;
     slot.openingIdx = (slot.gameIndex / 2) % static_cast<int>(openings_.size());
     slot.gameInOpening = slot.gameIndex % 2;
+    slot.lastEvalWR = 50.0f;
 
     const auto& opening = openings_[slot.openingIdx];
     slot.board.reset(opening.boardSize > 0 ? opening.boardSize : config_.boardSize);
@@ -335,6 +342,15 @@ void SPSAController::onSlotMove(int slotId, bool fromPlus, int x, int y) {
     if (checkWin(slot.board, mv, curColor)) { endSlotGame(slotId, fromPlus ? 1 : 2); return; }
     if (slot.board.isBoardFull()) { endSlotGame(slotId, 0); return; }
 
+    int totalCells = slot.board.size() * slot.board.size();
+    if (slot.board.totalStones() >= totalCells * 0.8f) {
+        if (slot.lastEvalWR >= 45.0f && slot.lastEvalWR <= 55.0f) {
+            log("Slot " + std::to_string(slotId) + " draw by 80% full and balanced eval (wr " + std::to_string(slot.lastEvalWR) + ").");
+            endSlotGame(slotId, 0);
+            return;
+        }
+    }
+
     slot.isPlusTurn = !slot.isPlusTurn;
     if (config_.matchTimeMs > 0) {
         if (slot.isPlusTurn) slot.enginePlus.send_raw_if_idle("INFO time_left " + std::to_string(slot.plusTimeLeftMs));
@@ -349,6 +365,26 @@ void SPSAController::onSlotMove(int slotId, bool fromPlus, int x, int y) {
 void SPSAController::onSlotError(int slotId, bool fromPlus, const std::string& err) {
     log("Slot " + std::to_string(slotId) + " engine " + (fromPlus ? "+" : "-") + " error: " + err);
     endSlotGame(slotId, fromPlus ? 2 : 1);
+}
+
+void SPSAController::onSlotMessage(int slotId, bool fromPlus, const std::string& msg) {
+    auto& slot = *slots_[slotId];
+    if (!slot.busy) return;
+    
+    float wr = -1.0f;
+    if (auto pos = msg.find("(W "); pos != std::string::npos) {
+        try { wr = std::stof(msg.substr(pos + 3)); } catch(...) {}
+    } else if (auto pos = msg.find(" w "); pos != std::string::npos) {
+        try { wr = std::stof(msg.substr(pos + 3)); } catch(...) {}
+    } else if (auto pos = msg.find(" | Eval "); pos != std::string::npos) {
+        try { wr = 50.0f + std::stoi(msg.substr(pos + 8)) / 10.0f; } catch(...) {}
+    } else if (auto pos = msg.find(" ev "); pos != std::string::npos) {
+        try { wr = 50.0f + std::stoi(msg.substr(pos + 4)) / 10.0f; } catch(...) {}
+    }
+    
+    if (wr >= 0.0f) {
+        slot.lastEvalWR = wr;
+    }
 }
 
 void SPSAController::endSlotGame(int slotId, int result) {
