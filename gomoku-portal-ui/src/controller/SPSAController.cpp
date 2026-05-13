@@ -120,16 +120,17 @@ void SPSAController::start(const SPSAConfig& config) {
         openings_.push_back(rec);
     }
 
+    if (!config_.paramsConfigPath.empty()) {
+        loadParamsConfig(config_.paramsConfigPath);
+    } else {
+        initDefaultParams();
+    }
+
     if (!config_.statePath.empty() && loadState(config_.statePath)) {
         log("Resumed SPSA from iteration " + std::to_string(iteration_)
             + " with " + std::to_string(params_.size()) + " params.");
     } else {
         iteration_ = 0; history_.clear();
-        if (!config_.paramsConfigPath.empty()) {
-            loadParamsConfig(config_.paramsConfigPath);
-        } else {
-            initDefaultParams();
-        }
         log("Starting fresh SPSA with " + std::to_string(params_.size()) + " params.");
     }
 
@@ -302,6 +303,7 @@ void SPSAController::dispatchToSlot(int slotId) {
     slot.gameIndex = pendingGames_.front();
     pendingGames_.pop();
     slot.busy = true;
+    signalProgressUpdated.emit();
     slot.openingIdx = (slot.gameIndex / 2) % static_cast<int>(openings_.size());
     slot.gameInOpening = slot.gameIndex % 2;
     slot.lastEvalWR = 50.0f;
@@ -569,7 +571,8 @@ void SPSAController::saveState() {
     for (size_t i = 0; i < params_.size(); ++i) {
         out << "    { \"name\": \"" << params_[i].name << "\", \"value\": " << params_[i].value
             << ", \"min\": " << params_[i].min << ", \"max\": " << params_[i].max
-            << ", \"initial\": " << params_[i].initial << " }";
+            << ", \"initial\": " << params_[i].initial 
+            << ", \"a\": " << params_[i].a << ", \"c\": " << params_[i].c << " }";
         if (i+1 < params_.size()) out << ","; out << "\n";
     }
     out << "  ],\n  \"history\": [\n";
@@ -594,20 +597,46 @@ bool SPSAController::loadState(const std::string& path) {
     std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     auto iterPos = content.find("\"iteration\":"); if (iterPos == std::string::npos) return false;
     iteration_ = std::stoi(content.substr(iterPos + 13));
-    params_.clear();
+    // Only clear if we didn't already populate from CSV
+    if (params_.empty()) {
+        params_.clear();
+    }
     auto paramsStart = content.find("\"params\":"); if (paramsStart == std::string::npos) return false;
     size_t sf = paramsStart;
     while (true) {
         auto np = content.find("\"name\":", sf); if (np == std::string::npos) break;
         auto nb = content.find(']', paramsStart+9); if (np > nb) break;
-        SPSAParam p;
         auto ns = content.find('"', np+7)+1; auto ne = content.find('"', ns);
-        p.name = content.substr(ns, ne-ns);
-        auto vp = content.find("\"value\":", ne); p.value = std::stod(content.substr(vp+8));
-        auto mp = content.find("\"min\":", vp); p.min = std::stod(content.substr(mp+6));
-        auto xp = content.find("\"max\":", mp); p.max = std::stod(content.substr(xp+6));
-        auto ip = content.find("\"initial\":", xp); p.initial = std::stod(content.substr(ip+10));
-        params_.push_back(p); sf = ip+10;
+        std::string name = content.substr(ns, ne-ns);
+        auto vp = content.find("\"value\":", ne); double value = std::stod(content.substr(vp+8));
+        auto mp = content.find("\"min\":", vp); double min = std::stod(content.substr(mp+6));
+        auto xp = content.find("\"max\":", mp); double max = std::stod(content.substr(xp+6));
+        auto ip = content.find("\"initial\":", xp); double initial = std::stod(content.substr(ip+10));
+        
+        double a = 0.0, c = 0.0;
+        auto ap = content.find("\"a\":", ip);
+        auto nextObj = content.find("\"name\":", ip);
+        if (ap != std::string::npos && (nextObj == std::string::npos || ap < nextObj)) {
+            a = std::stod(content.substr(ap+4));
+        }
+        auto cp = content.find("\"c\":", ip);
+        if (cp != std::string::npos && (nextObj == std::string::npos || cp < nextObj)) {
+            c = std::stod(content.substr(cp+4));
+        }
+
+        bool found = false;
+        for (auto& p : params_) {
+            if (p.name == name) {
+                p.value = value;
+                // Min, max, initial, a, c from CSV take priority, so we don't overwrite them
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            params_.push_back({name, value, min, max, initial, a, c});
+        }
+        sf = ip+10;
     }
     history_.clear();
     auto hs = content.find("\"history\":"); if (hs != std::string::npos) {
