@@ -48,6 +48,36 @@ void EvalBar::draw_content(const Cairo::RefPtr<Cairo::Context>& cr, int width, i
     cr->move_to(0, height / 2.0);
     cr->line_to(width, height / 2.0);
     cr->stroke();
+
+    // Draw winrate percentage text
+    cr->select_font_face("Sans", Cairo::ToyFontFace::Slant::NORMAL, Cairo::ToyFontFace::Weight::BOLD);
+    cr->set_font_size(11);
+    
+    char text[16];
+    if (blackWinrate > 0.5) {
+        std::snprintf(text, sizeof(text), "%d%%", static_cast<int>(std::round(blackWinrate * 100)));
+        cr->set_source_rgb(0.9, 0.9, 0.9); // White text on black background
+    } else {
+        std::snprintf(text, sizeof(text), "%d%%", static_cast<int>(std::round((1.0 - blackWinrate) * 100)));
+        cr->set_source_rgb(0.1, 0.1, 0.1); // Black text on white background
+    }
+    
+    Cairo::TextExtents extents;
+    cr->get_text_extents(text, extents);
+    
+    double textX = (width - extents.width) / 2.0 - extents.x_bearing;
+    double textY;
+    
+    if (blackWinrate >= 0.5) {
+        // Black is winning, draw near bottom
+        textY = height - 10.0; 
+    } else {
+        // White is winning, draw near top
+        textY = 10.0 + extents.height;
+    }
+    
+    cr->move_to(textX, textY);
+    cr->show_text(text);
 }
 
 } // namespace ui::widgets
