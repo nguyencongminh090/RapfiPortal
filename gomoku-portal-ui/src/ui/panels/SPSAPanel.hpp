@@ -59,10 +59,6 @@ private:
     Gtk::Label  lblParamsConfig_{"No Params config selected", Gtk::Align::START};
 
     // SPSA hyperparameters
-    Gtk::Label      lblA_{"a (learning rate):"};
-    Gtk::SpinButton spinA_;
-    Gtk::Label      lblC_{"c (perturbation):"};
-    Gtk::SpinButton spinC_;
     Gtk::Label      lblStab_{"A (stabilization):"};
     Gtk::SpinButton spinStab_;
     Gtk::Label      lblGames_{"Games / Iteration:"};

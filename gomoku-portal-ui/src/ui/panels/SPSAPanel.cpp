@@ -65,17 +65,6 @@ void SPSAPanel::setupLayout() {
     mainBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::HORIZONTAL));
 
     // SPSA hyperparameters
-    auto adjA = Gtk::Adjustment::create(1.0, 0.01, 100.0, 0.1, 1.0, 0);
-    spinA_.set_adjustment(adjA);
-    spinA_.set_digits(2);
-    mainBox_.append(lblA_);
-    mainBox_.append(spinA_);
-
-    auto adjC = Gtk::Adjustment::create(2.0, 0.1, 50.0, 0.1, 1.0, 0);
-    spinC_.set_adjustment(adjC);
-    spinC_.set_digits(2);
-    mainBox_.append(lblC_);
-    mainBox_.append(spinC_);
 
     auto adjStab = Gtk::Adjustment::create(10.0, 0.0, 1000.0, 1.0, 10.0, 0);
     spinStab_.set_adjustment(adjStab);
@@ -327,8 +316,8 @@ void SPSAPanel::onStart() {
     cfg.obfPath = pathOBF_;
     cfg.statePath = pathState_;
     cfg.paramsConfigPath = pathParamsConfig_;
-    cfg.a = spinA_.get_value();
-    cfg.c = spinC_.get_value();
+    cfg.a = 1.0;
+    cfg.c = 2.0;
     cfg.A = spinStab_.get_value();
     cfg.gamesPerIteration = spinGames_.get_value_as_int();
     cfg.turnTimeMs = spinTurnTime_.get_value_as_int();
@@ -362,8 +351,6 @@ void SPSAPanel::onStateChanged() {
     btnStart_.set_sensitive(!busy);
     btnStop_.set_sensitive(busy);
 
-    spinA_.set_sensitive(!busy);
-    spinC_.set_sensitive(!busy);
     spinStab_.set_sensitive(!busy);
     spinGames_.set_sensitive(!busy);
     spinTurnTime_.set_sensitive(!busy);
