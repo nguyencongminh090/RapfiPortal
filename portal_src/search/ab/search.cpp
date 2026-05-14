@@ -1188,6 +1188,21 @@ moves_loop:
             // Decrease/increase reduction for moves with a good/bad history (~9 elo)
             r -= extensionFromStatScore(ss->statScore, depth);
 
+            // [PORTAL:] Don't prune portal-adjacent moves too early
+            if (board.portalCount() > 0 && ss->moveP4[self] >= K_BLOCK3 && !board.isPortalCell(move)) {
+                bool adjPortal = false;
+                int x = move.x(), y = move.y(), bs = board.size();
+                for (int dx = -1; dx <= 1 && !adjPortal; dx++)
+                    for (int dy = -1; dy <= 1 && !adjPortal; dy++) {
+                        if (dx == 0 && dy == 0) continue;
+                        Pos nb = Pos(x + dx, y + dy);
+                        if (nb.isInBoard(bs, bs) && board.isPortalCell(nb))
+                            adjPortal = true;
+                    }
+                if (adjPortal)
+                    r = std::max(0.0f, r - 1.0f);
+            }
+
             // Allow LMR to do deeper search in some circumstances
             // Clamp the LMR depth to newDepth (no depth less than one)
             Depth d = std::max(std::min(newDepth - r, newDepth + 1), 1.0f);
