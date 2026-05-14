@@ -152,14 +152,27 @@ MovePicker::MovePicker(Rule rule, const Board &board, ExtraArgs<MovePicker::ROOT
         fastPartialSort(curMove, endMove, 0, ScoredMove::PolicyComparator {});
 
     // [PORTAL: Opening first-move zone preference]
-    // On WALL boards at ply==0, heavily prefer the 8 cells surrounding any WALL.
+    // On WALL boards at ply==0, strictly enforce the 8 cells surrounding any WALL.
     // This satisfies the game rule: first stone must be placed adjacent to a WALL.
     if (board.ply() == 0 && board.wallCount() > 0 && !useNormalizedPolicy) {
-        for (auto *m = curMove; m < endMove; ++m)
-            if (board.isAdjacentToWall(m->pos))
-                m->score += Config::WALL_FIRST_MOVE_BONUS;
-        // Re-sort after bonus injection
-        fastPartialSort(curMove, endMove, 0, ScoredMove::ScoreComparator {});
+        bool hasWallAdj = false;
+        for (auto *m = curMove; m < endMove; ++m) {
+            if (board.isAdjacentToWall(m->pos)) {
+                hasWallAdj = true;
+                break;
+            }
+        }
+        
+        if (hasWallAdj) {
+            ScoredMove* filteredEnd = curMove;
+            for (auto *m = curMove; m < endMove; ++m) {
+                if (board.isAdjacentToWall(m->pos)) {
+                    *filteredEnd = *m;
+                    filteredEnd++;
+                }
+            }
+            endMove = filteredEnd;
+        }
     }
 }
 
