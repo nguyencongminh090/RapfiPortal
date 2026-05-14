@@ -169,7 +169,7 @@ void SPSAController::pollEngines() {
             bool mDead = !s->engineMinus.isAlive();
             log("Watchdog: Slot " + std::to_string(s->id) + " engine died silently! Plus=" 
                 + (pDead?"DEAD":"OK") + " Minus=" + (mDead?"DEAD":"OK"));
-            endSlotGame(s->id, pDead ? 2 : 1);
+            endSlotGame(s->id, -1); // -1 = Error/Ignored
         }
     }
 }
@@ -477,7 +477,7 @@ void SPSAController::onSlotMove(int slotId, bool fromPlus, int x, int y) {
 
 void SPSAController::onSlotError(int slotId, bool fromPlus, const std::string& err) {
     log("Slot " + std::to_string(slotId) + " engine " + (fromPlus ? "+" : "-") + " error: " + err);
-    endSlotGame(slotId, fromPlus ? 2 : 1);
+    endSlotGame(slotId, -1); // -1 = Error/Ignored
 }
 
 void SPSAController::onSlotMessage(int slotId, bool fromPlus, const std::string& msg) {
@@ -507,7 +507,7 @@ void SPSAController::endSlotGame(int slotId, int result) {
 
     if (result == 1) matchScorePlus_++;
     else if (result == 2) matchScoreMinus_++;
-    else matchDraws_++;
+    else if (result == 0) matchDraws_++;
     gamesCompleted_++;
 
     signalProgressUpdated.emit();
@@ -522,6 +522,13 @@ void SPSAController::endSlotGame(int slotId, int result) {
         if (!connectSlotEngines(slot, plusPath, minusPath)) {
             log("Failed to reconnect slot " + std::to_string(slotId));
             slot.busy = false;
+            
+            bool allIdle = true;
+            for (auto& s : slots_) if (s->busy) { allIdle = false; break; }
+            if (allIdle) {
+                if (state_ == SPSAState::Validating) onAllValidationGamesFinished();
+                else onAllGamesFinished();
+            }
             return;
         }
         if (state_ == SPSAState::Validating) applyCurrentParams(slot.enginePlus);
