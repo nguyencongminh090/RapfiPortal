@@ -301,7 +301,7 @@ void SPSAController::startIterationMatches() {
     
     // Launch the first slot start timeout
     if (!pendingSlotStarts_.empty()) {
-        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 100);
+        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 500);
     }
     signalProgressUpdated.emit();
 }
@@ -533,7 +533,7 @@ void SPSAController::endSlotGame(int slotId, int result) {
         pendingSlotStarts_.push(slotId);
         
         if (wasEmpty) {
-            Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 100);
+            Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 500);
         }
     });
 }
@@ -604,7 +604,7 @@ void SPSAController::startValidationMatch() {
         pendingSlotStarts_.push(sp->id);
     }
     if (!pendingSlotStarts_.empty()) {
-        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 100);
+        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 500);
     }
     signalProgressUpdated.emit();
 }
