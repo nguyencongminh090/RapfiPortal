@@ -134,6 +134,10 @@ std::string EngineProtocol::yxPlaySelfDist(int n) {
     return "YXPLAYSELF " + std::to_string(n);
 }
 
+std::string EngineProtocol::yxOpponentDist(int n) {
+    return "YXOPPDIST " + std::to_string(n);
+}
+
 std::string EngineProtocol::traceBoard() { return "TRACEBOARD"; }
 std::string EngineProtocol::traceSearch() { return "TRACESEARCH"; }
 

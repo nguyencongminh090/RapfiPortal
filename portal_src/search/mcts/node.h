@@ -22,6 +22,11 @@
 #include "../../core/types.h"
 #include "../movepick.h"
 
+namespace Search {
+struct SearchOptions;
+}
+class Board;
+
 #include <atomic>
 #include <cassert>
 #include <cstring>
@@ -174,9 +179,15 @@ public:
 
     /// Initializes the edges of this node from the given move picker.
     /// @param movePicker The move picker to generate the edges.
+    /// @param ply The current search ply.
+    /// @param options The search options containing constraints.
+    /// @param board The current board state for distance checks.
     /// @return Whether this node has no valid edges. If true,
     ///   this node is a terminal node that has been mated.
-    bool createEdges(MovePicker &movePicker);
+    bool createEdges(MovePicker          &movePicker,
+                     int                  ply     = 0,
+                     const SearchOptions *options = nullptr,
+                     const Board         *board   = nullptr);
 
     /// Returns the graph hash key of this node.
     HashKey getHash() const { return hash; }

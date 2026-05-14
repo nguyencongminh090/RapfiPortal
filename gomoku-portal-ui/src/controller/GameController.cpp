@@ -332,6 +332,27 @@ void GameController::playMoveWithDistance(int n, bool selfOnly) {
     }
 }
 
+void GameController::playMoveWithOpponentDistance(int n) {
+    if (engine_.state() == engine::EngineState::Disconnected) {
+        signalEngineMessage.emit("[Error] Cannot start search: Engine not connected.");
+        return;
+    }
+    if (engine_.state() != engine::EngineState::Idle) return;
+
+    if (topologyDirty_) {
+        syncBoardToEngine();
+        topologyDirty_ = false;
+    }
+
+    // Sync board silently first
+    auto record  = model::GameRecord::fromBoard(board_);
+    auto entries = record.toBoardEntries(board_.sideToMove());
+    engine_.loadPositionSilent(entries);
+
+    // Now send the command
+    engine_.yxOpponentDist(n);
+}
+
 void GameController::stopThinking() {
     if (engine_.state() == engine::EngineState::Thinking) {
         engine_.stopThinking();

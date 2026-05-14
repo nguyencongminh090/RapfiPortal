@@ -208,6 +208,12 @@ void EngineController::yxPlaySelfDist(int n) {
     setState(EngineState::Thinking);
 }
 
+void EngineController::yxOpponentDist(int n) {
+    requireIdle("yxOpponentDist");
+    send(EngineProtocol::yxOpponentDist(n));
+    setState(EngineState::Thinking);
+}
+
 void EngineController::stopThinking() {
     if (state_ != EngineState::Thinking) return;  // Silently ignore if not thinking
     send(EngineProtocol::stop());

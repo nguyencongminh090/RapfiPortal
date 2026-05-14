@@ -164,6 +164,8 @@ struct SearchOptions
     int minRootDist = 0;
     /// Minimum Chebyshev distance to self stones for root moves
     int minRootSelfDist = 0;
+    /// Minimum Chebyshev distance for opponent's next move (at depth 1)
+    int minOpponentDist = 0;
 
     /// Checks if we are in analysis mode.
     bool isAnalysisMode() const { return !timeLimit && !maxNodes; }

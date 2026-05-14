@@ -408,7 +408,7 @@ bool expandNode(Node &node, const SearchOptions &options, const Board &board, in
                           true,
                           RootPolicyTemperature,
                       });
-        bool       noValidMove = node.createEdges(mp);
+        bool       noValidMove = node.createEdges(mp, ply, &options, &board);
         assert(!node.isLeaf());
         assert(!noValidMove);
         return false;
@@ -424,7 +424,7 @@ bool expandNode(Node &node, const SearchOptions &options, const Board &board, in
                           PolicyTemperature,
                       });
 
-        bool noValidMove = node.createEdges(mp);
+        bool noValidMove = node.createEdges(mp, ply, &options, &board);
         if (noValidMove) {
             Value terminalValue = board.p4Count(~board.sideToMove(), A_FIVE)
                                       ? mated_in(board.ply() + 2)

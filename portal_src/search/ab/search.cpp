@@ -944,6 +944,12 @@ moves_loop:
         if (!RootNode && move == skipMove)
             continue;
 
+        // [OPPONENT DISTANCE PROTOCOL]
+        // Filter opponent's moves at depth 1 based on distance from our last move
+        if (ss->ply == 1 && options.minOpponentDist > 0
+            && Pos::distance(move, board.getLastMove()) < options.minOpponentDist)
+            continue;
+
         if (RootNode) {
             if (options.balanceMode == SearchOptions::BALANCE_TWO) {
                 Balance2Move b2move {board.getLastMove(), move};

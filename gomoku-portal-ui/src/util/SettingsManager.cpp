@@ -37,6 +37,10 @@ void SettingsManager::load() {
         if (keyFile_->has_key("Game", "playDistSelfOnly")) {
             playDistSelfOnly_ = keyFile_->get_boolean("Game", "playDistSelfOnly");
         }
+        if (keyFile_->has_key("Game", "oppDistN")) {
+            oppDistN_ = keyFile_->get_integer("Game", "oppDistN");
+            if (oppDistN_ < 1) oppDistN_ = 1;
+        }
         if (keyFile_->has_key("Window", "width")) {
             windowWidth_ = keyFile_->get_integer("Window", "width");
         }
@@ -98,6 +102,7 @@ void SettingsManager::save() {
         keyFile_->set_integer("Game", "lastBoardSize", lastBoardSize_);
         keyFile_->set_integer("Game", "playDistN", playDistN_);
         keyFile_->set_boolean("Game", "playDistSelfOnly", playDistSelfOnly_);
+        keyFile_->set_integer("Game", "oppDistN", oppDistN_);
         keyFile_->set_integer("Window", "width", windowWidth_);
         keyFile_->set_integer("Window", "height", windowHeight_);
         keyFile_->set_boolean("Window", "maximized", windowMaximized_);

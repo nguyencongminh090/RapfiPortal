@@ -96,6 +96,9 @@ public:
     /// @param selfOnly If true, only distance to engine's own stones is considered.
     void playMoveWithDistance(int n, bool selfOnly = false);
 
+    /// Ask the engine to think with the constraint that the opponent's next move has distance at least N.
+    void playMoveWithOpponentDistance(int n);
+
     /// Stop the engine's current search.
     void stopThinking();
 

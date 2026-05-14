@@ -718,6 +718,25 @@ void playSelfDist()
     options.minRootSelfDist = 0;
 }
 
+void playOpponentDist()
+{
+    int dist;
+    if (!(std::cin >> dist)) {
+        ERRORL("Invalid distance N for YXOPPDIST.");
+        return;
+    }
+
+    options.minOpponentDist = dist;
+    think(*board,
+          1,
+          Search::SearchOptions::BALANCE_NONE,
+          false,
+          false);
+
+    // Reset minOpponentDist for subsequent searches.
+    options.minOpponentDist = 0;
+}
+
 void turn()
 {
     auto pos = parseLegalCoord(std::cin, *board);
@@ -1485,6 +1504,7 @@ bool runProtocol()
     else if (cmd == "YXSEARCHDEFEND")      CheckBoardOK(searchDefend);
     else if (cmd == "YXPLAYDIST")          CheckBoardOK(playDist);
     else if (cmd == "YXPLAYSELF")          CheckBoardOK(playSelfDist);
+    else if (cmd == "YXOPPDIST")           CheckBoardOK(playOpponentDist);
     else if (cmd == "YXDBSPLIT")           CheckBoardOK(splitDatabase);
     else if (cmd == "YXDBMERGE")           CheckBoardOK(mergeDatabase);
     else if (cmd == "SWAP2BOARD")          CheckBoardOK(swap2board);

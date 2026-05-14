@@ -76,6 +76,7 @@ void test_command_builders() {
 
     // Analysis
     CHECK(EngineProtocol::yxNBest(5)   == "YXNBEST 5",       "yxNBest(5)");
+    CHECK(EngineProtocol::yxOpponentDist(5) == "YXOPPDIST 5",  "yxOpponentDist(5)");
     CHECK(EngineProtocol::traceBoard() == "TRACEBOARD",       "traceBoard()");
     CHECK(EngineProtocol::traceSearch()== "TRACESEARCH",      "traceSearch()");
 

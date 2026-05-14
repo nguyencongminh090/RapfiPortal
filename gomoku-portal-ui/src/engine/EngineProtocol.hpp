@@ -139,6 +139,9 @@ public:
     /// "YXPLAYSELF {n}" — engine plays a move with at least N Chebyshev distance from SELF stones
     static std::string yxPlaySelfDist(int n);
 
+    /// "YXOPPDIST {n}" — search with constraint: opponent next move distance >= N
+    static std::string yxOpponentDist(int n);
+
     /// "TRACEBOARD" — dump board patterns/scores
     static std::string traceBoard();
 

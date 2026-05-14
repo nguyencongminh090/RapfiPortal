@@ -80,6 +80,8 @@ private:
     Gtk::SpinButton spinPlayDist_;
     Gtk::CheckButton chkSelfDistOnly_{"Self Only"};
     Gtk::Button btnPlayDist_{"Play Dist"};
+    Gtk::SpinButton spinOppDist_;
+    Gtk::Button btnOppDist_{"Opp Dist"};
     Gtk::Button btnStop_{"Stop"};
     Gtk::Button btnSaveGame_{"Save"};
     Gtk::Button btnLoadGame_{"Load"};
@@ -153,6 +155,7 @@ private:
     void onConnect();
     void onThink();
     void onPlayDist();
+    void onOppDist();
     void onStop();
     
     void onSaveGame();

@@ -67,6 +67,7 @@ MainWindow::MainWindow(controller::GameController& gameCtrl)
             settings.setLastBoardSize(spinBoardSize_.get_value_as_int());
             settings.setPlayDistN(spinPlayDist_.get_value_as_int());
             settings.setPlayDistSelfOnly(chkSelfDistOnly_.get_active());
+            settings.setOppDistN(spinOppDist_.get_value_as_int());
             settings.save();
             return false; // let the window close
         }, false));
@@ -219,6 +220,16 @@ void MainWindow::setupToolbar() {
     btnPlayDist_.set_tooltip_text("Ask engine to play a move with at least N distance");
     toolbarBox_.append(btnPlayDist_);
 
+    auto oppDistAdj = Gtk::Adjustment::create(util::SettingsManager::instance().oppDistN(), 1.0, 22.0, 1.0, 1.0, 0.0);
+    spinOppDist_.set_adjustment(oppDistAdj);
+    spinOppDist_.set_numeric(true);
+    spinOppDist_.set_tooltip_text("Minimum Chebyshev distance for opponent's response");
+    spinOppDist_.set_size_request(50, -1);
+    toolbarBox_.append(spinOppDist_);
+
+    btnOppDist_.set_tooltip_text("Search with constraint: opponent next move distance >= N");
+    toolbarBox_.append(btnOppDist_);
+
     toolbarBox_.append(btnStop_);
     toolbarBox_.append(*Gtk::make_managed<Gtk::Separator>(Gtk::Orientation::VERTICAL));
     toolbarBox_.append(btnSaveGame_);
@@ -241,6 +252,7 @@ void MainWindow::setupSignals() {
     btnConnect_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onConnect));
     btnThink_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onThink));
     btnPlayDist_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onPlayDist));
+    btnOppDist_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onOppDist));
     btnStop_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onStop));
     btnSaveGame_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onSaveGame));
     btnLoadGame_.signal_clicked().connect(sigc::mem_fun(*this, &MainWindow::onLoadGame));
@@ -563,6 +575,11 @@ void MainWindow::onPlayDist() {
     gameCtrl_.playMoveWithDistance(n, selfOnly);
 }
 
+void MainWindow::onOppDist() {
+    int n = spinOppDist_.get_value_as_int();
+    gameCtrl_.playMoveWithOpponentDistance(n);
+}
+
 void MainWindow::onStop() {
     gameCtrl_.stopThinking();
 }
@@ -789,6 +806,8 @@ void MainWindow::onSetupToggled() {
         comboMode_.set_sensitive(false);
         btnUndo_.set_sensitive(false);
         btnThink_.set_sensitive(false);
+        btnPlayDist_.set_sensitive(false);
+        btnOppDist_.set_sensitive(false);
         
         logPanel_.appendLog("--- Entered Setup Mode ---");
     } else {
@@ -799,6 +818,8 @@ void MainWindow::onSetupToggled() {
         comboMode_.set_sensitive(true);
         bool idle = (gameCtrl_.engine().state() == engine::EngineState::Idle);
         btnThink_.set_sensitive(idle);
+        btnPlayDist_.set_sensitive(idle);
+        btnOppDist_.set_sensitive(idle);
         btnUndo_.set_sensitive(true);
         
         logPanel_.appendLog("--- Exited Setup Mode ---");
@@ -858,6 +879,8 @@ void MainWindow::onEngineStateChanged(engine::EngineState state) {
         btnPlayDist_.set_sensitive(idle);
         spinPlayDist_.set_sensitive(idle);
         chkSelfDistOnly_.set_sensitive(idle);
+        btnOppDist_.set_sensitive(idle);
+        spinOppDist_.set_sensitive(idle);
         btnStop_.set_sensitive(thinking);
         btnNewGame_.set_sensitive(!busy);
         btnUndo_.set_sensitive(!busy);

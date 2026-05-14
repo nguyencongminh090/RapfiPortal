@@ -19,6 +19,8 @@
 #include "node.h"
 
 #include "../../config.h"
+#include "../../game/board.h"
+#include "../searchcommon.h"
 #include "nodetable.h"
 
 namespace Search::MCTS {
@@ -85,7 +87,7 @@ void Node::setNonTerminal(float utility, float drawRate)
     n.store(1, std::memory_order_release);
 }
 
-bool Node::createEdges(MovePicker &movePicker)
+bool Node::createEdges(MovePicker &movePicker, int ply, const SearchOptions *options, const Board *board)
 {
     Pos      moveList[MAX_MOVES];
     float    policyList[MAX_MOVES];
@@ -94,6 +96,13 @@ bool Node::createEdges(MovePicker &movePicker)
     while (Pos move = movePicker()) {
         assert(movePicker.hasPolicyScore());
         assert(movePicker.hasNormalizedPolicy());
+
+        // [OPPONENT DISTANCE PROTOCOL]
+        // Filter opponent's moves at depth 1 based on distance from our last move
+        if (ply == 1 && options && options->minOpponentDist > 0 && board
+            && Pos::distance(move, board->getLastMove()) < options->minOpponentDist)
+            continue;
+
         moveList[numEdges]   = move;
         policyList[numEdges] = movePicker.curMoveNormalizePolicy();
         numEdges++;

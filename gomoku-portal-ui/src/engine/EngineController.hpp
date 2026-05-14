@@ -120,6 +120,9 @@ public:
     /// Send YXPLAYSELF n — starts engine thinking with distance constraint from self stones.
     void yxPlaySelfDist(int n);
 
+    /// Send YXOPPDIST n — starts engine thinking with opponent distance constraint.
+    void yxOpponentDist(int n);
+
     /// Send STOP to interrupt thinking (valid in THINKING state).
     void stopThinking();
 
