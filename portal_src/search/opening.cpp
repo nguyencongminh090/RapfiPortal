@@ -56,16 +56,20 @@ std::vector<Pos> generateOpening(const Board &board, GameRule rule)
             // If there are only portays (no walls), or nothing, play center.
             bool hasWalls = false;
             std::vector<Pos> adjCells;
-            FOR_EVERY_POSITION(&board, p) {
-                if (board.isWallCell(p)) {
-                    hasWalls = true;
-                    for (int dx = -1; dx <= 1; dx++) {
-                        for (int dy = -1; dy <= 1; dy++) {
-                            if (dx == 0 && dy == 0) continue;
-                            Pos adj(p.x() + dx, p.y() + dy);
-                            // Ensure the adjacent cell is empty and is neither a Wall nor a Portal.
-                            if (board.isInBoard(adj) && board.isEmpty(adj) && !board.isPortalCell(adj) && !board.isWallCell(adj)) {
-                                adjCells.push_back(adj);
+            // Use raw loops instead of FOR_EVERY_POSITION macro which skips WALL pieces
+            for (int y = 0; y < board.size(); y++) {
+                for (int x = 0; x < board.size(); x++) {
+                    Pos p(x, y);
+                    if (board.isWallCell(p)) {
+                        hasWalls = true;
+                        for (int dx = -1; dx <= 1; dx++) {
+                            for (int dy = -1; dy <= 1; dy++) {
+                                if (dx == 0 && dy == 0) continue;
+                                Pos adj(p.x() + dx, p.y() + dy);
+                                // Ensure the adjacent cell is empty and is neither a Wall nor a Portal.
+                                if (board.isInBoard(adj) && board.isEmpty(adj) && !board.isPortalCell(adj) && !board.isWallCell(adj)) {
+                                    adjCells.push_back(adj);
+                                }
                             }
                         }
                     }
@@ -262,14 +266,16 @@ void expandCandidateHalfBoard(Board &board)
 
 bool isBoardSymmetry(const Board &board, TransformType symTrans)
 {
-    FOR_EVERY_POSITION(&board, pos)
-    {
-        if (board.isEmpty(pos))
-            continue;
+    for (int y = 0; y < board.size(); y++) {
+        for (int x = 0; x < board.size(); x++) {
+            Pos pos(x, y);
+            if (board.isEmpty(pos))
+                continue;
 
-        Pos transformedPos = applyTransform(pos, board.size(), symTrans);
-        if (board.get(pos) != board.get(transformedPos))
-            return false;
+            Pos transformedPos = applyTransform(pos, board.size(), symTrans);
+            if (board.get(pos) != board.get(transformedPos))
+                return false;
+        }
     }
 
     return true;
