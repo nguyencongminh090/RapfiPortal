@@ -80,3 +80,7 @@ yarn-error.log*
 # Build/Dist
 dist/
 .cache
+
+# Backups and Packs
+portal_src_V17_Backup/
+*.tar.gz
