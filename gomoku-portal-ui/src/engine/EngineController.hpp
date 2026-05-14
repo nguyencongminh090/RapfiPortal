@@ -55,6 +55,9 @@ public:
     /// Current engine config.
     [[nodiscard]] const EngineConfig& currentConfig() const { return currentConfig_; }
 
+    /// Check if the underlying engine process is still running.
+    [[nodiscard]] bool isAlive() const { return process_.isAlive(); }
+
     // =========================================================================
     // Game Commands (valid in IDLE state only)
     // =========================================================================

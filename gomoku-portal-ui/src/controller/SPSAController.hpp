@@ -214,7 +214,7 @@ private:
     // Concurrent game slots
     // -----------------------------------------------------------------------
 
-    static constexpr int MAX_SLOTS = 8;
+    static constexpr int MAX_SLOTS = 256;
     std::vector<std::unique_ptr<GameSlot>> slots_;
 
     // Work queue: indices of games still to be played

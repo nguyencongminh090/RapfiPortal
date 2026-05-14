@@ -157,8 +157,18 @@ void SPSAController::stop() {
 
 void SPSAController::pollEngines() {
     for (auto& s : slots_) {
+        if (!s->busy) continue;
+        
         s->enginePlus.pollOutput();
         s->engineMinus.pollOutput();
+        
+        if (!s->enginePlus.isAlive() || !s->engineMinus.isAlive()) {
+            bool pDead = !s->enginePlus.isAlive();
+            bool mDead = !s->engineMinus.isAlive();
+            log("Watchdog: Slot " + std::to_string(s->id) + " engine died silently! Plus=" 
+                + (pDead?"DEAD":"OK") + " Minus=" + (mDead?"DEAD":"OK"));
+            endSlotGame(s->id, pDead ? 2 : 1);
+        }
     }
 }
 
@@ -287,6 +297,35 @@ void SPSAController::startIterationMatches() {
 void SPSAController::dispatchToSlot(int slotId) {
     if (stopRequested_) return;
     auto& slot = *slots_[slotId];
+
+    // If engines died (e.g. OOM or resource limit), attempt to reconnect them before assigning next game.
+    if (!slot.enginePlus.isAlive() || !slot.engineMinus.isAlive()) {
+        log("Slot " + std::to_string(slotId) + " engines died, attempting to reconnect...");
+        slot.enginePlus.disconnect();
+        slot.engineMinus.disconnect();
+        
+        std::string ePlusPath = (state_ == SPSAState::Validating) ? config_.enginePath : config_.enginePath;
+        std::string eMinusPath = (state_ == SPSAState::Validating) ? config_.baselinePath : config_.enginePath;
+        
+        if (!connectSlotEngines(slot, ePlusPath, eMinusPath)) {
+            log("Failed to restart engines for slot " + std::to_string(slotId));
+            slot.busy = false;
+            // Still check if we need to end iteration
+            bool allIdle = true;
+            for (auto& s : slots_) if (s->busy) { allIdle = false; break; }
+            if (allIdle) {
+                if (state_ == SPSAState::Validating) onAllValidationGamesFinished();
+                else onAllGamesFinished();
+            }
+            return;
+        }
+        
+        if (state_ == SPSAState::Playing) {
+            applyPerturbedParams(slot);
+        } else if (state_ == SPSAState::Validating) {
+            applyCurrentParams(slot.enginePlus);
+        }
+    }
 
     if (pendingGames_.empty()) {
         slot.busy = false;
