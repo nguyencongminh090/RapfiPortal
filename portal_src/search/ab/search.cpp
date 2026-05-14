@@ -1167,8 +1167,9 @@ moves_loop:
 
             // Increase reduction for useless defend move (~6 elo)
             if (oppo4 && ss->moveP4[oppo] < E_BLOCK4) {
-                r += (distOppo > 4 && board.portalCount() == 0 ? OPPO_USELESS_DEFEND_REDUCTION : 0);
-                r += (distSelf > 4 && board.portalCount() == 0 ? SELF_USELESS_DEFEND_REDUCTION : 0);
+                bool inConstrainedZone = board.portalCount() > 0 || board.isAdjacentToWall(move);
+                r += (distOppo > 4 && !inConstrainedZone ? OPPO_USELESS_DEFEND_REDUCTION : 0);
+                r += (distSelf > 4 && !inConstrainedZone ? SELF_USELESS_DEFEND_REDUCTION : 0);
             }
 
             // Decrease reduction for continuous attack (~5 elo)
@@ -1188,18 +1189,27 @@ moves_loop:
             // Decrease/increase reduction for moves with a good/bad history (~9 elo)
             r -= extensionFromStatScore(ss->statScore, depth);
 
-            // [PORTAL:] Don't prune portal-adjacent moves too early
-            if (board.portalCount() > 0 && ss->moveP4[self] >= K_BLOCK3 && !board.isPortalCell(move)) {
-                bool adjPortal = false;
-                int x = move.x(), y = move.y(), bs = board.size();
-                for (int dx = -1; dx <= 1 && !adjPortal; dx++)
-                    for (int dy = -1; dy <= 1 && !adjPortal; dy++) {
-                        if (dx == 0 && dy == 0) continue;
-                        Pos nb = Pos(x + dx, y + dy);
-                        if (nb.isInBoard(bs, bs) && board.isPortalCell(nb))
-                            adjPortal = true;
-                    }
-                if (adjPortal)
+            // [WALL/PORTAL:] Don't prune obstacle-adjacent moves too early
+            if (ss->moveP4[self] >= K_BLOCK3) {
+                bool adjObstacle = false;
+                // Check Portal
+                if (board.portalCount() > 0 && !board.isPortalCell(move)) {
+                    int x = move.x(), y = move.y(), bs = board.size();
+                    for (int dx = -1; dx <= 1 && !adjObstacle; dx++)
+                        for (int dy = -1; dy <= 1 && !adjObstacle; dy++) {
+                            if (dx == 0 && dy == 0) continue;
+                            Pos nb = Pos(x + dx, y + dy);
+                            if (nb.isInBoard(bs, bs) && board.isPortalCell(nb))
+                                adjObstacle = true;
+                        }
+                }
+                // Check WALL
+                if (board.wallCount() > 0 && !adjObstacle) {
+                    if (board.isAdjacentToWall(move))
+                        adjObstacle = true;
+                }
+
+                if (adjObstacle)
                     r = std::max(0.0f, r - 1.0f);
             }
 
