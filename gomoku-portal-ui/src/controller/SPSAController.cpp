@@ -93,18 +93,28 @@ void SPSAController::destroySlots() {
 }
 
 bool SPSAController::connectSlotEngines(GameSlot& slot, const std::string& plusPath, const std::string& minusPath) {
+    bool success = true;
     engine::EngineConfig cfg;
-    cfg.executablePath = plusPath;
     cfg.timeoutTurn = config_.turnTimeMs;
     cfg.timeoutMatch = config_.matchTimeMs;
     cfg.maxMemoryBytes = config_.maxMemory;
     cfg.threadNum = config_.threads;
     cfg.boardSize = config_.boardSize;
     cfg.rule = config_.rule;
-    if (!slot.enginePlus.connect(cfg)) return false;
-    cfg.executablePath = minusPath;
-    if (!slot.engineMinus.connect(cfg)) { slot.enginePlus.disconnect(); return false; }
-    return true;
+
+    if (!slot.enginePlus.isAlive() || slot.plusCurrentPath != plusPath) {
+        cfg.executablePath = plusPath;
+        if (!slot.enginePlus.connect(cfg)) success = false;
+        else slot.plusCurrentPath = plusPath;
+    }
+    
+    if (!slot.engineMinus.isAlive() || slot.minusCurrentPath != minusPath) {
+        cfg.executablePath = minusPath;
+        if (!slot.engineMinus.connect(cfg)) success = false;
+        else slot.minusCurrentPath = minusPath;
+    }
+    
+    return success;
 }
 
 void SPSAController::start(const SPSAConfig& config) {
@@ -284,14 +294,14 @@ void SPSAController::startIterationMatches() {
     while (!pendingSlotStarts_.empty()) pendingSlotStarts_.pop();
     for (auto& sp : slots_) {
         sp->busy = false;
-        sp->enginePlus.disconnect();
-        sp->engineMinus.disconnect();
+        if (sp->enginePlus.getState() != engine::EngineState::Idle) sp->enginePlus.disconnect();
+        if (sp->engineMinus.getState() != engine::EngineState::Idle) sp->engineMinus.disconnect();
         pendingSlotStarts_.push(sp->id);
     }
     
     // Launch the first slot start timeout
     if (!pendingSlotStarts_.empty()) {
-        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 10);
+        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 100);
     }
     signalProgressUpdated.emit();
 }
@@ -515,25 +525,16 @@ void SPSAController::endSlotGame(int slotId, int result) {
     Glib::signal_idle().connect_once([this, slotId]() {
         if (stopRequested_) return;
         auto& slot = *slots_[slotId];
-        slot.enginePlus.disconnect();
-        slot.engineMinus.disconnect();
-        std::string plusPath = config_.enginePath;
-        std::string minusPath = (state_ == SPSAState::Validating) ? config_.baselinePath : config_.enginePath;
-        if (!connectSlotEngines(slot, plusPath, minusPath)) {
-            log("Failed to reconnect slot " + std::to_string(slotId));
-            slot.busy = false;
-            
-            bool allIdle = true;
-            for (auto& s : slots_) if (s->busy) { allIdle = false; break; }
-            if (allIdle) {
-                if (state_ == SPSAState::Validating) onAllValidationGamesFinished();
-                else onAllGamesFinished();
-            }
-            return;
+        
+        if (slot.enginePlus.getState() != engine::EngineState::Idle) slot.enginePlus.disconnect();
+        if (slot.engineMinus.getState() != engine::EngineState::Idle) slot.engineMinus.disconnect();
+        
+        bool wasEmpty = pendingSlotStarts_.empty();
+        pendingSlotStarts_.push(slotId);
+        
+        if (wasEmpty) {
+            Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 100);
         }
-        if (state_ == SPSAState::Validating) applyCurrentParams(slot.enginePlus);
-        else applyPerturbedParams(slot);
-        dispatchToSlot(slotId);
     });
 }
 
@@ -598,12 +599,12 @@ void SPSAController::startValidationMatch() {
     while (!pendingSlotStarts_.empty()) pendingSlotStarts_.pop();
     for (auto& sp : slots_) {
         sp->busy = false;
-        sp->enginePlus.disconnect();
-        sp->engineMinus.disconnect();
+        if (sp->enginePlus.getState() != engine::EngineState::Idle) sp->enginePlus.disconnect();
+        if (sp->engineMinus.getState() != engine::EngineState::Idle) sp->engineMinus.disconnect();
         pendingSlotStarts_.push(sp->id);
     }
     if (!pendingSlotStarts_.empty()) {
-        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 10);
+        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 100);
     }
     signalProgressUpdated.emit();
 }

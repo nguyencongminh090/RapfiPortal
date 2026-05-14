@@ -121,6 +121,8 @@ struct GameSlot {
     int                        plusTimeLeftMs = 0;
     int                        minusTimeLeftMs = 0;
     float                      lastEvalWR = 50.0f;
+    std::string                plusCurrentPath;
+    std::string                minusCurrentPath;
 
     // Signal connections for this slot
     std::vector<sigc::connection> connections;
