@@ -294,8 +294,8 @@ void SPSAController::startIterationMatches() {
     while (!pendingSlotStarts_.empty()) pendingSlotStarts_.pop();
     for (auto& sp : slots_) {
         sp->busy = false;
-        if (sp->enginePlus.getState() != engine::EngineState::Idle) sp->enginePlus.disconnect();
-        if (sp->engineMinus.getState() != engine::EngineState::Idle) sp->engineMinus.disconnect();
+        if (sp->enginePlus.state() != engine::EngineState::Idle) sp->enginePlus.disconnect();
+        if (sp->engineMinus.state() != engine::EngineState::Idle) sp->engineMinus.disconnect();
         pendingSlotStarts_.push(sp->id);
     }
     
@@ -526,8 +526,8 @@ void SPSAController::endSlotGame(int slotId, int result) {
         if (stopRequested_) return;
         auto& slot = *slots_[slotId];
         
-        if (slot.enginePlus.getState() != engine::EngineState::Idle) slot.enginePlus.disconnect();
-        if (slot.engineMinus.getState() != engine::EngineState::Idle) slot.engineMinus.disconnect();
+        if (slot.enginePlus.state() != engine::EngineState::Idle) slot.enginePlus.disconnect();
+        if (slot.engineMinus.state() != engine::EngineState::Idle) slot.engineMinus.disconnect();
         
         bool wasEmpty = pendingSlotStarts_.empty();
         pendingSlotStarts_.push(slotId);
@@ -599,8 +599,8 @@ void SPSAController::startValidationMatch() {
     while (!pendingSlotStarts_.empty()) pendingSlotStarts_.pop();
     for (auto& sp : slots_) {
         sp->busy = false;
-        if (sp->enginePlus.getState() != engine::EngineState::Idle) sp->enginePlus.disconnect();
-        if (sp->engineMinus.getState() != engine::EngineState::Idle) sp->engineMinus.disconnect();
+        if (sp->enginePlus.state() != engine::EngineState::Idle) sp->enginePlus.disconnect();
+        if (sp->engineMinus.state() != engine::EngineState::Idle) sp->engineMinus.disconnect();
         pendingSlotStarts_.push(sp->id);
     }
     if (!pendingSlotStarts_.empty()) {
@@ -642,20 +642,23 @@ void SPSAController::saveState() {
             << ", \"min\": " << params_[i].min << ", \"max\": " << params_[i].max
             << ", \"initial\": " << params_[i].initial 
             << ", \"a\": " << params_[i].a << ", \"c\": " << params_[i].c << " }";
-        if (i+1 < params_.size()) out << ","; out << "\n";
+        if (i+1 < params_.size()) out << ","; 
+        out << "\n";
     }
     out << "  ],\n  \"history\": [\n";
     for (size_t i = 0; i < history_.size(); ++i) {
         out << "    { \"iter\": " << history_[i].iteration << ", \"plus\": " << history_[i].scoreTheta_plus
             << ", \"minus\": " << history_[i].scoreTheta_minus << ", \"draws\": " << history_[i].draws << " }";
-        if (i+1 < history_.size()) out << ","; out << "\n";
+        if (i+1 < history_.size()) out << ","; 
+        out << "\n";
     }
     out << "  ],\n  \"validation\": [\n";
     for (size_t i = 0; i < valHistory_.size(); ++i) {
         out << "    { \"after\": " << valHistory_[i].afterIteration << ", \"tuned\": " << valHistory_[i].scoreTuned
             << ", \"baseline\": " << valHistory_[i].scoreBaseline << ", \"draws\": " << valHistory_[i].draws
             << ", \"winrate\": " << valHistory_[i].winrate << " }";
-        if (i+1 < valHistory_.size()) out << ","; out << "\n";
+        if (i+1 < valHistory_.size()) out << ","; 
+        out << "\n";
     }
     out << "  ]\n}\n";
     log("State saved (iter=" + std::to_string(iteration_) + ")");
