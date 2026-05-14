@@ -220,6 +220,10 @@ private:
     // Work queue: indices of games still to be played
     std::queue<int> pendingGames_;
 
+    // Queue for staggered engine start to avoid OS thread exhaustion
+    std::queue<int> pendingSlotStarts_;
+    bool onSlotStartTimeout();
+
     // Aggregated match results (across all slots)
     int matchScorePlus_  = 0;
     int matchScoreMinus_ = 0;

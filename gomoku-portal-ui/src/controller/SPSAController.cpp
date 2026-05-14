@@ -148,8 +148,10 @@ void SPSAController::start(const SPSAConfig& config) {
 void SPSAController::stop() {
     if (state_ == SPSAState::Idle) return;
     stopRequested_ = true;
+    stopRequested_ = true;
     for (auto& s : slots_) { s->enginePlus.disconnect(); s->engineMinus.disconnect(); s->busy = false; }
     while (!pendingGames_.empty()) pendingGames_.pop();
+    while (!pendingSlotStarts_.empty()) pendingSlotStarts_.pop();
     state_ = SPSAState::Finished;
     signalStateChanged.emit();
     log("SPSA tuning stopped.");
@@ -279,19 +281,41 @@ void SPSAController::startIterationMatches() {
     while (!pendingGames_.empty()) pendingGames_.pop();
     for (int i = 0; i < gamesTotalCurrent_; ++i) pendingGames_.push(i);
 
+    while (!pendingSlotStarts_.empty()) pendingSlotStarts_.pop();
     for (auto& sp : slots_) {
-        auto& slot = *sp;
-        slot.busy = false;
-        slot.enginePlus.disconnect();
-        slot.engineMinus.disconnect();
-        if (!connectSlotEngines(slot, config_.enginePath, config_.enginePath)) {
-            log("Failed to start engines for slot " + std::to_string(slot.id));
-            continue;
-        }
-        applyPerturbedParams(slot);
-        dispatchToSlot(slot.id);
+        sp->busy = false;
+        sp->enginePlus.disconnect();
+        sp->engineMinus.disconnect();
+        pendingSlotStarts_.push(sp->id);
+    }
+    
+    // Launch the first slot start timeout
+    if (!pendingSlotStarts_.empty()) {
+        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 10);
     }
     signalProgressUpdated.emit();
+}
+
+bool SPSAController::onSlotStartTimeout() {
+    if (stopRequested_ || pendingSlotStarts_.empty()) return false;
+    
+    int slotId = pendingSlotStarts_.front();
+    pendingSlotStarts_.pop();
+    auto& slot = *slots_[slotId];
+    
+    std::string ePlusPath = (state_ == SPSAState::Validating) ? config_.enginePath : config_.enginePath;
+    std::string eMinusPath = (state_ == SPSAState::Validating) ? config_.baselinePath : config_.enginePath;
+    
+    if (!connectSlotEngines(slot, ePlusPath, eMinusPath)) {
+        log("Failed to start engines for slot " + std::to_string(slot.id));
+    } else {
+        if (state_ == SPSAState::Playing) applyPerturbedParams(slot);
+        else applyCurrentParams(slot.enginePlus);
+        dispatchToSlot(slot.id);
+    }
+    
+    // Continue timeout loop if there are more slots to start
+    return !pendingSlotStarts_.empty();
 }
 
 void SPSAController::dispatchToSlot(int slotId) {
@@ -564,17 +588,15 @@ void SPSAController::startValidationMatch() {
     while (!pendingGames_.empty()) pendingGames_.pop();
     for (int i = 0; i < gamesTotalCurrent_; ++i) pendingGames_.push(i);
 
+    while (!pendingSlotStarts_.empty()) pendingSlotStarts_.pop();
     for (auto& sp : slots_) {
-        auto& slot = *sp;
-        slot.busy = false;
-        slot.enginePlus.disconnect();
-        slot.engineMinus.disconnect();
-        if (!connectSlotEngines(slot, config_.enginePath, config_.baselinePath)) {
-            log("Failed to start validation engines for slot " + std::to_string(slot.id));
-            continue;
-        }
-        applyCurrentParams(slot.enginePlus);
-        dispatchToSlot(slot.id);
+        sp->busy = false;
+        sp->enginePlus.disconnect();
+        sp->engineMinus.disconnect();
+        pendingSlotStarts_.push(sp->id);
+    }
+    if (!pendingSlotStarts_.empty()) {
+        Glib::signal_timeout().connect(sigc::mem_fun(*this, &SPSAController::onSlotStartTimeout), 10);
     }
     signalProgressUpdated.emit();
 }
